@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+enum MyEnumType {
+    Item1 = 0;
+    Item2 = 1;
+}
+
+enum MyNativeEnumType {
+    Item3 = 0;
+    Item4 = 1;
+}
+
+message MyObjType {
+    string att1 = 1;
+}
+
+message MyBasicTypes {
+    string string_item = 1;
+    double number_item = 2;
+    bool bool_item = 3;
+    MyEnumType enum_item = 4;
+    MyNativeEnumType native_enum_item = 5;
+    string literal_item = 6;
+    google.protobuf.Any any_item = 7;
+    google.protobuf.Timestamp date_item = 8;
+    repeated double set_item = 9;
+    repeated string array_item = 10;
+    MyObjType my_obj = 11;
+}
