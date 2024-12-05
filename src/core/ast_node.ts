@@ -75,7 +75,7 @@ export class Zod2Ast
      * @param schema 
      * @returns 
      */
-    zodToAST(schema: ZodTypeAny, state?: {isUnionDiscriminator?: boolean}): ASTNode {
+    private zodToAST(schema: ZodTypeAny, state?: {isUnionDiscriminator?: boolean}): ASTNode {
         const def = schema._def;
 
         if (schema instanceof ZodString) {
