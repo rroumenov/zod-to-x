@@ -37,4 +37,8 @@ export default class StringUtils {
         ) // Capitalize each word except the first one
         .join(''); // Join the words back together
     }
+
+    static capitalize(input: string) {
+        return String(input).charAt(0).toUpperCase() + String(input).slice(1);
+    }
 }
