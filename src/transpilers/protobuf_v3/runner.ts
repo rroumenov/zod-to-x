@@ -2,15 +2,13 @@ import {
     ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTObject, ASTUnion,
     IZodToXOpt, TranspilerableTypes, Zod2X
 } from '@/core';
+import { INT32_RANGES, UINT32_RANGES } from '@/utils/number_limits';
 import StringUtils from '@/utils/string_utils';
 
 const allowedKeyTypes = [
     "int32", "int64", "uint32", "uint64", "sint32", "sint64",
     "fixed32", "fixed64", "sfixed32", "sfixed64", "bool", "string"
 ];
-
-const INT32_RANGES  = [-2_147_483_648, 2_147_483_647];
-const UINT32_RANGES = [0, 4_294_967_295];
 
 interface IZod2ProtoV3Opt extends Omit<IZodToXOpt, "skipDiscriminatorNodes"> {
     /**
