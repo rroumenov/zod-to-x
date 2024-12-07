@@ -30,7 +30,7 @@ const defaultOpts: IZod2ProtoV3Opt = {
     skipDiscriminatorNodes: true,   // Not required for protobuf files
 }
 
-export class Zod2ProtoV3 extends Zod2X
+export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
 {
     constructor(opt: IZod2ProtoV3Opt = {}) {
         super({

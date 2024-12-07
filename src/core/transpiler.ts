@@ -102,27 +102,23 @@ interface IInternalOpts {
  * Extend this class and implement the abstract methods to define how each Zod type
  * should be converted to the target language's syntax.
  */
-export abstract class Zod2X
+export abstract class Zod2X<T extends IZodToXOpt>
 {    
     protected output: string[];
     protected indent: TIndentationLevels;
     protected imports: Set<string>;
 
-    protected opt: Partial<IZodToXOpt>;
+    protected opt: Partial<T>;
 
     private inOpt: IInternalOpts;
 
-    protected constructor(inOpt: IInternalOpts, opt: Partial<IZodToXOpt>) {
+    protected constructor(inOpt: IInternalOpts, opt: Partial<T>) {
         this.output = [];
         this.imports = new Set<string>();
         this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
         this.opt = opt;
         this.inOpt = inOpt;
-
-        if (opt?.header) {
-            this.imports.add(this.getComment(opt.header));
-        }
     }
 
     /**
@@ -418,20 +414,26 @@ export abstract class Zod2X
 
         transpilerQueue.nodes.forEach(this._transpileItem.bind(this));
 
-        if (this.imports.size > 0) {
-            const imports = [...this.imports];
+        this.runAfter();
 
-            if (!imports.at(-1)?.endsWith("\n")) {
-                imports.push("");
-            }
-            
-            this.output = [
-                ...imports,
-                ...this.output
-            ];
+        let header = [];
+
+        if (this.opt.header) {
+            header.push(...this.opt.header.split("\n").map(i => this.getComment(i)));
         }
 
-        this.runAfter();
+        if (this.imports.size > 0) {
+            header.push(...this.imports);
+
+            if (!header.at(-1)?.endsWith("\n")) {
+                header.push("");
+            }
+        }
+            
+        this.output = [
+            ...header,
+            ...this.output
+        ];
 
         return this.output.join("\n");
     }

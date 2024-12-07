@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { diffLinesRaw } from "jest-diff";
 
 import { BasicTypes } from "../data/basic_schemas";
+import { header } from "../data/header";
 import { UserModel } from "../data/user_schema";
 
 let basicTypesQueue: ASTNodes;
@@ -19,7 +20,7 @@ describe('Zod2Ts', () => {
     });
   
     test('Basic Types as interface', () => {
-        const output = new Zod2Ts().transpile(basicTypesQueue);
+        const output = new Zod2Ts({header}).transpile(basicTypesQueue);
         const expectedOutput = fs.readFileSync("./test/test_zod2ts/basic_schemas.expect.ts").toString();
         
         try {
@@ -33,7 +34,7 @@ describe('Zod2Ts', () => {
     });
   
     test('Basic Types as class', () => {
-        const output = new Zod2Ts({outType: "class"}).transpile(basicTypesQueue);
+        const output = new Zod2Ts({outType: "class", header}).transpile(basicTypesQueue);
         const expectedOutput = fs.readFileSync("./test/test_zod2ts/basic_schemas.expect_class.ts").toString();
         
         try {

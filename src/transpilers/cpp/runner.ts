@@ -33,11 +33,11 @@ const defaultOpts: IZod2CppOpt = {
     indent: 4,
     skipDiscriminatorNodes: false,
     
-    namespace: "zodtox",
+    namespace: "zodtocpp",
     outType: 'struct',
 }
 
-export class Zod2Cpp extends Zod2X {
+export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     constructor(opt = {}) {
         super(
             {
@@ -49,7 +49,14 @@ export class Zod2Cpp extends Zod2X {
 
     protected getIntersectionType = (): string => { /** Covered by "transpileIntersection" method */ return "" };
 
-    protected runAfter() {}
+    protected runAfter() {
+        if (this.opt.namespace) {
+            this.output = this.output.map(i => `${this.indent[1]}${i}`);
+
+            this.output.unshift(`namespace ${this.opt.namespace} {`);
+            this.output.push("}");
+        }
+    }
     protected runBefore() {}
     
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;

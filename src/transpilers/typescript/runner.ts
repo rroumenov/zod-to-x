@@ -18,7 +18,7 @@ const defaultOpts: IZod2TsOpt = {
     outType: 'interface',
 }
 
-export class Zod2Ts extends Zod2X
+export class Zod2Ts extends Zod2X<IZod2TsOpt>
 {
     constructor(opt: IZod2TsOpt = {}) {
         super({

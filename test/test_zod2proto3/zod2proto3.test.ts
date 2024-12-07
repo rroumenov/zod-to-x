@@ -7,6 +7,7 @@ import { diffLinesRaw } from "jest-diff";
 import * as pb from "protobufjs";
 
 import { BasicTypes } from "../data/basic_schemas";
+import { header } from "../data/header";
 import { ShopAccountModel } from "../data/shop_account_schema";
 
 let shopAccountNodes: ASTNodes;
@@ -22,7 +23,7 @@ describe('Zod2Proto3', () => {
         pb.loadSync("./test/test_zod2proto3/basic_schemas.expect.proto");
 
         const basicTypesNodes = new Zod2Ast().build(BasicTypes);
-        const output = new Zod2ProtoV3().transpile(basicTypesNodes);
+        const output = new Zod2ProtoV3({header}).transpile(basicTypesNodes);
         const expectedOutput = fs.readFileSync("./test/test_zod2proto3/basic_schemas.expect.proto").toString();
         
         try {

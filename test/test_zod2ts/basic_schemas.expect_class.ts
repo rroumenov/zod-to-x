@@ -1,3 +1,6 @@
+// This is
+// a multiline
+// header.
 export enum MyEnumType {
     Item1 = "Item1",
     Item2 = "Item2",
