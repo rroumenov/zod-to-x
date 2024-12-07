@@ -18,9 +18,14 @@ const LIB = {
 
 interface IZod2CppOpt extends IZodToXOpt {
     /**
+     * 
+     */
+    namespace: string;
+    
+    /**
      * Output transpilation using C++ Structs or Classes.
      */
-    outType?: 'struct' | 'class'
+    outType?: 'struct' | 'class';
 }
 
 const defaultOpts: IZod2CppOpt = {
@@ -28,6 +33,7 @@ const defaultOpts: IZod2CppOpt = {
     indent: 4,
     skipDiscriminatorNodes: false,
     
+    namespace: "zodtox",
     outType: 'struct',
 }
 
@@ -43,18 +49,15 @@ export class Zod2Cpp extends Zod2X {
 
     protected getIntersectionType = (): string => { /** Covered by "transpileIntersection" method */ return "" };
 
-    protected addComment(data = "", indent = "") {
-        if (data && this.opt.includeComments) {
-            this.output += `${indent}/** ${data} */\n`;
-        }
-    }
-
     protected runAfter() {}
     protected runBefore() {}
     
+    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}\n`;
     protected getBooleanType = () => "bool";
     protected getDateType = () => "std::string"; // Representing ISO date as a string
     protected getStringType = () => "std::string";
+
+    /** Ex: std::tuple<TypeA> */
     protected getTupleType = (itemsType: string[]) => `std::tuple<${itemsType.join(", ")}>`;
     
     protected getAnyType = () => {
@@ -62,16 +65,25 @@ export class Zod2Cpp extends Zod2X {
         return "nlohmann::json";
     };
 
+    /** Ex: std::set<TypeA> */
     protected getSetType = (itemType: string) => {
         this.imports.add(LIB.set);
         return `std::set<${itemType}>`;
     };
     
+    /** Ex: boost::variant<TypeA, TypeB> */
     protected getUnionType = (itemsType: string[]) => {
         this.imports.add(LIB.variant);
         return `boost::variant<${itemsType.join(", ")}>`
     };
 
+    /** Ex: depends on number range (if any). One of:
+     *  - std::uint32_t
+     *  - std::uint64_t
+     *  - std::int32_t
+     *  - std::int64_t
+     *  - double
+     */
     protected getNumberType = (isInt: boolean, range: {min?: number, max?: number}): string => {
         if (!isInt) {
             return "double";
@@ -99,6 +111,7 @@ export class Zod2Cpp extends Zod2X {
         }
     };
 
+    /** Ex: std::vector<std::vector<TypeA>> */
     protected getArrayType(arrayType: string, arrayDeep: number) {
         this.imports.add(LIB.vector);
 
@@ -118,15 +131,30 @@ export class Zod2Cpp extends Zod2X {
             );
     }
 
+    /** Ex: std::map<TypeA> */
     protected getMapType(keyType: string, valueType: string) {
         this.imports.add(LIB.map);
         return `std::map<${keyType}, ${valueType}>`;
     }
 
     protected getRecordType(keyType: string, valueType: string) {
-        return `std::map<${keyType}, ${valueType}>`;
+        return this.getMapType(keyType, valueType);
     }
 
+    /** Ex:
+     *  enum class EnumA: int {
+     *      Item1,
+     *      Item2
+     *  }
+     * 
+     *  std::string toString(EnumA item) {
+     *      switch (item) {
+     *          case EnumA::Item1: return "item1";
+     *          case EnumA::Item2: return "item2";
+     *      }
+     *      return "Unknown";
+     *  }
+     */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon) {
         this.addComment(data.description);
 
@@ -137,22 +165,32 @@ export class Zod2Cpp extends Zod2X {
             key = StringUtils.capitalize(key);
             value = isNaN(Number(value)) ? value : key; // In case of nativeEnum, key is used as string
 
-            switchCases.push(
-                `${this.indent}${this.indent}case ${data.name}::${key}: return "${value}";`
-            );
+            switchCases.push(`${this.indent[2]}case ${data.name}::${key}: return "${value}";`);
 
-            return `${this.indent}${StringUtils.capitalize(key)}`;
-        }).join('\n');
+            return `${this.indent[1]}${StringUtils.capitalize(key)}`;
+        }).join(',\n');
         this.output += "\n};\n\n";
 
         this.output += `std::string toString(${data.name} type) {\n`;
-        this.output += `${this.indent}switch (type) {\n`;
-        this.output += switchCases.join(',\n');
-        this.output += `\n${this.indent}}\n`;
-        this.output += `${this.indent}return "Unknown;\n`;
+        this.output += `${this.indent[1]}switch (type) {\n`;
+        this.output += switchCases.join('\n');
+        this.output += `\n${this.indent[1]}}\n`;
+        this.output += `${this.indent[1]}return "Unknown";\n`;
         this.output += `}\n\n`;
     }
 
+    /** Ex:
+     *  - Case of using classes:
+     *  class MyClassC: public MyClassA, public MyClassB {
+     *      public:
+     *      MyClassC() {}
+     *  }
+     * 
+     *  - Case of using structs
+     *  struct MyStructC: public MyStructA, public MyStructB {
+     *      
+     *  }
+     */
     protected transpileIntersection(data: ASTIntersection & ASTCommon) {
         this.addComment(data.description);
     
@@ -171,16 +209,7 @@ export class Zod2Cpp extends Zod2X {
         }
     }
 
-    protected transpileStruct(data: ASTObject & ASTCommon) {
-        this.addComment(data.description);
-
-        if (this.opt.outType === "class") {
-            this._transpileStructAsClass(data);
-        } else {
-            this._transpileStructAsStruct(data);
-        }
-    }
-
+    /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
         this.addComment(data.description);
 
@@ -191,6 +220,22 @@ export class Zod2Cpp extends Zod2X {
         this.output += `using ${data.name} = ${this.getUnionType(attributesTypes)};\n\n`;
     }
 
+    protected transpileStruct(data: ASTObject & ASTCommon) {
+        this.addComment(data.description);
+
+        if (this.opt.outType === "class") {
+            this._transpileStructAsClass(data);
+        } else {
+            this._transpileStructAsStruct(data);
+        }
+    }
+
+    /** Ex:
+     *  struct MyStruct {
+     *      TypeA attribute1;
+     *      TypeB attribute2;
+     *  }
+     */
     private _transpileStructAsStruct(data: ASTObject & ASTCommon) {
         this.output += `struct ${data.name} {\n`;
 
@@ -201,15 +246,24 @@ export class Zod2Cpp extends Zod2X {
         this.output += "};\n\n";
     }
 
+    /** Ex:
+     *  class MyClass {
+     *      public:
+     *      TypeA attribute1;
+     *      TypeB attribute2;
+     * 
+     *      MyClass() {}
+     *  }
+     */
     private _transpileStructAsClass(data: ASTObject & ASTCommon) {
-        this.output += `class ${data.name} {\n${this.indent}public:\n`;
+        this.output += `class ${data.name} {\n${this.indent[1]}public:\n`;
 
         Object.entries(data.properties).forEach(([key, value]) => {
             this._transpileMember(key, value);
         });
 
         this.output += `\n`;
-        this.output += `${this.indent}${data.name}() {}\n`;
+        this.output += `${this.indent[1]}${data.name}() {}\n`;
         this.output += "};\n\n";
     }
 
@@ -222,7 +276,7 @@ export class Zod2Cpp extends Zod2X {
             !this.isTranspilerable(memberNode as TranspilerableTypes))
         {
             // Avoid duplicated descriptions for transpiled items.
-            this.addComment(memberNode.description, `\n${this.indent}`);
+            this.addComment(memberNode.description, `\n${this.indent[1]}`);
         }
 
         if (memberNode.isOptional || memberNode.isNullable) {
@@ -230,6 +284,6 @@ export class Zod2Cpp extends Zod2X {
             keyType = `boost::optional<${keyType}>`;
         }
 
-        this.output += `${this.indent}${keyType} ${memberName};\n`;
+        this.output += `${this.indent[1]}${keyType} ${memberName};\n`;
     }
 }
