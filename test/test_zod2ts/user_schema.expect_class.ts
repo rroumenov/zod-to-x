@@ -18,7 +18,7 @@ export class UserAddress {
 
 export type UserRole = "admin" | "editor" | "viewer";
 
-/** This is a UserStatus enumerate description. */
+// This is a UserStatus enumerate description.
 export enum UserStatus {
     active = "active",
     inactive = "inactive",
@@ -101,7 +101,7 @@ export class EnterpriseSubscription {
 
 export type Subscription = FreeSubscription | PremiumSubscription | EnterpriseSubscription;
 
-/** This is a UserModel interface description. */
+// This is a UserModel interface description.
 export class UserModel {
     name: string;
     age?: number;
@@ -116,7 +116,7 @@ export class UserModel {
     preferences: UserVisualPreferences & UserRegionalPreferences;
     lastLogin: Date | null;
 
-    /** This is a Notes attribute description. */
+    // This is a Notes attribute description.
     notes?: string[];
     friends?: UserModel[] | null;
     subscription: Subscription;

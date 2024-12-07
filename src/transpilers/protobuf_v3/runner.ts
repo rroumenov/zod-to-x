@@ -37,15 +37,10 @@ export class Zod2ProtoV3 extends Zod2X
             enableCompositeTypes: true
         }, { ...defaultOpts, ...opt });
     }
-    
-    protected addComment(data?: string, indent?: string): void {
-        if (data && this.opt.includeComments) {
-            this.output += `${indent || ""}/** ${data} */\n`;
-        }
-    }
-    
+
     protected getUnionType = (): string => { /** Covered by "transpileUnion" method */ return "" };
 
+    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}\n`;
     protected getBooleanType = (): string => "bool";
     protected getStringType = (): string => "string";
 
@@ -146,7 +141,7 @@ export class Zod2ProtoV3 extends Zod2X
                 throw new Error(`Enumerate item name cannot start with number: ${key}`);
             }
             
-            this.output += `${this.indent}${key} = ${index};\n`
+            this.output += `${this.indent[1]}${key} = ${index};\n`
         });
 
         this.output += "}\n\n";
@@ -166,11 +161,11 @@ export class Zod2ProtoV3 extends Zod2X
                 !this.isTranspilerable(value as TranspilerableTypes))
             {
                 // Avoid duplicated descriptions for transpiled items.
-                this.addComment(value.description, `\n${this.indent}`);
+                this.addComment(value.description, `\n${this.indent[1]}`);
             }
 
             this.output +=
-                `${this.indent}${this.getAttributeType(value)} ${this._adaptField(key)} = ${index + 1};\n`;
+                `${this.indent[1]}${this.getAttributeType(value)} ${this._adaptField(key)} = ${index + 1};\n`;
         });
 
         this.output += "}\n\n";
@@ -210,14 +205,14 @@ export class Zod2ProtoV3 extends Zod2X
         }
 
         this.output += `message ${data.name} {\n`;
-        this.output += `${this.indent}oneof ${this._adaptField(data.name + "Oneof")} {\n`;
+        this.output += `${this.indent[1]}oneof ${this._adaptField(data.name + "Oneof")} {\n`;
 
         attributesTypes.forEach((item, index) => {
             this.output +=
-                `${this.indent}${this.indent}${item} ${this._adaptField(item)} = ${index + 1};\n`;
+                `${this.indent[2]}${item} ${this._adaptField(item)} = ${index + 1};\n`;
         });
 
-        this.output += `${this.indent}}\n`;
+        this.output += `${this.indent[1]}}\n`;
         this.output += "}\n\n";
     }
 

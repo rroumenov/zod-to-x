@@ -1,3 +1,6 @@
+/**
+ * This schema is valid for testing transpilers that do NOT admit composite types, like C++.
+ */
 import { z } from "zod";
 
 const StatusEnum = z.enum(["ACTIVE", "INACTIVE", "PENDING"]).zod2x("Status");

@@ -1,3 +1,6 @@
+/**
+ * This schema shall be valid for testing against any transpiler.
+ */
 import { z } from "zod";
 
 const ZodEnum = z.enum(["Item1", "Item2"]).zod2x("MyEnumType");

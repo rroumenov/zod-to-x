@@ -1,5 +1,7 @@
 import { ZodFirstPartyTypeKind } from 'zod';
 
+import StringUtils, { TIndentationLevels } from '@/utils/string_utils';
+
 import {
     ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTNode, ASTNodes,
     ASTObject, ASTUnion, TranspilerableTypes
@@ -103,7 +105,7 @@ interface IInternalOpts {
 export abstract class Zod2X
 {    
     protected output: string;
-    protected indent: string;
+    protected indent: TIndentationLevels;
     protected imports: Set<string>;
 
     protected opt: Partial<IZodToXOpt>;
@@ -113,13 +115,13 @@ export abstract class Zod2X
     protected constructor(inOpt: IInternalOpts, opt: Partial<IZodToXOpt>) {
         this.output = "";
         this.imports = new Set<string>();
-        this.indent = " ".repeat(opt?.indent ?? 4);
+        this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
         this.opt = opt;
         this.inOpt = inOpt;
 
         if (opt?.header) {
-            this.addComment(opt.header);
+            this.imports.add(this.getComment(opt.header));
         }
     }
 
@@ -131,11 +133,9 @@ export abstract class Zod2X
     protected abstract runAfter(): void;
 
     /**
-     * Adds a comment to the transpiled output.
-     * @param data - The comment text to add.
-     * @param indent - Optional indentation to apply before the comment.
+     * Returns a comment.
      */
-    protected abstract addComment(data?: string, indent?: string): void;
+    protected abstract getComment(data: string, indent?: string): string;
 
     /**
      * Returns the keyword representing a string type in the target language.
@@ -263,6 +263,17 @@ export abstract class Zod2X
                 token.type === ZodFirstPartyTypeKind.ZodIntersection)
             )
         );
+    }
+
+    /**
+     * Adds a comment to the transpiled output.
+     * @param data - The comment text to add.
+     * @param indent - Optional indentation to apply before the comment.
+     */
+    protected addComment(data = "", indent = "") {
+        if (data && this.opt.includeComments) {
+            this.output += this.getComment(data, indent);
+        }
     }
 
     /**
