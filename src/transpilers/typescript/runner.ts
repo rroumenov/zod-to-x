@@ -29,7 +29,7 @@ export class Zod2Ts extends Zod2X
     protected runAfter(): void {}
     protected runBefore(): void {}
 
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}\n`;
+    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getAnyType = (): string => "any";
     protected getBooleanType = (): string => "boolean";
     protected getDateType = (): string => "Date";
@@ -88,7 +88,8 @@ export class Zod2Ts extends Zod2X
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
         this.addComment(data.description);
 
-        this.output += `export enum ${data.name} {\n`;
+        
+        this.push0(`export enum ${data.name} {`);
 
         data.values.forEach(i => {
             // If enum key starts with number, it is stored between quotes.
@@ -96,10 +97,11 @@ export class Zod2Ts extends Zod2X
 
             // Enum value is stored between quotes if not nativeEnum.
             const enumValue = typeof i[1] === 'string' ? `"${i[1]}"` : `${i[1]}`;
-            this.output += `${this.indent[1]}${keyValue} = ${enumValue},\n`
+            
+            this.push1(`${keyValue} = ${enumValue},`);
         });
 
-        this.output += "}\n\n";
+        this.push0("}\n");
     }
 
     /** Ex: type TypeC = TypeA & TypeB */
@@ -108,8 +110,7 @@ export class Zod2Ts extends Zod2X
 
         const attributesTypes = [data.left, data.right].map(this.getAttributeType.bind(this));
         
-        this.output +=
-            `export type ${data.name} = ${this.getIntersectionType(attributesTypes)};\n\n`;     
+        this.push0(`export type ${data.name} = ${this.getIntersectionType(attributesTypes)};\n`);
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
@@ -129,7 +130,7 @@ export class Zod2Ts extends Zod2X
         
         const attributesTypes = data.options.map(this.getAttributeType.bind(this));
         
-        this.output += `export type ${data.name} = ${this.getUnionType(attributesTypes)};\n\n`;
+        this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
     }
 
     /** Ex:
@@ -139,13 +140,13 @@ export class Zod2Ts extends Zod2X
      *  }
      * */
     private _transpileStructuAsInterface(data: ASTObject & ASTCommon) {
-        this.output += `export interface ${data.name} {\n`;
+        this.push0(`export interface ${data.name} {`);
 
         for(const [key, value] of Object.entries(data.properties)) {
             this._transpileMember(key, value);
         }
 
-        this.output += "}\n\n";
+        this.push0("}\n");
     }
 
     /** Ex:
@@ -160,21 +161,20 @@ export class Zod2Ts extends Zod2X
      *  }
      * */
     private _transpileStructAsClass(data: ASTObject & ASTCommon) {
-        this.output += `export class ${data.name} {\n`;
+        this.push0(`export class ${data.name} {`);
         const constructorBody: string[] = [];
 
         for(const [key, value] of Object.entries(data.properties)) {
             this._transpileMember(key, value);
-            constructorBody.push(`${this.indent[2]}this.${key} = data.${key};`);
+            constructorBody.push(`this.${key} = data.${key};`);
         }
 
-        this.output += [
-            `\n${this.indent[1]}constructor(data: ${data.name}) {`,
-            ...constructorBody,
-            `${this.indent[1]}}\n`
-        ].join('\n');
+        this.push0("");
+        this.push1(`constructor(data: ${data.name}) {`);
+        constructorBody.forEach(i => this.push2(i));
+        this.push1("}");
 
-        this.output += "}\n\n";
+        this.push0("}\n");
     }
 
     /** For Interface/Class attributes.
@@ -192,7 +192,6 @@ export class Zod2Ts extends Zod2X
             this.addComment(memberNode.description, `\n${this.indent[1]}`);
         }
 
-        this.output +=
-            `${this.indent[1]}${keyName}${this.getAttributeType(memberNode)}${setNullable};\n`;
+        this.push1(`${keyName}${this.getAttributeType(memberNode)}${setNullable};`);
     }
 }

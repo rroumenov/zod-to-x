@@ -40,7 +40,7 @@ export class Zod2ProtoV3 extends Zod2X
 
     protected getUnionType = (): string => { /** Covered by "transpileUnion" method */ return "" };
 
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}\n`;
+    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getBooleanType = (): string => "bool";
     protected getStringType = (): string => "string";
 
@@ -134,17 +134,17 @@ export class Zod2ProtoV3 extends Zod2X
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
         this.addComment(data.description);
 
-        this.output += `enum ${data.name} {\n`;
+        this.push0(`enum ${data.name} {`);
 
         data.values.forEach(([key, value], index) => {
             if (Number.isInteger(key.at(0))) {
                 throw new Error(`Enumerate item name cannot start with number: ${key}`);
             }
             
-            this.output += `${this.indent[1]}${key} = ${index};\n`
+            this.push1(`${key} = ${index};`);
         });
 
-        this.output += "}\n\n";
+        this.push0("}\n");
     }
 
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
@@ -154,7 +154,7 @@ export class Zod2ProtoV3 extends Zod2X
     protected transpileStruct(data: ASTObject & ASTCommon): void {
         this.addComment(data.description);
 
-        this.output += `message ${data.name} {\n`;
+        this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
             if (value.description &&
@@ -164,11 +164,10 @@ export class Zod2ProtoV3 extends Zod2X
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
 
-            this.output +=
-                `${this.indent[1]}${this.getAttributeType(value)} ${this._adaptField(key)} = ${index + 1};\n`;
+            this.push1(`${this.getAttributeType(value)} ${this._adaptField(key)} = ${index + 1};`);
         });
 
-        this.output += "}\n\n";
+        this.push0("}\n");
     }
 
     /**
@@ -204,16 +203,15 @@ export class Zod2ProtoV3 extends Zod2X
             throw new Error("Map and Repeated fields are not suported by Protobuf oneOf");
         }
 
-        this.output += `message ${data.name} {\n`;
-        this.output += `${this.indent[1]}oneof ${this._adaptField(data.name + "Oneof")} {\n`;
+        this.push0(`message ${data.name} {`);        
+        this.push1(`oneof ${this._adaptField(data.name + "Oneof")} {`);
 
         attributesTypes.forEach((item, index) => {
-            this.output +=
-                `${this.indent[2]}${item} ${this._adaptField(item)} = ${index + 1};\n`;
+            this.push2(`${item} ${this._adaptField(item)} = ${index + 1};`);
         });
 
-        this.output += `${this.indent[1]}}\n`;
-        this.output += "}\n\n";
+        this.push1(`}`);
+        this.push0("}\n");
     }
 
     protected runBefore(): void {

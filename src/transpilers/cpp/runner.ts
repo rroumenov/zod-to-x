@@ -52,7 +52,7 @@ export class Zod2Cpp extends Zod2X {
     protected runAfter() {}
     protected runBefore() {}
     
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}\n`;
+    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getBooleanType = () => "bool";
     protected getDateType = () => "std::string"; // Representing ISO date as a string
     protected getStringType = () => "std::string";
@@ -160,23 +160,24 @@ export class Zod2Cpp extends Zod2X {
 
         const switchCases: string[] = [];
 
-        this.output += `enum class ${data.name}: int {\n`;
-        this.output += data.values.map(([key, value]) => {
+        this.push0(`enum class ${data.name}: int {`);
+        data.values.forEach(([key, value], index) => {
             key = StringUtils.capitalize(key);
             value = isNaN(Number(value)) ? value : key; // In case of nativeEnum, key is used as string
 
-            switchCases.push(`${this.indent[2]}case ${data.name}::${key}: return "${value}";`);
+            const separator = index + 1 == data.values.length ? "" : ",";
+            this.push1(`${StringUtils.capitalize(key)}${separator}`);
+            
+            switchCases.push(`case ${data.name}::${key}: return "${value}";`);
+        });;
+        this.push0("};\n");
 
-            return `${this.indent[1]}${StringUtils.capitalize(key)}`;
-        }).join(',\n');
-        this.output += "\n};\n\n";
-
-        this.output += `std::string toString(${data.name} type) {\n`;
-        this.output += `${this.indent[1]}switch (type) {\n`;
-        this.output += switchCases.join('\n');
-        this.output += `\n${this.indent[1]}}\n`;
-        this.output += `${this.indent[1]}return "Unknown";\n`;
-        this.output += `}\n\n`;
+        this.push0(`std::string toString(${data.name} type) {`);
+        this.push1(`switch (type) {`);
+        switchCases.forEach(i => this.push2(i));
+        this.push1(`}`);
+        this.push1(`return "Unknown";`);
+        this.push0(`}\n`);
     }
 
     /** Ex:
@@ -198,14 +199,15 @@ export class Zod2Cpp extends Zod2X {
         const rightType = this.getAttributeType(data.right);
     
         if (this.opt.outType === "class") {
-            this.output += `class ${data.name} : public ${leftType}, public ${rightType} {\n`;
-            this.output += `public:\n    ${data.name}() {}\n\n`;
-            this.output += "    // Intersection fields are inherited from base classes.\n";
-            this.output += "};\n\n";
+            this.push0(`class ${data.name} : public ${leftType}, public ${rightType} {`);
+            this.push1(`public:`);
+            this.push1(`${data.name}() {}\n`);
+            this.addComment("Intersection fields are inherited from base classes.", this.indent[1]);
+            this.push0("};\n");
         } else {
-            this.output += `struct ${data.name} : public ${leftType}, public ${rightType} {\n`;
-            this.output += "    // Intersection fields are inherited from base structs.\n";
-            this.output += "};\n\n";
+            this.push0(`struct ${data.name} : public ${leftType}, public ${rightType} {`);
+            this.addComment("Intersection fields are inherited from base structs.", this.indent[1]);
+            this.push0("};\n");
         }
     }
 
@@ -217,7 +219,7 @@ export class Zod2Cpp extends Zod2X {
             this.getAttributeType.bind(this)
         );
 
-        this.output += `using ${data.name} = ${this.getUnionType(attributesTypes)};\n\n`;
+        this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
@@ -237,13 +239,13 @@ export class Zod2Cpp extends Zod2X {
      *  }
      */
     private _transpileStructAsStruct(data: ASTObject & ASTCommon) {
-        this.output += `struct ${data.name} {\n`;
+        this.push0(`struct ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value]) => {
             this._transpileMember(key, value);
         });
 
-        this.output += "};\n\n";
+        this.push0("};\n");
     }
 
     /** Ex:
@@ -256,15 +258,16 @@ export class Zod2Cpp extends Zod2X {
      *  }
      */
     private _transpileStructAsClass(data: ASTObject & ASTCommon) {
-        this.output += `class ${data.name} {\n${this.indent[1]}public:\n`;
+        this.push0(`class ${data.name} {`);
+        this.push1(`public:`);
 
         Object.entries(data.properties).forEach(([key, value]) => {
             this._transpileMember(key, value);
         });
 
-        this.output += `\n`;
-        this.output += `${this.indent[1]}${data.name}() {}\n`;
-        this.output += "};\n\n";
+        this.push1("");
+        this.push1(`${data.name}() {}`);
+        this.push0("};\n");
     }
 
     private _transpileMember(memberName: string, memberNode: ASTNode)
@@ -284,6 +287,6 @@ export class Zod2Cpp extends Zod2X {
             keyType = `boost::optional<${keyType}>`;
         }
 
-        this.output += `${this.indent[1]}${keyType} ${memberName};\n`;
+        this.push1(`${keyType} ${memberName};`);
     }
 }

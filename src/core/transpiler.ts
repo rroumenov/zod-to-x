@@ -104,7 +104,7 @@ interface IInternalOpts {
  */
 export abstract class Zod2X
 {    
-    protected output: string;
+    protected output: string[];
     protected indent: TIndentationLevels;
     protected imports: Set<string>;
 
@@ -113,7 +113,7 @@ export abstract class Zod2X
     private inOpt: IInternalOpts;
 
     protected constructor(inOpt: IInternalOpts, opt: Partial<IZodToXOpt>) {
-        this.output = "";
+        this.output = [];
         this.imports = new Set<string>();
         this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
@@ -265,6 +265,12 @@ export abstract class Zod2X
         );
     }
 
+    // Push with indentation helpers
+    protected push0 = (data: string) => this.output.push(`${this.indent[0]}${data}`);
+    protected push1 = (data: string) => this.output.push(`${this.indent[1]}${data}`);
+    protected push2 = (data: string) => this.output.push(`${this.indent[2]}${data}`);
+    protected push3 = (data: string) => this.output.push(`${this.indent[3]}${data}`);
+
     /**
      * Adds a comment to the transpiled output.
      * @param data - The comment text to add.
@@ -272,7 +278,7 @@ export abstract class Zod2X
      */
     protected addComment(data = "", indent = "") {
         if (data && this.opt.includeComments) {
-            this.output += this.getComment(data, indent);
+            this.output.push(this.getComment(data, indent));
         }
     }
 
@@ -402,7 +408,7 @@ export abstract class Zod2X
      * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
      * @returns The transpiled code as a string.
      */
-    transpile(transpilerQueue: ASTNodes)
+    transpile(transpilerQueue: ASTNodes): string
     {
         this.runBefore();
 
@@ -413,12 +419,21 @@ export abstract class Zod2X
         transpilerQueue.nodes.forEach(this._transpileItem.bind(this));
 
         if (this.imports.size > 0) {
-            this.output = [...this.imports.keys()].join('\n') + `\n\n${this.output}`;
+            const imports = [...this.imports];
+
+            if (!imports.at(-1)?.endsWith("\n")) {
+                imports.push("");
+            }
+            
+            this.output = [
+                ...imports,
+                ...this.output
+            ];
         }
 
         this.runAfter();
 
-        return this.output;
+        return this.output.join("\n");
     }
 }
 

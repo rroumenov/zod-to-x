@@ -30,6 +30,7 @@ describe('Zod2Proto3', () => {
         }
         catch(error) {
             diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
+            fs.writeFileSync("./test/test_zod2proto3/err-basic_schemas.expect.proto", output);
             throw error;
         }
     });
@@ -47,6 +48,7 @@ describe('Zod2Proto3', () => {
         }
         catch(error) {
             diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
+            fs.writeFileSync("./test/test_zod2proto3/err-shop_account_schema.expect.proto", output);
             throw error;
         }
     });
@@ -65,6 +67,7 @@ describe('Zod2Proto3', () => {
         }
         catch(error) {
             diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
+            fs.writeFileSync("./test/test_zod2proto3/err-shop_account_schema.expect_camel.proto", output);
             throw error;
         }
     });

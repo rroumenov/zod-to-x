@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package shopaccount;
 
-
 message Preferences {
     string theme = 1;
     bool notificationsEnabled = 2;
