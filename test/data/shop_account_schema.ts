@@ -3,14 +3,18 @@
  */
 import { z } from "zod";
 
-const StatusEnum = z.enum(["ACTIVE", "INACTIVE", "PENDING"]).zod2x("Status");
+const StatusEnum = z.enum(["ACTIVE", "INACTIVE", "PENDING"])
+.describe("Status enum description")
+.zod2x("Status");
 
 const AddressSchema = z.object({
   street: z.string().max(255),
-  city: z.string().max(100),
+  city: z.string().max(100).describe("City attribute description"),
   state: z.string().max(100),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/), // ZIP Code format
-}).zod2x("Address");
+})
+.describe("Address structure description")
+.zod2x("Address");
 
 const PreferencesSchema = z.object({
   theme: z.string().min(1),
