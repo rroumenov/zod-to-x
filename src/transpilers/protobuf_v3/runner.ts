@@ -1,9 +1,10 @@
+import Case from 'case';
+
 import {
     ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTObject, ASTUnion,
     IZodToXOpt, TranspilerableTypes, Zod2X
 } from '@/core';
 import { INT32_RANGES, UINT32_RANGES } from '@/utils/number_limits';
-import StringUtils from '@/utils/string_utils';
 
 const allowedKeyTypes = [
     "int32", "int64", "uint32", "uint64", "sint32", "sint64",
@@ -231,12 +232,10 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
      */
     private _adaptField(fieldName: string) {
         if (this.opt.useCamelCase) {
-            return fieldName.includes("_")
-                ? StringUtils.toCamelCase(fieldName)
-                : StringUtils.toNonCapitalized(fieldName);
+            return Case.camel(fieldName);
         }
         else {
-            return StringUtils.toSnakeCase(fieldName);
+            return Case.snake(fieldName);
         }
     }
 }
