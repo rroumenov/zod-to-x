@@ -335,6 +335,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _transpileMember(memberName: string, memberNode: ASTNode)
     {
         let keyType = this.getAttributeType(memberNode);
+        const origType = keyType;
 
         if (memberNode.description &&
             !(memberNode as ASTDefintion).reference &&
@@ -352,7 +353,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this.push1(`${keyType} ${Case.snake(memberName)};`);
 
-        return keyType;
+        return origType;
     }
 
     /**
@@ -415,7 +416,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 this._push1(this.serializers, `j["${i.origName}"] = x.${i.snakeName};`);
             }
             else {
-                this._push1(this.serializers, `set_opt(j, "${i.origName}", x.${i.snakeName});`);
+                this._push1(
+                    this.serializers,
+                    `set_opt<${i.typeName}>(j, "${i.origName}", x.${i.snakeName});`
+                );
             }
         });
         this._push0(this.serializers, "}\n");
@@ -439,13 +443,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             if (i.required) {
                 this._push1(
                     this.serializers,
-                    `x.${i.snakeName}(j.at("${i.origName}").get<${i.typeName}>());`
+                    `x.${i.snakeName} = j.at("${i.origName}").get<${i.typeName}>();`
                 );
             }
             else {
                 this._push1(
                     this.serializers,
-                    `x.set_${i.snakeName}(get_opt<${i.typeName}>(j, "${i.origName}"));`
+                    `x.${i.snakeName} = get_opt<${i.typeName}>(j, "${i.origName}");`
                 );
             }
         });
@@ -476,7 +480,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 this._push1(this.serializers, `j["${i.origName}"] = x.get_${i.snakeName}();`);
             }
             else {
-                this._push1(this.serializers, `set_opt(j, "${i.origName}", x.get_${i.snakeName}());`);
+                this._push1(
+                    this.serializers,
+                    `set_opt<${i.typeName}>(j, "${i.origName}", x.get_${i.snakeName}());`
+                );
             }
         });
         this._push0(this.serializers, "}\n");
@@ -572,13 +579,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             if (index === 0) {
                 this._push1(
                     this.serializers,
-                    `if (j == ${i.origValue}) x = ${parent}::${i.enumName};`
+                    `if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
                 );
             }
             else {
                 this._push1(
                     this.serializers,
-                    `else if (j == ${i.origValue}) x = ${parent}::${i.enumName};`
+                    `else if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
                 );
             }
         });
