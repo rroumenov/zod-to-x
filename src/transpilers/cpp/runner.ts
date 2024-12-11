@@ -6,7 +6,7 @@ import {
 } from '@/core';
 import { INT32_RANGES, UINT32_RANGES } from '@/utils/number_limits';
 
-import { LIB } from './libs';
+import { LIB, USING } from './libs';
 import { getNlohmannOptionalHelper } from './nlohmann';
 import { defaultOpts, IZod2CppOpt } from './options';
 
@@ -66,6 +66,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.output.push(...this.serializers);
             this.output.push("}");
         }
+
+        if (this.imports.has(LIB.nlohmann)) {
+            this.imports.add(`\n${USING.nlohmann}`);
+        }
     }
     
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
@@ -82,7 +86,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     
     protected getAnyType = () => {
         this.imports.add(LIB.nlohmann);
-        return "nlohmann::json";
+        return "json";
     };
 
     /** Ex: std::set<TypeA> */
@@ -231,6 +235,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         );
 
         this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+
+        this._createUnionSerializer(data.name, attributesTypes);
+        this._createUnionDeserializer(data.name, attributesTypes);
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
@@ -256,11 +263,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         Object.entries(data.properties).forEach(([key, value]) => {
             const snakeName = Case.snake(key);
-            const typeName = this._transpileMember(snakeName, value);
+            const origType = this._transpileMember(snakeName, value);
             serializeData.push({
                 origName: key,
                 snakeName,
-                typeName,
+                typeName: origType,
                 required: !(value.isNullable || value.isOptional),
             });
         });
@@ -296,18 +303,18 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         Object.entries(data.properties).forEach(([key, value]) => {
             const snakeName = Case.snake(key);
-            const typeName = this._transpileMember(snakeName, value);
+            const origType = this._transpileMember(snakeName, value);
             setterGetter.push(
                 ...this._createSetterGetter(
                     snakeName,
-                    typeName,
+                    origType,
                     !(value.isNullable || value.isOptional)
                 )
             );
             serializeData.push({
                 origName: key,
                 snakeName,
-                typeName,
+                typeName: origType,
                 required: !(value.isNullable || value.isOptional),
             })
         });
@@ -332,7 +339,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param memberNode - The ASTNode defining the member's type, description, and other
      *                     attributes.
      * 
-     * @returns - The C++ type of the member, modified if it is nullable or optional.
+     * @returns - The original C++ type of the member, without optional modifier.
      */
     private _transpileMember(memberName: string, memberNode: ASTNode)
     {
@@ -384,12 +391,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             );
         }
         else {
-            result.push(
-                `${memberType} get_${memberName}() const { return this->${memberName}; }`
-            );
-            result.push(
-                `void set_${memberName}(${memberType} value) { this->${memberName} = value; }`
-            );
+            const fullType = `boost::optional<${memberType}>`;
+            result.push(`${fullType} get_${memberName}() const { return this->${memberName}; }`);
+            result.push(`void set_${memberName}(${fullType} value) { this->${memberName} = value; }`);
         }
 
         return result;
@@ -595,6 +599,108 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.serializers,
             `else { throw std::runtime_error("Unexpected value deserializing enum ${parent}."); }`
         );
+        this._push0(this.serializers, `}\n`);
+    }
+
+    /**
+     * @description Generates a `to_json` function for a specified union type, allowing the JSON
+     *              library to correctly serialize any variant within the union.
+     *
+     * @param unionName The name of the union type.
+     * @param itemsType A list of all variant types contained in the union.
+     *
+     * @example
+     * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
+     * // The generated output might look like:
+     * //
+     * // inline void to_json(json& j, const MyUnion& x) {
+     * //     if (x.type() == typeid(int)) {
+     * //         j = boost::get<int>(x);
+     * //     } else if (x.type() == typeid(std::string)) {
+     * //         j = boost::get<std::string>(x);
+     * //     } else {
+     * //         throw std::runtime_error("Unknown MyUnion type.");
+     * //     }
+     * // }
+     */
+    private _createUnionSerializer(unionName: string, itemsType: string[])
+    {
+        this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
+
+        itemsType.forEach((i, index) => {
+            const condition = index === 0 ? "if" : "else if";
+            this._push1(this.serializers, `${condition} (x.type() == typeid(${i})) {`);
+            this._push2(this.serializers, `j = boost::get<${i}>(x);`);
+            this._push1(this.serializers, `}`);
+
+        });
+        
+        this._push1(this.serializers, `else {`);
+        this._push2(
+            this.serializers,
+            `throw std::runtime_error("Unknown ${unionName} type.");`
+        );
+        this._push1(this.serializers, `}`);
+
+        this._push0(this.serializers, `}\n`);
+    }
+
+    /**
+     * @description Generates a `from_json` function for a specified union type, attempting to
+     *              deserialize the provided JSON into one of the known variant types. If no match
+     *              is found, it throws an error.
+     *
+     * @param unionName The name of the union type.
+     * @param itemsType A list of all variant types contained in the union.
+     *
+     * @example
+     * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
+     * // The generated output might look like:
+     * //
+     * // inline void from_json(const json& j, MyUnion& x) {
+     * //     try {
+     * //         // Try to deserialize as int
+     * //         x = j.get<int>();
+     * //         return;
+     * //     } catch (const std::exception&) {
+     * //         // Fall through to try the next type
+     * //     }
+     * //
+     * //     try {
+     * //         // Try to deserialize as std::string
+     * //         x = j.get<std::string>();
+     * //         return;
+     * //     } catch (const std::exception&) {
+     * //         // None of the types matched. Error
+     * //         throw std::runtime_error("Failed to deserialize MyUnion: unknown format");
+     * //     }
+     * // }
+     */
+    private _createUnionDeserializer(unionName: string, itemsType: string[])
+    {
+        this._push0(this.serializers, `inline void from_json(const json& j, ${unionName}& x) {`);
+
+        itemsType.forEach((i, index) => {
+            this._push1(this.serializers, `try {`);
+            this._push2(this.serializers, this.getComment(`Try to deserialize as ${i}`));
+            this._push2(this.serializers, `x = j.get<${i}>();`);
+            this._push2(this.serializers, `return;`);
+            this._push1(this.serializers, `} catch (const std::exception&) {`);
+
+            if (index != itemsType.length - 1) {
+                this._push2(this.serializers, this.getComment(`Fall through to try the next type`));
+            }
+            else {
+                this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
+                this._push2(
+                    this.serializers,
+                    `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
+                );
+            }
+
+            this._push1(this.serializers, `}`);            
+        });
+
         this._push0(this.serializers, `}\n`);
     }
 

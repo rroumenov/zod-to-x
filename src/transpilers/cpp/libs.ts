@@ -10,3 +10,7 @@ export const LIB = {
     variant: "#include <boost/variant.hpp>",
     vector: "#include <vector>"
 };
+
+export const USING = {
+    nlohmann: "using nlohmann::json;"
+}
