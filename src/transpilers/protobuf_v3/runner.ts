@@ -87,13 +87,36 @@ export class Zod2ProtoV3 extends Zod2X
     };
 
     protected getSetType = (itemType: string): string => {
-        return `repeated ${itemType}`;
+        return this.getArrayType(itemType, 1);
     };
 
+    /**
+     * @description Determines the equivalent Protobuf type for a tuple based on its item types.
+     *
+     * Protobuf v3 does not directly support tuples. However, if all the types
+     * in the tuple are identical, it can be represented as a `repeated` field
+     * of that type. If the tuple contains mixed types, Protobuf cannot represent
+     * it directly, and an alternative approach (e.g., defining a Protobuf message)
+     * should be considered.
+     *
+     * @param itemsType - An array of strings representing the types of the tuple elements.
+     * @returns A string representing the Protobuf type for the tuple.
+     *          If all tuple elements are of the same type, it returns a `repeated` field of that
+     *          type.
+     * @throws Error if the tuple contains mixed types.
+     */
     protected getTupleType = (itemsType: string[]): string => {
-        throw new Error(
-            "Protobuf v3 does not support tuples directly. Consider defining a message type."
-        );
+        
+        const uniqueTypes = new Set(itemsType);
+    
+        if (uniqueTypes.size === 1) {
+            return this.getArrayType(itemsType[0], 1);
+        }
+        else {
+            throw new Error(
+                "Protobuf v3 does not support mixed-type tuples. Consider defining a message type."
+            );
+        }
     };
 
     protected getIntersectionType = (itemsType: string[]): string => {
