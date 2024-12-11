@@ -50,7 +50,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.output.unshift(`namespace ${this.opt.namespace} {`);
         this.output.push("}");
 
-        if (this.serializers.length > 0) {
+        if (this.opt.skipSerialize !== true &&
+            this.serializers.length > 0)
+        {
             this.imports.add(LIB.nlohmann);
 
             this.output.push("")

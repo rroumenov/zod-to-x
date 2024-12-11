@@ -15,6 +15,11 @@ export interface IZod2CppOpt extends IZodToXOpt {
      * Output transpilation using C++ Structs or Classes.
      */
     outType?: 'struct' | 'class';
+
+    /**
+     * Remove Nlohmann JSON serialization/deserialization. Default is false.
+     */
+    skipSerialize?: boolean;
 }
 
 export const defaultOpts: IZod2CppOpt = {
