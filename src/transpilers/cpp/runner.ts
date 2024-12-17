@@ -230,14 +230,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
         this.addComment(data.description);
 
-        const attributesTypes = data.options.map(
-            this.getAttributeType.bind(this)
-        );
+        const attributesData = data.options.map( i => {
+            return {
+                type: this.getAttributeType(i),
+                discriminantValue: (i as ASTCommon & ASTDefintion).discriminantValue
+            }
+        });
+
+        const attributesTypes = attributesData.map(i => i.type);
 
         this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
 
         this._createUnionSerializer(data.name, attributesTypes);
-        this._createUnionDeserializer(data.name, attributesTypes);
+        this._createUnionDeserializer(
+            data.name,
+            attributesData,
+            (data as ASTDiscriminatedUnion).discriminantKey
+        );
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
@@ -651,12 +660,36 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *              is found, it throws an error.
      *
      * @param unionName The name of the union type.
-     * @param itemsType A list of all variant types contained in the union.
+     * @param items A list of possible variant types. Each item includes:
+     *              - `type`: The C++ type for deserialization (e.g., `int`, `std::string`).
+     *              - `discriminantValue` (optional): The value in the discriminator field
+     *                that maps to the respective type.
+     * @param discriminator (optional) The JSON field name that acts as a type discriminator.
+     *                      Required for discriminator-based deserialization.
      *
      * @example
-     * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
-     * // The generated output might look like:
+     * // Discriminator-based deserialization:
+     * // Given: unionName = "MyUnion", discriminator = "type"
+     * // items = { {"type": "EmailContact", "discriminantValue": "email"},
+     * //           {"type": "PhoneContact", "discriminantValue": "phone"} }
      * //
+     * // The generated output might look like:
+     * // inline void from_json(const json& j, MyUnion& x) {
+     * //     const auto& k = j.at("type").get<std::string>();
+     * //     if (k == "email") {
+     * //         x = j.get<EmailContact>();
+     * //     } else if (k == "phone") {
+     * //         x = j.get<PhoneContact>();
+     * //     } else {
+     * //         throw std::runtime_error("Failed to deserialize MyUnion: unknown type");
+     * //     }
+     * // }
+     *
+     * @example
+     * // Fallback matching without a discriminator:
+     * // Given: unionName = "MyUnion", items = { {"type": "int"}, {"type": "std::string"} }
+     * //
+     * // The generated output might look like:
      * // inline void from_json(const json& j, MyUnion& x) {
      * //     try {
      * //         // Try to deserialize as int
@@ -676,30 +709,62 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * //     }
      * // }
      */
-    private _createUnionDeserializer(unionName: string, itemsType: string[])
-    {
+    private _createUnionDeserializer(
+        unionName: string,
+        items: Array<{type: string, discriminantValue?: string}>,
+        discriminator?: string
+    ) {
         this._push0(this.serializers, `inline void from_json(const json& j, ${unionName}& x) {`);
 
-        itemsType.forEach((i, index) => {
-            this._push1(this.serializers, `try {`);
-            this._push2(this.serializers, this.getComment(`Try to deserialize as ${i}`));
-            this._push2(this.serializers, `x = j.get<${i}>();`);
-            this._push2(this.serializers, `return;`);
-            this._push1(this.serializers, `} catch (const std::exception&) {`);
+        const useDiscriminator = discriminator && items.every(i => i.discriminantValue);
 
-            if (index != itemsType.length - 1) {
-                this._push2(this.serializers, this.getComment(`Fall through to try the next type`));
-            }
-            else {
-                this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
-                this._push2(
-                    this.serializers,
-                    `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
-                );
-            }
+        if (useDiscriminator) {
+            this._push1(
+                this.serializers,
+                `const auto& k = j.at("${discriminator}").get<std::string>();`
+            );
 
-            this._push1(this.serializers, `}`);            
-        });
+            items.forEach((i, index) => {
+                const condition = index === 0 ? "if" : "else if";
+                this._push1(this.serializers, `${condition} (k == "${i.discriminantValue}") {`);
+                this._push2(this.serializers, `x = j.get<${i.type}>();`);
+                this._push1(this.serializers, `}`);
+    
+                if (index == items.length - 1) {
+                    this._push1(this.serializers, `else {`);
+                    this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
+                    this._push2(
+                        this.serializers,
+                        `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
+                    );
+                    this._push1(this.serializers, `}`);
+                }
+            });
+        }
+        else
+        {
+            items.forEach((i, index) => {
+                this._push1(this.serializers, `try {`);
+                this._push2(this.serializers, this.getComment(`Try to deserialize as ${i.type}`));
+                this._push2(this.serializers, `x = j.get<${i.type}>();`);
+                this._push2(this.serializers, `return;`);
+                this._push1(this.serializers, `} catch (const std::exception&) {`);
+    
+                if (index != items.length - 1) {
+                    this._push2(this.serializers, this.getComment(`Fall through to try the next type`));
+                }
+                else {
+                    this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
+                    this._push2(
+                        this.serializers,
+                        `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
+                    );
+                }
+    
+                this._push1(this.serializers, `}`);            
+            });
+        }
+
 
         this._push0(this.serializers, `}\n`);
     }
