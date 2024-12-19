@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": ["dist"],
@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/rroumenov/zod-to-x#readme",
   "dependencies": {
+    "case": "1.6.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {

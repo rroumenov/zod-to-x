@@ -64,6 +64,7 @@ export type ASTDiscriminatedUnion = {
     type: ZodFirstPartyTypeKind.ZodDiscriminatedUnion;
     name: string;
     options: ASTNode[];
+    discriminantKey?: string;
 };
 
 export type ASTIntersection = {
@@ -87,9 +88,12 @@ export type ASTCommon = {
  * Represents a type definition in the AST. Used to reduce node size and identify 
  * schemas that can be referenced in a transpilation process.
  */
-export type ASTDefintion = ASTCommon & (
-    { type: "definition"; reference: string }
-)
+export type ASTDefintion = ASTCommon & ({
+    type: "definition";
+    reference: string;
+    referenceType: ZodFirstPartyTypeKind;
+    discriminantValue?: string;
+})
 
 /**
  * Represents a general AST node, encompassing various Zod schema types.

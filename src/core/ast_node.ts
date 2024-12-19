@@ -7,6 +7,18 @@ import {
 
 import { ASTDefintion, ASTNode, ASTNodes, TranspilerableTypes } from './ast_types';
 
+interface IZodToAstOpt {
+    /**
+     * Indicates when a ZodEnum is passed as ZodDiscriminatedUnion option.
+     */
+    isUnionDiscriminator?: boolean;
+
+    /**
+     * The key used in ZodDiscriminatedUnion type.
+     */
+    discriminantKey?: string;
+}
+
 /**
  * This class creates AST nodes used to transpile Zod Schemas to other languages.
  * Simply create an instance and call build with a ZodObject to obtain a list with transpilerable
@@ -20,7 +32,7 @@ export class Zod2Ast
     private nodes: Map<string, TranspilerableTypes>;
 
     /**
-     * Additional transpilerable nodes supplied by ZodDiscriminantUnions
+     * Additional transpilerable nodes supplied by ZodDiscriminatedUnion
      */
     private discriminatorNodes: Map<string, TranspilerableTypes>;
 
@@ -38,10 +50,17 @@ export class Zod2Ast
     /**
      * Transpilerable items are treated as references in the AST
      * @param ref 
+     * @param refType
+     * @param discriminantValue
      * @returns 
      */
-    private _createDefinition(ref: string): ASTDefintion {
-        return { type: "definition", reference: ref };
+    private _createDefinition(
+        ref: string,
+        refType: ZodFirstPartyTypeKind,
+        discriminantValue?: string
+    ): ASTDefintion
+    {
+        return { type: "definition", reference: ref, referenceType: refType, discriminantValue };
     }
 
     /**
@@ -75,7 +94,7 @@ export class Zod2Ast
      * @param schema 
      * @returns 
      */
-    zodToAST(schema: ZodTypeAny, state?: {isUnionDiscriminator?: boolean}): ASTNode {
+    private zodToAST(schema: ZodTypeAny, opt?: IZodToAstOpt): ASTNode {
         const def = schema._def;
 
         if (schema instanceof ZodString) {
@@ -169,7 +188,8 @@ export class Zod2Ast
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
             const lazySchema = def.getter();
-            const lazyPointer: ASTDefintion = this._createDefinition("pending");
+            const lazyPointer: ASTDefintion =
+                this._createDefinition("pending", ZodFirstPartyTypeKind.ZodAny);
 
             this.lazyPointers.push([lazyPointer, lazySchema]);
 
@@ -205,7 +225,7 @@ export class Zod2Ast
                 description: def.description,
             };
 
-            if (state?.isUnionDiscriminator) {
+            if (opt?.isUnionDiscriminator) {
                 if (!this.nodes.has(name) &&
                     !this.discriminatorNodes.has(name))
                 {
@@ -222,15 +242,27 @@ export class Zod2Ast
                 }
             }
 
-            return this._createDefinition(name);
+            return this._createDefinition(name, def.typeName);
         }
         else if (schema instanceof ZodObject) {
             let name: string = def.zod2x?.typeName!;
+            let discriminantValue: string | undefined = undefined;
 
             if (!this.nodes.has(name)) {
                 const properties: Record<string, ASTNode> = {};
                 for (const key in def.shape()) {
                     properties[key] = this.zodToAST(def.shape()[key]);
+
+                    if (opt?.discriminantKey &&
+                        key === opt?.discriminantKey)
+                    {
+                        if (properties[key].type === ZodFirstPartyTypeKind.ZodLiteral) {
+                            discriminantValue = String(properties[key].value);
+                        }
+                        else {
+                            console.warn(`Consider to set '${key}' key of '${name}' as ZodLiteral`);
+                        }
+                    }
                 }
 
                 this.nodes.set(name, {
@@ -241,7 +273,7 @@ export class Zod2Ast
                 });
             };
 
-            return this._createDefinition(name);
+            return this._createDefinition(name, def.typeName, discriminantValue);
         }
         else if(schema instanceof ZodUnion ||
                 schema instanceof ZodDiscriminatedUnion)
@@ -251,8 +283,11 @@ export class Zod2Ast
             const item: ASTNode | TranspilerableTypes = {
                 type: def.typeName,
                 name: def.zod2x?.typeName,
-                options: def.options.map(this.zodToAST.bind(this)),
-                description: schema.description
+                options: def.options.map(
+                    (i: ZodTypeAny) => this.zodToAST(i, { discriminantKey: def.discriminator })
+                ),
+                description: schema.description,
+                discriminantKey: def.discriminator
             }
 
             if (def.zod2x?.discriminatorEnum) {
@@ -263,7 +298,7 @@ export class Zod2Ast
                 !this.nodes.has(name))
             {
                 this.nodes.set(name, item);
-                return this._createDefinition(name);
+                return this._createDefinition(name, def.typeName);
             }
 
             return item;
@@ -283,7 +318,7 @@ export class Zod2Ast
                 !this.nodes.has(name))
             {
                 this.nodes.set(name, item);
-                return this._createDefinition(name);
+                return this._createDefinition(name, def.typeName);
             }
 
             return item;

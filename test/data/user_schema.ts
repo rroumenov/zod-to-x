@@ -1,3 +1,6 @@
+/**
+ * This schema is valid for testing transpilers that admit composite types, like Typescript.
+ */
 import { z, ZodType } from 'zod';
 
 const Name = z.string();

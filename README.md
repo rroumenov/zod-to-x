@@ -10,7 +10,6 @@
 - [Supported output languages](#supported-output-languages)
 - [Mapping of supported Zod Types](#mapping-of-supported-zod-types)
 - [Additional utils](#additional-utils)
-- [Known limitations](#known-limitations)
 
 
 
@@ -140,6 +139,7 @@ A complete and more complex schema definition with its outputs can be found in t
 - [Zod Schemas](test/data)
 - [Typescript outputs](test/test_zod2ts)
 - [Protobuf V3 outputs](test/test_zod2proto3/)
+- [C++ 11 outputs](test/test_zod2cpp/)
 
 
 
@@ -148,44 +148,57 @@ Common options:
 - **header**: Text to add as a comment at the beginning of the output.
 - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
 - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
+- **skipDiscriminatorNodes**: prevents the inclusion of `ZodEnum` or `ZodNativeEnum` schemas that are used solely as discriminator keys in a `ZodDiscriminatedUnion`. Defaults to `false`.
 
-### · **Typescript**  
-Options:
-  - **outType**: Output transpilation using Typescript interfaces or Classes.
+### Typescript  
+#### Options:
+  - **outType**: Output transpilation using Typescript interfaces or Classes. Defaults to `interface`.
 
-### · Protobuf V3
-Options:
+### Protobuf V3
+#### Options:
   - **packageName**: Name of the protobuf file package.
   - **useCamelCase**: Protobuf follows the snake_case convention for field names, but camelCase can also be used. Defaults to `false`.
 
-### · C++ (upcoming)
+#### Limitations:
+  - `oneof` fields support only unions of `ZodObject` schemas.
+
+
+### C++ 11 (+17 upcoming)
+#### Options:
+  - **includeNulls**: When serializing, include all values even if `null`. Defaults to `false`.
+  - **namespace**: Name of the namespace containing the output code.
+  - **outType**: Output transpilation using C++ Structs or Classes. Defaults to `struct`.
+  - **skipSerialize**: Remove Nlohmann JSON serialization/deserialization. Defaults to `false`.
+
+#### Limitations:
+  - `ZodIntersection` is supported only for intersection of `ZodObject` schemas.
 
 
 
 ## Mapping of supported Zod Types
 
-| Zod Type          | TypeScript                  | Protobuf                                      |
-|-------------------|-----------------------------|-----------------------------------------------|
-| `z.string()`      | `string`                    | `string`                                      |
-| `z.number()`      | `number`                    | `double`, `uint32`, `uint64`, `ìnt32`, `int64`|
-| `z.bigint()`      | `number`                    | `int64`, `uint64`                             |
-| `z.boolean()`     | `boolean`                   | `bool`                                        |
-| `z.date()`        | `Date`                      | `google.protobuf.Timestamp`                   |
-| `z.literal()`     | Literal value (`'value'`)   | `number` or `string`                          |
-| `z.enum()`        | `enum`                      | `enum`                                        |
-| `z.nativeEnum()`  | Native `enum`               | `enum`                                        |
-| `z.array()`       | `T[]`                       | `repeated` field                              |
-| `z.set()`         | `Set<T>`                    | `repeated` field                              |
-| `z.tuple()`       | `[T1, T2, T3]`              | Not supported                                 |
-| `z.object()`      | `interface` or `class`      | `message`                                     |
-| `z.record()`      | `Record<string, T>`         | `map<string, K>`                              |
-| `z.union()`       | `T1 \| T2` or `type`        | `oneof`                                       |
-| `z.intersection()`| `T1 & T2` or `type`         | Not supported                                 |
-| `z.any()`         | `any`                       | `google.protobuf.Any`                         |
-| `z.optional()`    | `T \| undefined`            | Not supported                                 |
-| `z.nullable()`    | `T \| null`                 | Not supported                                 |
+| Zod Type              | TypeScript                  | Protobuf                                      | C++                                           |
+|-----------------------|-----------------------------|-----------------------------------------------|-----------------------------------------------|
+| `z.string()`          | `string`                    | `string`                                      | `std::string`
+| `z.number()`          | `number`                    | `double`, `uint32`, `uint64`, `ìnt32`, `int64`| `double`, `uint32`, `uint64`, `ìnt32`, `int64`
+| `z.bigint()`          | `number`                    | `int64`, `uint64`                             | `int64`, `uint64`
+| `z.boolean()`         | `boolean`                   | `bool`                                        | `bool`
+| `z.date()`            | `Date`                      | `google.protobuf.Timestamp`                   | Not supported
+| `z.literal()`         | Literal value (`'value'`)   | As number or string                           | As string
+| `z.enum()`            | `enum`                      | `enum`                                        | `enum class T: int`
+| `z.nativeEnum()`      | Native `enum`               | `enum`                                        | `enum class T: int`
+| `z.array()`           | `T[]`                       | `repeated` field                              | `std::vector<T>`
+| `z.set()`             | `Set<T>`                    | `repeated` field                              | `std::set<T>`
+| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field                              | `std::tuple<T>`
+| `z.object()`          | `interface` or `class`      | `message`                                     | `struct` or `class`
+| `z.record()`          | `Record<string, T>`         | `map<string, K>`                              | `std::unordered_map<T>`
+| `z.union()`           | `T1 \| T2` or `type`        | `oneof`                                       | `boost::variant<T, K>`
+| `z.intersection()` (*)| `T1 & T2` or `type`         | Not supported                                 | `struct` or `class` with `inheritance`
+| `z.any()`             | `any`                       | `google.protobuf.Any`                         | `nlohmann::json`
+| `z.optional()`        | `T \| undefined`            | Not supported                                 | `boost::optional<T>`
+| `z.nullable()`        | `T \| null`                 | Not supported                                 | `boost::optional<T>`
 
-
+(*) Consider to use Zod's merge instead of ZodIntersection when possible.
 
 ## Additional utils
 - `zod2JsonSchemaDefinitions`  
@@ -326,9 +339,3 @@ console.log(userJsonSchema);
 //   "$schema": "http://json-schema.org/draft-07/schema#"
 // }
 ```
-
-
-
-## Known limitations
-- Protobuf V3:  
-  - `oneof` fields support only unions of `ZodObject` schemas.

@@ -1,5 +1,7 @@
 import { ZodFirstPartyTypeKind } from 'zod';
 
+import StringUtils, { TIndentationLevels } from '@/utils/string_utils';
+
 import {
     ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTNode, ASTNodes,
     ASTObject, ASTUnion, TranspilerableTypes
@@ -100,27 +102,23 @@ interface IInternalOpts {
  * Extend this class and implement the abstract methods to define how each Zod type
  * should be converted to the target language's syntax.
  */
-export abstract class Zod2X
+export abstract class Zod2X<T extends IZodToXOpt>
 {    
-    protected output: string;
-    protected indent: string;
+    protected output: string[];
+    protected indent: TIndentationLevels;
     protected imports: Set<string>;
 
-    protected opt: Partial<IZodToXOpt>;
+    protected opt: Partial<T>;
 
     private inOpt: IInternalOpts;
 
-    protected constructor(inOpt: IInternalOpts, opt: Partial<IZodToXOpt>) {
-        this.output = "";
+    protected constructor(inOpt: IInternalOpts, opt: Partial<T>) {
+        this.output = [];
         this.imports = new Set<string>();
-        this.indent = " ".repeat(opt?.indent ?? 4);
+        this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
         this.opt = opt;
         this.inOpt = inOpt;
-
-        if (opt?.header) {
-            this.addComment(opt.header);
-        }
     }
 
     /**
@@ -131,11 +129,9 @@ export abstract class Zod2X
     protected abstract runAfter(): void;
 
     /**
-     * Adds a comment to the transpiled output.
-     * @param data - The comment text to add.
-     * @param indent - Optional indentation to apply before the comment.
+     * Returns a comment.
      */
-    protected abstract addComment(data?: string, indent?: string): void;
+    protected abstract getComment(data: string, indent?: string): string;
 
     /**
      * Returns the keyword representing a string type in the target language.
@@ -265,6 +261,23 @@ export abstract class Zod2X
         );
     }
 
+    // Push with indentation helpers
+    protected push0 = (data: string) => this.output.push(`${this.indent[0]}${data}`);
+    protected push1 = (data: string) => this.output.push(`${this.indent[1]}${data}`);
+    protected push2 = (data: string) => this.output.push(`${this.indent[2]}${data}`);
+    protected push3 = (data: string) => this.output.push(`${this.indent[3]}${data}`);
+
+    /**
+     * Adds a comment to the transpiled output.
+     * @param data - The comment text to add.
+     * @param indent - Optional indentation to apply before the comment.
+     */
+    protected addComment(data = "", indent = "") {
+        if (data && this.opt.includeComments) {
+            this.output.push(this.getComment(data, indent));
+        }
+    }
+
     /**
      * Checks if composite types (unions and intersections) are enabled.
      * Throws an error if composite types are not supported by the target language.
@@ -391,7 +404,7 @@ export abstract class Zod2X
      * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
      * @returns The transpiled code as a string.
      */
-    transpile(transpilerQueue: ASTNodes)
+    transpile(transpilerQueue: ASTNodes): string
     {
         this.runBefore();
 
@@ -401,13 +414,28 @@ export abstract class Zod2X
 
         transpilerQueue.nodes.forEach(this._transpileItem.bind(this));
 
-        if (this.imports.size > 0) {
-            this.output = [...this.imports.keys()].join('\n') + `\n\n${this.output}`;
-        }
-
         this.runAfter();
 
-        return this.output;
+        let header = [];
+
+        if (this.opt.header) {
+            header.push(...this.opt.header.split("\n").map(i => this.getComment(i)));
+        }
+
+        if (this.imports.size > 0) {
+            header.push(...this.imports);
+
+            if (!header.at(-1)?.endsWith("\n")) {
+                header.push("");
+            }
+        }
+            
+        this.output = [
+            ...header,
+            ...this.output
+        ];
+
+        return this.output.join("\n");
     }
 }
 
