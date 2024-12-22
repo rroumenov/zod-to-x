@@ -1,15 +1,24 @@
-import Case from 'case';
-import { ZodFirstPartyTypeKind } from 'zod';
+import Case from "case";
+import { ZodFirstPartyTypeKind } from "zod";
 
 import {
-    ASTCommon, ASTDefintion, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum,
-    ASTNode, ASTObject, ASTUnion, TranspilerableTypes, Zod2X
-} from '@/core';
-import { INT32_RANGES, UINT32_RANGES } from '@/utils/number_limits';
+    ASTCommon,
+    ASTDefintion,
+    ASTDiscriminatedUnion,
+    ASTEnum,
+    ASTIntersection,
+    ASTNativeEnum,
+    ASTNode,
+    ASTObject,
+    ASTUnion,
+    TranspilerableTypes,
+    Zod2X,
+} from "@/core";
+import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 
-import { LIB, USING } from './libs';
-import { getNlohmannOptionalHelper } from './nlohmann';
-import { defaultOpts, IZod2CppOpt } from './options';
+import { LIB, USING } from "./libs";
+import { getNlohmannOptionalHelper } from "./nlohmann";
+import { defaultOpts, IZod2CppOpt } from "./options";
 
 /** Required data to serialize structure/class attribute. */
 interface IStructAttributeSerialData {
@@ -41,29 +50,30 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.serializers = [];
     }
 
-    protected getIntersectionType = (): string => { /** Covered by "transpileIntersection" method */ return "" };
+    protected getIntersectionType = (): string => {
+        /** Covered by "transpileIntersection" method */
+        return "";
+    };
 
     protected runBefore() {}
 
     protected runAfter() {
-        this.output = this.output.map(i => `${this.indent[1]}${i}`);
+        this.output = this.output.map((i) => `${this.indent[1]}${i}`);
 
         this.output.unshift(`namespace ${this.opt.namespace} {`);
         this.output.push("}");
 
-        if (this.opt.skipSerialize !== true &&
-            this.serializers.length > 0)
-        {
+        if (this.opt.skipSerialize !== true && this.serializers.length > 0) {
             this.imports.add(LIB.nlohmann);
 
-            this.output.push("")
+            this.output.push("");
             this.output.push(`namespace ${this.opt.namespace} {`);
 
             if (this.imports.has(LIB.optional) && !this.opt.includeNulls) {
                 this.serializers.unshift(...getNlohmannOptionalHelper(this.opt.indent as number));
             }
 
-            this.serializers = this.serializers.map(i => `${this.indent[1]}${i}`);
+            this.serializers = this.serializers.map((i) => `${this.indent[1]}${i}`);
             this.output.push(...this.serializers);
             this.output.push("}");
         }
@@ -72,11 +82,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.imports.add(`\n${USING.nlohmann}`);
         }
     }
-    
+
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getDateType = () => this.getStringType(); // Representing ISO date as a string
     protected getBooleanType = () => "bool";
-    
+
     protected getStringType = () => {
         this.imports.add(LIB.string);
         return "std::string";
@@ -84,7 +94,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: std::tuple<TypeA> */
     protected getTupleType = (itemsType: string[]) => `std::tuple<${itemsType.join(", ")}>`;
-    
+
     protected getAnyType = () => {
         this.imports.add(LIB.nlohmann);
         return "json";
@@ -95,11 +105,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.imports.add(LIB.set);
         return `std::set<${itemType}>`;
     };
-    
+
     /** Ex: boost::variant<TypeA, TypeB> */
     protected getUnionType = (itemsType: string[]) => {
         this.imports.add(LIB.variant);
-        return `boost::variant<${itemsType.join(", ")}>`
+        return `boost::variant<${itemsType.join(", ")}>`;
     };
 
     /** Ex: depends on number range (if any). One of:
@@ -109,7 +119,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  - std::int64_t
      *  - double
      */
-    protected getNumberType = (isInt: boolean, range: {min?: number, max?: number}): string => {
+    protected getNumberType = (isInt: boolean, range: { min?: number; max?: number }): string => {
         if (!isInt) {
             return "double";
         }
@@ -119,18 +129,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         if (range?.min! >= UINT32_RANGES[0]) {
             if (range?.max! <= UINT32_RANGES[1]) {
                 return "std::uint32_t";
-            }
-            else {
+            } else {
                 return "std::uint64_t";
             }
-        }
-        else {
-            if (range?.max! <= INT32_RANGES[1] &&
-                range?.min! >= INT32_RANGES[0])
-            {
+        } else {
+            if (range?.max! <= INT32_RANGES[1] && range?.min! >= INT32_RANGES[0]) {
                 return "std::int32_t";
-            }
-            else {
+            } else {
                 return "std::int64_t";
             }
         }
@@ -150,10 +155,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected getLiteralStringType(value: string | number) {
         return isNaN(Number(value))
             ? this.getStringType()
-            : this.getNumberType(
-                Number.isInteger(value),
-                {min: value as number, max: value as number}
-            );
+            : this.getNumberType(Number.isInteger(value), {
+                  min: value as number,
+                  max: value as number,
+              });
     }
 
     /** Ex: std::unordered_map<TypeA> */
@@ -184,9 +189,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
             const separator = index + 1 == data.values.length ? "" : ",";
             this.push1(`${key}${separator}`);
-            
-            serializeData.push({enumName: key, origValue: value});
-        });;
+
+            serializeData.push({ enumName: key, origValue: value });
+        });
         this.push0("};\n");
 
         this._createEnumSerializer(data.name, serializeData);
@@ -198,12 +203,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  class MyClassC: public MyClassA, public MyClassB {
      *  public:
      *      MyClassC() = default;
-     *      virtual ~MyClass() = default;      
+     *      virtual ~MyClass() = default;
      *  }
-     * 
+     *
      *  - Case of using structs
      *  struct MyStructC: public MyStructA, public MyStructB {
-     *      
+     *
      *  }
      */
     protected transpileIntersection(data: ASTIntersection & ASTCommon) {
@@ -212,17 +217,20 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this.addComment(data.description);
 
-        if (!(data.left.type === "definition" &&
+        if (
+            !(
+                data.left.type === "definition" &&
                 data.left.referenceType === ZodFirstPartyTypeKind.ZodObject &&
                 data.right.type === "definition" &&
-                data.right.referenceType === ZodFirstPartyTypeKind.ZodObject))
-        {
+                data.right.referenceType === ZodFirstPartyTypeKind.ZodObject
+            )
+        ) {
             throw new Error(`${data.name}: only intersection of ZodObjects is supported.`);
         }
-    
+
         const leftType = this.getAttributeType(data.left);
         const rightType = this.getAttributeType(data.right);
-    
+
         if (this.opt.outType === "class") {
             this.push0(`class ${data.name} : public ${leftType}, public ${rightType} {`);
             this.push0(`public:`);
@@ -245,14 +253,14 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
         this.addComment(data.description);
 
-        const attributesData = data.options.map( i => {
+        const attributesData = data.options.map((i) => {
             return {
                 type: this.getAttributeType(i),
-                discriminantValue: (i as ASTCommon & ASTDefintion).discriminantValue
-            }
+                discriminantValue: (i as ASTCommon & ASTDefintion).discriminantValue,
+            };
         });
 
-        const attributesTypes = attributesData.map(i => i.type);
+        const attributesTypes = attributesData.map((i) => i.type);
 
         this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
 
@@ -297,7 +305,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         });
 
         this.push0("};\n");
-        
+
         this._createStructSerializer(data.name, serializeData);
         this._createStructDeserializer(data.name, serializeData);
     }
@@ -307,11 +315,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  private:
      *      TypeA attribute1;
      *      TypeB attribute2;
-     * 
+     *
      *  public:
      *      MyClass() = default;
      *      virtual ~MyClass() = default;
-     * 
+     *
      *      const TypeA& get_attribute1() const { return this->attribute1; }
      *      TypeA& get_mut attribute1() { return this->attribute1; }
      *      void set_attribute1(TypeA& value) { this->attribute1 = value; }
@@ -340,15 +348,15 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 snakeName,
                 typeName: origType,
                 required: !(value.isNullable || value.isOptional),
-            })
+            });
         });
 
         this.push0("");
-        this.push0(`public:`)
+        this.push0(`public:`);
         this.push1(`${data.name}() = default;`);
         this.push1(`virtual ~${data.name}() = default;`);
 
-        setterGetter.forEach(i => this.push1(i));
+        setterGetter.forEach((i) => this.push1(i));
 
         this.push0("};\n");
 
@@ -358,22 +366,22 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /**
      * @description Transpiles an individual member of a C++ class based on the provided ASTNode.
-     * 
+     *
      * @param memberName - The name of the member variable to transpile.
      * @param memberNode - The ASTNode defining the member's type, description, and other
      *                     attributes.
-     * 
+     *
      * @returns - The original C++ type of the member, without optional modifier.
      */
-    private _transpileMember(memberName: string, memberNode: ASTNode)
-    {
+    private _transpileMember(memberName: string, memberNode: ASTNode) {
         let keyType = this.getAttributeType(memberNode);
         const origType = keyType;
 
-        if (memberNode.description &&
+        if (
+            memberNode.description &&
             !(memberNode as ASTDefintion).reference &&
-            !this.isTranspilerable(memberNode as TranspilerableTypes))
-        {
+            !this.isTranspilerable(memberNode as TranspilerableTypes)
+        ) {
             // Avoid duplicated descriptions for transpiled items.
             this.push1("");
             this.addComment(memberNode.description, `${this.indent[1]}`);
@@ -391,33 +399,35 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /**
      * @description Creates getter and setter enumHelpers for a C++ class member variable.
-     * 
+     *
      * @param memberName - The name of the member variable.
      * @param memberType - The C++ type of the member variable.
      * @param [required] - Whether the member is required (default is `false`).
-     * 
+     *
      * @returns - An array of strings representing the C++ getter and setter enumHelpers.
      */
-    private _createSetterGetter(memberName: string, memberType: string, required?:boolean): string[]
-    {
+    private _createSetterGetter(
+        memberName: string,
+        memberType: string,
+        required?: boolean
+    ): string[] {
         const result: string[] = [];
-        
+
         result.push("");
         if (required) {
             result.push(
                 `const ${memberType}& get_${memberName}() const { return this->${memberName}; }`
             );
-            result.push(
-                `${memberType}& get_mut_${memberName}() { return this->${memberName}; }`
-            );
+            result.push(`${memberType}& get_mut_${memberName}() { return this->${memberName}; }`);
             result.push(
                 `void set_${memberName}(const ${memberType}& value) { this->${memberName} = value; }`
             );
-        }
-        else {
+        } else {
             const fullType = `boost::optional<${memberType}>`;
             result.push(`${fullType} get_${memberName}() const { return this->${memberName}; }`);
-            result.push(`void set_${memberName}(${fullType} value) { this->${memberName} = value; }`);
+            result.push(
+                `void set_${memberName}(${fullType} value) { this->${memberName} = value; }`
+            );
         }
 
         return result;
@@ -436,14 +446,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the serialized structure
      * @param childs - Structure attributes data.
      */
-    private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[])
-    {
+    private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
-        childs.forEach(i => {
+        childs.forEach((i) => {
             if (i.required || this.opt.includeNulls === true) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.${i.snakeName};`);
-            }
-            else {
+            } else {
                 this._push1(
                     this.serializers,
                     `set_opt<${i.typeName}>(j, "${i.origName}", x.${i.snakeName});`
@@ -464,17 +472,15 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the deserialized structure
      * @param childs - Structure attributes data.
      */
-    private _createStructDeserializer(parent: string, childs: IStructAttributeSerialData[])
-    {
+    private _createStructDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
-        childs.forEach(i => {
+        childs.forEach((i) => {
             if (i.required) {
                 this._push1(
                     this.serializers,
                     `x.${i.snakeName} = j.at("${i.origName}").get<${i.typeName}>();`
                 );
-            }
-            else {
+            } else {
                 this._push1(
                     this.serializers,
                     `x.${i.snakeName} = get_opt<${i.typeName}>(j, "${i.origName}");`
@@ -498,14 +504,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the serialized structure
      * @param childs - Structure attributes data.
      */
-    private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[])
-    {
+    private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
-        childs.forEach(i => {
+        childs.forEach((i) => {
             if (i.required || this.opt.includeNulls === true) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.get_${i.snakeName}();`);
-            }
-            else {
+            } else {
                 this._push1(
                     this.serializers,
                     `set_opt<${i.typeName}>(j, "${i.origName}", x.get_${i.snakeName}());`
@@ -526,17 +530,15 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the deserialized structure
      * @param childs - Structure attributes data.
      */
-    private _createClassDeserializer(parent: string, childs: IStructAttributeSerialData[])
-    {
+    private _createClassDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
-        childs.forEach(i => {
+        childs.forEach((i) => {
             if (i.required) {
                 this._push1(
                     this.serializers,
                     `x.set_${i.snakeName}(j.at("${i.origName}").get<${i.typeName}>());`
                 );
-            }
-            else {
+            } else {
                 this._push1(
                     this.serializers,
                     `x.set_${i.snakeName}(get_opt<${i.typeName}>(j, "${i.origName}"));`
@@ -561,13 +563,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the serialized enumerate
      * @param childs - Enumerate values data.
      */
-    private _createEnumSerializer(parent: string, childs: IEnumItemSerialData[])
-    {
+    private _createEnumSerializer(parent: string, childs: IEnumItemSerialData[]) {
         this.imports.add(LIB.exceptions);
 
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         this._push1(this.serializers, `switch (x) {`);
-        childs.forEach(i => {
+        childs.forEach((i) => {
             this._push2(
                 this.serializers,
                 `case ${parent}::${i.enumName}: j = "${i.origValue}"; break;`
@@ -596,8 +597,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param parent - Name of the deserialized enumerate
      * @param childs - Enumerate values data.
      */
-    private _createEnumDeserializer(parent: string, childs: IEnumItemSerialData[])
-    {
+    private _createEnumDeserializer(parent: string, childs: IEnumItemSerialData[]) {
         this.imports.add(LIB.exceptions);
 
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
@@ -607,8 +607,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                     this.serializers,
                     `if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
                 );
-            }
-            else {
+            } else {
                 this._push1(
                     this.serializers,
                     `else if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
@@ -625,21 +624,20 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     /**
      * @description Creates a JSON serializer for a class or struct that is the intersection of
      *              multiple types.
-     * 
+     *
      * @example
      * // inline void to_json(json& j, const DerivedType& x) {
      * //     to_json(j, static_cast<const BaseType1&>(x));
      * //     to_json(j, static_cast<const BaseType2&>(x));
      * // }
-     * 
+     *
      * @param intersectName - The name of the intersected class or struct.
      * @param itemsType - An array of strings representing the names of the base types to serialize.
      */
-    private _createIntersectionSerializer(intersectName: string, itemsType: string[])
-    {
-        this._push0(this.serializers, `inline void to_json(json& j, const ${intersectName}& x) {`);    
+    private _createIntersectionSerializer(intersectName: string, itemsType: string[]) {
+        this._push0(this.serializers, `inline void to_json(json& j, const ${intersectName}& x) {`);
 
-        itemsType.forEach( i =>
+        itemsType.forEach((i) =>
             this._push1(this.serializers, `to_json(j, static_cast<const ${i}&>(x));`)
         );
 
@@ -649,21 +647,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     /**
      * @description Creates a JSON deserializer for a class or struct that is the intersection of
      *              multiple types.
-     * 
+     *
      * @example
      * // inline void from_json(const json& j, DerivedType& x) {
      * //     from_json(j, static_cast<BaseType1&>(x));
      * //     from_json(j, static_cast<BaseType2&>(x));
      * // }
-     * 
+     *
      * @param intersectName - The name of the intersected class or struct.
      * @param itemsType - An array of strings representing the names of the base types to deserialize.
      */
-    private _createIntersectionDeserializer(intersectName: string, itemsType: string[])
-    {
-        this._push0(this.serializers, `inline void from_json(const json& j, ${intersectName}& x) {`);
+    private _createIntersectionDeserializer(intersectName: string, itemsType: string[]) {
+        this._push0(
+            this.serializers,
+            `inline void from_json(const json& j, ${intersectName}& x) {`
+        );
 
-        itemsType.forEach( i =>
+        itemsType.forEach((i) =>
             this._push1(this.serializers, `from_json(j, static_cast<${i}&>(x));`)
         );
 
@@ -691,8 +691,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * //     }
      * // }
      */
-    private _createUnionSerializer(unionName: string, itemsType: string[])
-    {
+    private _createUnionSerializer(unionName: string, itemsType: string[]) {
         this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
 
         itemsType.forEach((i, index) => {
@@ -700,14 +699,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this._push1(this.serializers, `${condition} (x.type() == typeid(${i})) {`);
             this._push2(this.serializers, `j = boost::get<${i}>(x);`);
             this._push1(this.serializers, `}`);
-
         });
-        
+
         this._push1(this.serializers, `else {`);
-        this._push2(
-            this.serializers,
-            `throw std::runtime_error("Unknown ${unionName} type.");`
-        );
+        this._push2(this.serializers, `throw std::runtime_error("Unknown ${unionName} type.");`);
         this._push1(this.serializers, `}`);
 
         this._push0(this.serializers, `}\n`);
@@ -770,12 +765,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     private _createUnionDeserializer(
         unionName: string,
-        items: Array<{type: string, discriminantValue?: string}>,
+        items: Array<{ type: string; discriminantValue?: string }>,
         discriminator?: string
     ) {
         this._push0(this.serializers, `inline void from_json(const json& j, ${unionName}& x) {`);
 
-        const useDiscriminator = discriminator && items.every(i => i.discriminantValue);
+        const useDiscriminator = discriminator && items.every((i) => i.discriminantValue);
 
         if (useDiscriminator) {
             this._push1(
@@ -788,10 +783,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 this._push1(this.serializers, `${condition} (k == "${i.discriminantValue}") {`);
                 this._push2(this.serializers, `x = j.get<${i.type}>();`);
                 this._push1(this.serializers, `}`);
-    
+
                 if (index == items.length - 1) {
                     this._push1(this.serializers, `else {`);
-                    this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
+                    this._push2(
+                        this.serializers,
+                        this.getComment(`None of the types matched. Error`)
+                    );
                     this._push2(
                         this.serializers,
                         `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
@@ -799,9 +797,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                     this._push1(this.serializers, `}`);
                 }
             });
-        }
-        else
-        {
+        } else {
             console.warn(
                 `${unionName}: use ZodDiscriminatedUnion instead of ZodUnion whenever possible.`
             );
@@ -812,22 +808,26 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 this._push2(this.serializers, `x = j.get<${i.type}>();`);
                 this._push2(this.serializers, `return;`);
                 this._push1(this.serializers, `} catch (const std::exception&) {`);
-    
+
                 if (index != items.length - 1) {
-                    this._push2(this.serializers, this.getComment(`Fall through to try the next type`));
-                }
-                else {
-                    this._push2(this.serializers, this.getComment(`None of the types matched. Error`));
+                    this._push2(
+                        this.serializers,
+                        this.getComment(`Fall through to try the next type`)
+                    );
+                } else {
+                    this._push2(
+                        this.serializers,
+                        this.getComment(`None of the types matched. Error`)
+                    );
                     this._push2(
                         this.serializers,
                         `throw std::runtime_error("Failed to deserialize ${unionName}: unknown format");`
                     );
                 }
-    
-                this._push1(this.serializers, `}`);            
+
+                this._push1(this.serializers, `}`);
             });
         }
-
 
         this._push0(this.serializers, `}\n`);
     }

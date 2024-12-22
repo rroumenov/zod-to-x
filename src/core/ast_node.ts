@@ -1,11 +1,32 @@
 import {
-    ZodAny, ZodArray, ZodBigInt, ZodBoolean, ZodDate, ZodDiscriminatedUnion, ZodEnum,
-    ZodFirstPartyTypeKind, ZodIntersection, ZodLazy, ZodLiteral, ZodMap, ZodNativeEnum, ZodNullable,
-    ZodNumber, ZodNumberCheck, ZodObject, ZodOptional, ZodRawShape, ZodRecord, ZodSet, ZodString,
-    ZodTuple, ZodTypeAny, ZodUnion
-} from 'zod';
+    ZodAny,
+    ZodArray,
+    ZodBigInt,
+    ZodBoolean,
+    ZodDate,
+    ZodDiscriminatedUnion,
+    ZodEnum,
+    ZodFirstPartyTypeKind,
+    ZodIntersection,
+    ZodLazy,
+    ZodLiteral,
+    ZodMap,
+    ZodNativeEnum,
+    ZodNullable,
+    ZodNumber,
+    ZodNumberCheck,
+    ZodObject,
+    ZodOptional,
+    ZodRawShape,
+    ZodRecord,
+    ZodSet,
+    ZodString,
+    ZodTuple,
+    ZodTypeAny,
+    ZodUnion,
+} from "zod";
 
-import { ASTDefintion, ASTNode, ASTNodes, TranspilerableTypes } from './ast_types';
+import { ASTDefintion, ASTNode, ASTNodes, TranspilerableTypes } from "./ast_types";
 
 interface IZodToAstOpt {
     /**
@@ -24,8 +45,7 @@ interface IZodToAstOpt {
  * Simply create an instance and call build with a ZodObject to obtain a list with transpilerable
  * nodes.
  */
-export class Zod2Ast
-{
+export class Zod2Ast {
     /**
      * Transpilerable nodes
      */
@@ -49,50 +69,47 @@ export class Zod2Ast
 
     /**
      * Transpilerable items are treated as references in the AST
-     * @param ref 
+     * @param ref
      * @param refType
      * @param discriminantValue
-     * @returns 
+     * @returns
      */
     private _createDefinition(
         ref: string,
         refType: ZodFirstPartyTypeKind,
         discriminantValue?: string
-    ): ASTDefintion
-    {
+    ): ASTDefintion {
         return { type: "definition", reference: ref, referenceType: refType, discriminantValue };
     }
 
     /**
-     * Extracts and formats the enumeration values from a given ZodEnum or ZodNativeEnum schema.  
+     * Extracts and formats the enumeration values from a given ZodEnum or ZodNativeEnum schema.
      * @param schema - A ZodEnum or ZodNativeEnum schema containing the enumeration values.
      * @returns A list of key-value pairs where the key is a formatted string and the value
      *          is either a string or a number.
      */
     private _getEnumValues(schema: ZodEnum<any> | ZodNativeEnum): [string, string | number][] {
-        if(schema instanceof ZodEnum) {
-            return Object.entries(schema.Enum)
-                    .map(([key, value]) => {
-                        // Creates a string key if it starts with number.
-                        key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
-                        return [key, value] as [string, string | number];
-                    });
-        }
-        else {
+        if (schema instanceof ZodEnum) {
+            return Object.entries(schema.Enum).map(([key, value]) => {
+                // Creates a string key if it starts with number.
+                key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
+                return [key, value] as [string, string | number];
+            });
+        } else {
             return Object.entries(schema.enum)
-                    .filter(([key, _value]) => isNaN(Number(key)))
-                    .map(([key, value]) => {
-                        // Creates a string key if it starts with number.
-                        key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
-                        return [key, value] as [string, string | number];
-                    });
+                .filter(([key, _value]) => isNaN(Number(key)))
+                .map(([key, value]) => {
+                    // Creates a string key if it starts with number.
+                    key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
+                    return [key, value] as [string, string | number];
+                });
         }
     }
 
     /**
      * Build the AST node of provided Zod Schema
-     * @param schema 
-     * @returns 
+     * @param schema
+     * @returns
      */
     private zodToAST(schema: ZodTypeAny, opt?: IZodToAstOpt): ASTNode {
         const def = schema._def;
@@ -100,122 +117,105 @@ export class Zod2Ast
         if (schema instanceof ZodString) {
             return {
                 type: ZodFirstPartyTypeKind.ZodString,
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if(schema instanceof ZodNumber ||
-                schema instanceof ZodBigInt)
-        {
+        } else if (schema instanceof ZodNumber || schema instanceof ZodBigInt) {
             return {
                 type: ZodFirstPartyTypeKind.ZodNumber,
                 constraints: {
-                    min: def.checks.find((i: ZodNumberCheck) => i.kind === 'min')?.value,
-                    max: def.checks.find((i: ZodNumberCheck) => i.kind === 'max')?.value,
-                    isInt: (schema instanceof ZodBigInt ||
-                            def.checks.find((i: ZodNumberCheck) => i.kind === 'int') != undefined)
+                    min: def.checks.find((i: ZodNumberCheck) => i.kind === "min")?.value,
+                    max: def.checks.find((i: ZodNumberCheck) => i.kind === "max")?.value,
+                    isInt:
+                        schema instanceof ZodBigInt ||
+                        def.checks.find((i: ZodNumberCheck) => i.kind === "int") != undefined,
                 },
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodBoolean) {
+        } else if (schema instanceof ZodBoolean) {
             return {
                 type: ZodFirstPartyTypeKind.ZodBoolean,
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodDate) {
+        } else if (schema instanceof ZodDate) {
             return {
                 type: ZodFirstPartyTypeKind.ZodDate,
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodAny) {
+        } else if (schema instanceof ZodAny) {
             return {
                 type: ZodFirstPartyTypeKind.ZodAny,
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodNullable) {
+        } else if (schema instanceof ZodNullable) {
             const subSchema = this.zodToAST(def.innerType);
             return {
                 isNullable: true,
                 ...subSchema,
-                description: schema.description || subSchema.description
+                description: schema.description || subSchema.description,
             };
-        }
-        else if (schema instanceof ZodOptional) {
+        } else if (schema instanceof ZodOptional) {
             const subSchema = this.zodToAST(def.innerType);
             return {
                 isOptional: true,
                 ...subSchema,
-                description: schema.description || subSchema.description
+                description: schema.description || subSchema.description,
             };
-        }
-        else if (schema instanceof ZodArray) {
+        } else if (schema instanceof ZodArray) {
             const subSchema = this.zodToAST(def.type);
 
             return {
                 ...subSchema,
                 description: schema.description || subSchema.description,
                 arrayDimension: Number.isInteger(subSchema.arrayDimension)
-                                ? ++subSchema.arrayDimension!
-                                : 1
+                    ? ++subSchema.arrayDimension!
+                    : 1,
             };
-        }
-        else if (schema instanceof ZodSet) {
+        } else if (schema instanceof ZodSet) {
             return {
                 type: ZodFirstPartyTypeKind.ZodSet,
                 value: this.zodToAST(def.valueType),
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodLiteral) {
+        } else if (schema instanceof ZodLiteral) {
             return {
                 type: ZodFirstPartyTypeKind.ZodLiteral,
                 value: def.value,
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodRecord) {
+        } else if (schema instanceof ZodRecord) {
             return {
                 type: ZodFirstPartyTypeKind.ZodRecord,
                 key: this.zodToAST(def.keyType),
                 value: this.zodToAST(def.valueType),
-                description: schema.description
+                description: schema.description,
             };
-        }
-        else if (schema instanceof ZodLazy) {
+        } else if (schema instanceof ZodLazy) {
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
             const lazySchema = def.getter();
-            const lazyPointer: ASTDefintion =
-                this._createDefinition("pending", ZodFirstPartyTypeKind.ZodAny);
+            const lazyPointer: ASTDefintion = this._createDefinition(
+                "pending",
+                ZodFirstPartyTypeKind.ZodAny
+            );
 
             this.lazyPointers.push([lazyPointer, lazySchema]);
 
             return lazyPointer;
-        }
-        else if (schema instanceof ZodTuple) {
+        } else if (schema instanceof ZodTuple) {
             return {
                 type: ZodFirstPartyTypeKind.ZodTuple,
                 items: def.items.map(this.zodToAST.bind(this)),
-                description: schema.description
+                description: schema.description,
             };
-        }
-
-        else if (schema instanceof ZodMap) {
+        } else if (schema instanceof ZodMap) {
             return {
                 type: ZodFirstPartyTypeKind.ZodMap,
                 key: this.zodToAST(def.keyType),
                 value: this.zodToAST(def.valueType),
-                description: schema.description
+                description: schema.description,
             };
-        }
-
-        /** Transpilerable items */
-        else if(schema instanceof ZodNativeEnum ||
-                schema instanceof ZodEnum)
-        {
+        } else if (schema instanceof ZodNativeEnum || schema instanceof ZodEnum) {
+            /** Transpilerable items */
             let name: string = def.zod2x?.typeName!;
 
             const item: TranspilerableTypes = {
@@ -226,13 +226,10 @@ export class Zod2Ast
             };
 
             if (opt?.isUnionDiscriminator) {
-                if (!this.nodes.has(name) &&
-                    !this.discriminatorNodes.has(name))
-                {
+                if (!this.nodes.has(name) && !this.discriminatorNodes.has(name)) {
                     this.discriminatorNodes.set(name, item);
                 }
-            }
-            else {
+            } else {
                 if (!this.nodes.has(name)) {
                     this.nodes.set(name, item);
                 }
@@ -243,8 +240,7 @@ export class Zod2Ast
             }
 
             return this._createDefinition(name, def.typeName);
-        }
-        else if (schema instanceof ZodObject) {
+        } else if (schema instanceof ZodObject) {
             let name: string = def.zod2x?.typeName!;
             let discriminantValue: string | undefined = undefined;
 
@@ -253,13 +249,10 @@ export class Zod2Ast
                 for (const key in def.shape()) {
                     properties[key] = this.zodToAST(def.shape()[key]);
 
-                    if (opt?.discriminantKey &&
-                        key === opt?.discriminantKey)
-                    {
+                    if (opt?.discriminantKey && key === opt?.discriminantKey) {
                         if (properties[key].type === ZodFirstPartyTypeKind.ZodLiteral) {
                             discriminantValue = String(properties[key].value);
-                        }
-                        else {
+                        } else {
                             console.warn(`Consider to set '${key}' key of '${name}' as ZodLiteral`);
                         }
                     }
@@ -269,41 +262,35 @@ export class Zod2Ast
                     type: ZodFirstPartyTypeKind.ZodObject,
                     name: def.zod2x?.typeName,
                     properties,
-                    description: schema.description
+                    description: schema.description,
                 });
-            };
+            }
 
             return this._createDefinition(name, def.typeName, discriminantValue);
-        }
-        else if(schema instanceof ZodUnion ||
-                schema instanceof ZodDiscriminatedUnion)
-        {
+        } else if (schema instanceof ZodUnion || schema instanceof ZodDiscriminatedUnion) {
             let name: string = def.zod2x?.typeName as string;
 
             const item: ASTNode | TranspilerableTypes = {
                 type: def.typeName,
                 name: def.zod2x?.typeName,
-                options: def.options.map(
-                    (i: ZodTypeAny) => this.zodToAST(i, { discriminantKey: def.discriminator })
+                options: def.options.map((i: ZodTypeAny) =>
+                    this.zodToAST(i, { discriminantKey: def.discriminator })
                 ),
                 description: schema.description,
-                discriminantKey: def.discriminator
-            }
+                discriminantKey: def.discriminator,
+            };
 
             if (def.zod2x?.discriminatorEnum) {
-                this.zodToAST(def.zod2x?.discriminatorEnum, {isUnionDiscriminator: true});
+                this.zodToAST(def.zod2x?.discriminatorEnum, { isUnionDiscriminator: true });
             }
-            
-            if (name &&
-                !this.nodes.has(name))
-            {
+
+            if (name && !this.nodes.has(name)) {
                 this.nodes.set(name, item);
                 return this._createDefinition(name, def.typeName);
             }
 
             return item;
-        }
-        else if (schema instanceof ZodIntersection) {
+        } else if (schema instanceof ZodIntersection) {
             let name: string = def.zod2x?.typeName as string;
 
             const item: ASTNode | TranspilerableTypes = {
@@ -311,36 +298,32 @@ export class Zod2Ast
                 name: def.zod2x?.typeName,
                 left: this.zodToAST(def.left),
                 right: this.zodToAST(def.right),
-                description: schema.description
+                description: schema.description,
             };
-            
-            if (name &&
-                !this.nodes.has(name))
-            {
+
+            if (name && !this.nodes.has(name)) {
                 this.nodes.set(name, item);
                 return this._createDefinition(name, def.typeName);
             }
 
             return item;
-        }
-        else
-            throw new Error(`Unsupported Zod type: ${schema}`);
+        } else throw new Error(`Unsupported Zod type: ${schema}`);
     }
 
     /**
      * Create the AST identifying the nodes that can be transpiled.
-     * @param schema 
+     * @param schema
      * @returns Transpilerable nodes.
      */
     build<T extends ZodRawShape>(schema: ZodObject<T>): ASTNodes {
         this.zodToAST(schema);
 
-        while(this.lazyPointers.length > 0) {
+        while (this.lazyPointers.length > 0) {
             const [pointer, schema] = this.lazyPointers.shift()!;
             const lazyResolve = this.zodToAST(schema);
-            
+
             /** Pointer to the pending AST node is updated with the lazy resolve */
-            Object.keys(pointer).forEach(key => {
+            Object.keys(pointer).forEach((key) => {
                 delete (pointer as any)[key];
             });
 
@@ -351,7 +334,7 @@ export class Zod2Ast
 
         return {
             nodes: [...this.nodes.values()],
-            discriminatorNodes: [...this.discriminatorNodes.values()]
+            discriminatorNodes: [...this.discriminatorNodes.values()],
         };
     }
 }

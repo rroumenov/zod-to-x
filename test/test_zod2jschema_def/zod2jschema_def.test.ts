@@ -6,10 +6,8 @@ import { diffLinesRaw } from "jest-diff";
 
 import { UserModel } from "../data/user_schema";
 
-describe('zod2JsonSchemaDefinitions', () => {
-  
-    test('User model definitions', () => {
-
+describe("zod2JsonSchemaDefinitions", () => {
+    test("User model definitions", () => {
         const userDefinitions = zod2JsonSchemaDefinitions(UserModel);
 
         const expectedDefinitions = [
@@ -27,17 +25,16 @@ describe('zod2JsonSchemaDefinitions', () => {
         ];
 
         const currentDefinitions = Object.keys(userDefinitions);
-        
+
         try {
             expect(currentDefinitions.length).toBe(expectedDefinitions.length);
 
-            expectedDefinitions.forEach(i => {
+            expectedDefinitions.forEach((i) => {
                 expect(currentDefinitions.includes(i)).toBe(true);
             });
-        }
-        catch(error) {
+        } catch (error) {
             diffLinesRaw(currentDefinitions, expectedDefinitions);
             throw error;
         }
     });
-  });
+});

@@ -8,9 +8,9 @@ export const LIB = {
     set: "#include <set>",
     string: "#include <string>",
     variant: "#include <boost/variant.hpp>",
-    vector: "#include <vector>"
+    vector: "#include <vector>",
 };
 
 export const USING = {
-    nlohmann: "using nlohmann::json;"
-}
+    nlohmann: "using nlohmann::json;",
+};

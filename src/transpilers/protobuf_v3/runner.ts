@@ -1,14 +1,32 @@
-import Case from 'case';
+import Case from "case";
 
 import {
-    ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTObject, ASTUnion,
-    IZodToXOpt, TranspilerableTypes, Zod2X
-} from '@/core';
-import { INT32_RANGES, UINT32_RANGES } from '@/utils/number_limits';
+    ASTCommon,
+    ASTDiscriminatedUnion,
+    ASTEnum,
+    ASTIntersection,
+    ASTNativeEnum,
+    ASTObject,
+    ASTUnion,
+    IZodToXOpt,
+    TranspilerableTypes,
+    Zod2X,
+} from "@/core";
+import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 
 const allowedKeyTypes = [
-    "int32", "int64", "uint32", "uint64", "sint32", "sint64",
-    "fixed32", "fixed64", "sfixed32", "sfixed64", "bool", "string"
+    "int32",
+    "int64",
+    "uint32",
+    "uint64",
+    "sint32",
+    "sint64",
+    "fixed32",
+    "fixed64",
+    "sfixed32",
+    "sfixed64",
+    "bool",
+    "string",
 ];
 
 interface IZod2ProtoV3Opt extends Omit<IZodToXOpt, "skipDiscriminatorNodes"> {
@@ -28,24 +46,29 @@ const defaultOpts: IZod2ProtoV3Opt = {
     indent: 4,
     useCamelCase: false,
 
-    skipDiscriminatorNodes: true,   // Not required for protobuf files
-}
+    skipDiscriminatorNodes: true, // Not required for protobuf files
+};
 
-export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
-{
+export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     constructor(opt: IZod2ProtoV3Opt = {}) {
-        super({
-            enableCompositeTypes: true
-        }, { ...defaultOpts, ...opt });
+        super(
+            {
+                enableCompositeTypes: true,
+            },
+            { ...defaultOpts, ...opt }
+        );
     }
 
-    protected getUnionType = (): string => { /** Covered by "transpileUnion" method */ return "" };
+    protected getUnionType = (): string => {
+        /** Covered by "transpileUnion" method */
+        return "";
+    };
 
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getBooleanType = (): string => "bool";
     protected getStringType = (): string => "string";
 
-    protected getNumberType = (isInt: boolean, range: {min?: number, max?: number}): string => {
+    protected getNumberType = (isInt: boolean, range: { min?: number; max?: number }): string => {
         if (!isInt) {
             return "double";
         }
@@ -53,23 +76,18 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
         if (range?.min! >= UINT32_RANGES[0]) {
             if (range?.max! <= UINT32_RANGES[1]) {
                 return "uint32";
-            }
-            else {
+            } else {
                 return "uint64";
             }
-        }
-        else {
-            if (range?.max! <= INT32_RANGES[1] &&
-                range?.min! >= INT32_RANGES[0])
-            {
+        } else {
+            if (range?.max! <= INT32_RANGES[1] && range?.min! >= INT32_RANGES[0]) {
                 return "int32";
-            }
-            else {
+            } else {
                 return "int64";
             }
         }
     };
-    
+
     protected getAnyType = (): string => {
         this.imports.add(`import "google/protobuf/any.proto";`);
         return "google.protobuf.Any";
@@ -100,13 +118,11 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
      * @throws Error if the tuple contains mixed types.
      */
     protected getTupleType = (itemsType: string[]): string => {
-        
         const uniqueTypes = new Set(itemsType);
-    
+
         if (uniqueTypes.size === 1) {
             return this.getArrayType(itemsType[0], 1);
-        }
-        else {
+        } else {
             throw new Error(
                 "Protobuf v3 does not support mixed-type tuples. Consider defining a message type."
             );
@@ -120,23 +136,20 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
     protected getArrayType(arrayType: string, arrayDeep: number): string {
         if (arrayDeep === 1) {
             return `repeated ${arrayType}`;
-        }
-        else {
+        } else {
             throw new Error(
                 "Protobuf v3 does not support multidimensional arrays directly. " +
-                "You need to define nested message types for deeper arrays"
+                    "You need to define nested message types for deeper arrays"
             );
         }
     }
 
     protected getLiteralStringType(value: string | number): string | number {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             return this.getStringType();
-        }
-        else if (typeof value === 'number') {
-            return this.getNumberType(Number.isInteger(value), {min: value, max: value});
-        }
-        else {
+        } else if (typeof value === "number") {
+            return this.getNumberType(Number.isInteger(value), { min: value, max: value });
+        } else {
             throw new Error(`Protobuf v3 does not support Literals for this value type: ${value}`);
         }
     }
@@ -164,7 +177,7 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
             if (Number.isInteger(key.at(0))) {
                 throw new Error(`Enumerate item name cannot start with number: ${key}`);
             }
-            
+
             this.push1(`${key} = ${index};`);
         });
 
@@ -181,9 +194,7 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
         this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
-            if (value.description &&
-                !this.isTranspilerable(value as TranspilerableTypes))
-            {
+            if (value.description && !this.isTranspilerable(value as TranspilerableTypes)) {
                 // Avoid duplicated descriptions for transpiled items.
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
@@ -197,12 +208,12 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
     /**
      * Transpiles a Zod union or discriminated union into a Protobuf-compatible `oneof` message.
      *
-     * @limitations Currently supports `oneOf` for options that can be represented as a 
+     * @limitations Currently supports `oneOf` for options that can be represented as a
      *              Protobuf message or enum. Other types are not yet supported.
-     * @param data  The AST representation of a union or discriminated union, including its 
+     * @param data  The AST representation of a union or discriminated union, including its
      *              common metadata.
      * @example
-     * Input: 
+     * Input:
      * {
      *   name: "UserContact",
      *   options: ["EmailContact", "PhoneContact", "SocialContact"],
@@ -220,14 +231,14 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
      */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
         this.addComment(data.description);
-        
+
         const attributesTypes = data.options.map(this.getAttributeType.bind(this));
 
-        if (attributesTypes.find( i => i.startsWith("map<") || i.startsWith("repeated ") )) {
+        if (attributesTypes.find((i) => i.startsWith("map<") || i.startsWith("repeated "))) {
             throw new Error("Map and Repeated fields are not suported by Protobuf oneOf");
         }
 
-        this.push0(`message ${data.name} {`);        
+        this.push0(`message ${data.name} {`);
         this.push1(`oneof ${this._adaptField(data.name + "Oneof")} {`);
 
         attributesTypes.forEach((item, index) => {
@@ -250,14 +261,13 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt>
 
     /**
      * Adapt field name according to user input.
-     * @param fieldName 
-     * @returns 
+     * @param fieldName
+     * @returns
      */
     private _adaptField(fieldName: string) {
         if (this.opt.useCamelCase) {
             return Case.camel(fieldName);
-        }
-        else {
+        } else {
             return Case.snake(fieldName);
         }
     }

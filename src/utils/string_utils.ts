@@ -12,7 +12,7 @@ export default class StringUtils {
      */
     static getIndentationLevels(indentSize: number): [string, string, string, string, string] {
         return [
-            "",                          // Represents zero indentation.
+            "", // Represents zero indentation.
             " ".repeat(indentSize),
             " ".repeat(indentSize * 2),
             " ".repeat(indentSize * 3),

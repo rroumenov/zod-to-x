@@ -189,16 +189,17 @@ Common options:
 | `z.nativeEnum()`      | Native `enum`               | `enum`                                        | `enum class T: int`
 | `z.array()`           | `T[]`                       | `repeated` field                              | `std::vector<T>`
 | `z.set()`             | `Set<T>`                    | `repeated` field                              | `std::set<T>`
-| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field                              | `std::tuple<T>`
+| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field <sup>(1)</sup>                              | `std::tuple<T>`
 | `z.object()`          | `interface` or `class`      | `message`                                     | `struct` or `class`
 | `z.record()`          | `Record<string, T>`         | `map<string, K>`                              | `std::unordered_map<T>`
 | `z.union()`           | `T1 \| T2` or `type`        | `oneof`                                       | `boost::variant<T, K>`
-| `z.intersection()` (*)| `T1 & T2` or `type`         | Not supported                                 | `struct` or `class` with `inheritance`
+| `z.intersection()` <sup>(2)</sup>| `T1 & T2` or `type`         | Not supported                                 | `struct` or `class` with `inheritance`
 | `z.any()`             | `any`                       | `google.protobuf.Any`                         | `nlohmann::json`
 | `z.optional()`        | `T \| undefined`            | Not supported                                 | `boost::optional<T>`
 | `z.nullable()`        | `T \| null`                 | Not supported                                 | `boost::optional<T>`
 
-(*) Consider to use Zod's merge instead of ZodIntersection when possible.
+<sup>(1)</sup> Only for tuple with items of the same type.  
+<sup>(2)</sup> Consider to use Zod's merge instead of ZodIntersection when possible.
 
 ## Additional utils
 - `zod2JsonSchemaDefinitions`  

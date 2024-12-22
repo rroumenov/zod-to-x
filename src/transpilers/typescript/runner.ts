@@ -1,33 +1,45 @@
-import Case from 'case';
+import Case from "case";
 
 import {
-    ASTCommon, ASTDefintion, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum,
-    ASTNode, ASTObject, ASTUnion, IZodToXOpt, TranspilerableTypes, Zod2X
-} from '@/core';
+    ASTCommon,
+    ASTDefintion,
+    ASTDiscriminatedUnion,
+    ASTEnum,
+    ASTIntersection,
+    ASTNativeEnum,
+    ASTNode,
+    ASTObject,
+    ASTUnion,
+    IZodToXOpt,
+    TranspilerableTypes,
+    Zod2X,
+} from "@/core";
 
 interface IZod2TsOpt extends IZodToXOpt {
     /**
      * Output transpilation using Typescript interfaces or Classes.
      */
-    outType?: 'interface' | 'class'
+    outType?: "interface" | "class";
 }
 
 const defaultOpts: IZod2TsOpt = {
     includeComments: true,
     indent: 4,
     skipDiscriminatorNodes: false,
-    
-    outType: 'interface',
-}
 
-export class Zod2Ts extends Zod2X<IZod2TsOpt>
-{
+    outType: "interface",
+};
+
+export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     constructor(opt: IZod2TsOpt = {}) {
-        super({
-            enableCompositeTypes: true
-        }, { ...defaultOpts, ...opt });
+        super(
+            {
+                enableCompositeTypes: true,
+            },
+            { ...defaultOpts, ...opt }
+        );
     }
-    
+
     protected runAfter(): void {}
     protected runBefore(): void {}
 
@@ -42,11 +54,11 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
     protected getStringType = (): string => "string";
 
     /** Ex: [TypeA, TypeB] */
-    protected getTupleType = (itemsType: string[]): string => `[${itemsType.join(', ')}]`;
+    protected getTupleType = (itemsType: string[]): string => `[${itemsType.join(", ")}]`;
 
     /** Ex: TypeA | TypeB */
     protected getUnionType = (itemsType: string[]): string => itemsType.join(" | ");
-    
+
     /** Ex: TypeA & TypeB */
     protected getIntersectionType = (itemsType: string[]): string => itemsType.join(" & ");
 
@@ -54,16 +66,15 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
 
     /** Ex: Array<Array<TypeA[]>> */
     protected getArrayType(arrayType: string, arrayDeep: number): string {
-        let output = (
+        let output =
             arrayType.includes("|") || arrayType.includes("&")
-            ? `(${arrayType})[]`
-            : `${arrayType}[]`
-        );
+                ? `(${arrayType})[]`
+                : `${arrayType}[]`;
 
         for (let i = 0; i < arrayDeep - 1; i++) {
             output = `Array<${output}>`;
         }
-        
+
         return output;
     }
 
@@ -90,16 +101,15 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
         this.addComment(data.description);
 
-        
         this.push0(`export enum ${data.name} {`);
 
-        data.values.forEach(i => {
+        data.values.forEach((i) => {
             // If enum key starts with number, it is stored between quotes.
             const keyValue = isNaN(Number(i[0].at(0))) ? i[0] : `"${i[0]}"`;
 
             // Enum value is stored between quotes if not nativeEnum.
-            const enumValue = typeof i[1] === 'string' ? `"${i[1]}"` : `${i[1]}`;
-            
+            const enumValue = typeof i[1] === "string" ? `"${i[1]}"` : `${i[1]}`;
+
             this.push1(`${keyValue} = ${enumValue},`);
         });
 
@@ -111,7 +121,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
         this.addComment(data.description);
 
         const attributesTypes = [data.left, data.right].map(this.getAttributeType.bind(this));
-        
+
         this.push0(`export type ${data.name} = ${this.getIntersectionType(attributesTypes)};\n`);
     }
 
@@ -120,8 +130,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
 
         if (this.opt.outType === "class") {
             this._transpileStructAsClass(data);
-        }
-        else {
+        } else {
             this._transpileStructuAsInterface(data);
         }
     }
@@ -129,9 +138,9 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
     /** Ex: type TypeC = TypeA | TypeB */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
         this.addComment(data.description);
-        
+
         const attributesTypes = data.options.map(this.getAttributeType.bind(this));
-        
+
         this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
     }
 
@@ -144,7 +153,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
     private _transpileStructuAsInterface(data: ASTObject & ASTCommon) {
         this.push0(`export interface ${data.name} {`);
 
-        for(const [key, value] of Object.entries(data.properties)) {
+        for (const [key, value] of Object.entries(data.properties)) {
             this._transpileMember(Case.camel(key), value);
         }
 
@@ -155,7 +164,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
      *  class MyStruct {
      *      att1: TypeA;
      *      att2?: TypeB;
-     * 
+     *
      *      constructor(data: MyStruct) {
      *          this.att1 = data.att1;
      *          this.att2 = data.att2;
@@ -166,14 +175,14 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
         this.push0(`export class ${data.name} {`);
         const constructorBody: string[] = [];
 
-        for(const [key, value] of Object.entries(data.properties)) {
+        for (const [key, value] of Object.entries(data.properties)) {
             this._transpileMember(key, value);
             constructorBody.push(`this.${key} = data.${key};`);
         }
 
         this.push0("");
         this.push1(`constructor(data: ${data.name}) {`);
-        constructorBody.forEach(i => this.push2(i));
+        constructorBody.forEach((i) => this.push2(i));
         this.push1("}");
 
         this.push0("}\n");
@@ -181,15 +190,15 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt>
 
     /** For Interface/Class attributes.
      *  Ex: attribute1?: TypeA | null */
-    private _transpileMember(memberName: string, memberNode: ASTNode)
-    {
+    private _transpileMember(memberName: string, memberNode: ASTNode) {
         const keyName = memberNode.isOptional ? `${memberName}?: ` : `${memberName}: `;
         const setNullable = memberNode.isNullable ? " | null" : "";
 
-        if (memberNode.description &&
+        if (
+            memberNode.description &&
             !(memberNode as ASTDefintion).reference &&
-            !this.isTranspilerable(memberNode as TranspilerableTypes))
-        {
+            !this.isTranspilerable(memberNode as TranspilerableTypes)
+        ) {
             // Avoid duplicated descriptions for transpiled items.
             this.addComment(memberNode.description, `\n${this.indent[1]}`);
         }
