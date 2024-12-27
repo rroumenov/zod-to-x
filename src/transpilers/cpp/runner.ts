@@ -92,8 +92,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         return "std::string";
     };
 
-    /** Ex: std::tuple<TypeA> */
-    protected getTupleType = (itemsType: string[]) => `std::tuple<${itemsType.join(", ")}>`;
+    /** Ex: std::tuple<TypeA, TypeB, ...> */
+    protected getTupleType = (itemsType: string[]) => {
+        this.imports.add(LIB.tuple);
+        return `std::tuple<${itemsType.join(", ")}>`;
+    };
 
     protected getAnyType = () => {
         this.imports.add(LIB.nlohmann);
@@ -185,7 +188,6 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.push0(`enum class ${data.name}: int {`);
         data.values.forEach(([key, value], index) => {
             key = Case.pascal(key);
-            value = isNaN(Number(value)) ? value : key; // In case of nativeEnum, key is used as string
 
             const separator = index + 1 == data.values.length ? "" : ",";
             this.push1(`${key}${separator}`);
@@ -569,10 +571,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         this._push1(this.serializers, `switch (x) {`);
         childs.forEach((i) => {
-            this._push2(
-                this.serializers,
-                `case ${parent}::${i.enumName}: j = "${i.origValue}"; break;`
-            );
+            const value = isNaN(Number(i.origValue)) ? `"${i.origValue}"` : i.origValue;
+            this._push2(this.serializers, `case ${parent}::${i.enumName}: j = ${value}; break;`);
         });
         this._push2(
             this.serializers,
@@ -602,15 +602,14 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
         childs.forEach((i, index) => {
+            const value = isNaN(Number(i.origValue)) ? `"${i.origValue}"` : i.origValue;
+
             if (index === 0) {
-                this._push1(
-                    this.serializers,
-                    `if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
-                );
+                this._push1(this.serializers, `if (j == ${value}) x = ${parent}::${i.enumName};`);
             } else {
                 this._push1(
                     this.serializers,
-                    `else if (j == "${i.origValue}") x = ${parent}::${i.enumName};`
+                    `else if (j == ${value}) x = ${parent}::${i.enumName};`
                 );
             }
         });

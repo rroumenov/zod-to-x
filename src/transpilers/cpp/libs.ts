@@ -7,6 +7,7 @@ export const LIB = {
     optional: "#include <boost/optional.hpp>",
     set: "#include <set>",
     string: "#include <string>",
+    tuple: "#include <tuple>",
     variant: "#include <boost/variant.hpp>",
     vector: "#include <vector>",
 };

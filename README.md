@@ -180,8 +180,8 @@ Common options:
 | Zod Type              | TypeScript                  | Protobuf                                      | C++                                           |
 |-----------------------|-----------------------------|-----------------------------------------------|-----------------------------------------------|
 | `z.string()`          | `string`                    | `string`                                      | `std::string`
-| `z.number()`          | `number`                    | `double`, `uint32`, `uint64`, `ìnt32`, `int64`| `double`, `uint32`, `uint64`, `ìnt32`, `int64`
-| `z.bigint()`          | `number`                    | `int64`, `uint64`                             | `int64`, `uint64`
+| `z.number()`          | `number`                    | `double`, `uint32`, `uint64`, `ìnt32`, `int64`| `double`, `uint32_t`, `uint64_t`, `ìnt32_t`, `int64_t`
+| `z.bigint()`          | `number`                    | `int64`, `uint64`                             | `int64_t`, `uint64_t`
 | `z.boolean()`         | `boolean`                   | `bool`                                        | `bool`
 | `z.date()`            | `Date`                      | `google.protobuf.Timestamp`                   | Not supported
 | `z.literal()`         | Literal value (`'value'`)   | As number or string                           | As string
@@ -189,9 +189,10 @@ Common options:
 | `z.nativeEnum()`      | Native `enum`               | `enum`                                        | `enum class T: int`
 | `z.array()`           | `T[]`                       | `repeated` field                              | `std::vector<T>`
 | `z.set()`             | `Set<T>`                    | `repeated` field                              | `std::set<T>`
-| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field <sup>(1)</sup>                              | `std::tuple<T>`
+| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field <sup>(1)</sup>                              | `std::tuple<T1, T2, T3>`
 | `z.object()`          | `interface` or `class`      | `message`                                     | `struct` or `class`
 | `z.record()`          | `Record<string, T>`         | `map<string, K>`                              | `std::unordered_map<T>`
+| `z.map()`             | `Map<string, T>`            | `map<string, K>`                              | `std::unordered_map<T>`
 | `z.union()`           | `T1 \| T2` or `type`        | `oneof`                                       | `boost::variant<T, K>`
 | `z.intersection()` <sup>(2)</sup>| `T1 & T2` or `type`         | Not supported                                 | `struct` or `class` with `inheritance`
 | `z.any()`             | `any`                       | `google.protobuf.Any`                         | `nlohmann::json`
