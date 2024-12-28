@@ -16,7 +16,7 @@ import {
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 
-import { LIB, USING } from "./libs";
+import { getLibs, USING } from "./libs";
 import { getNlohmannOptionalHelper } from "./nlohmann";
 import { defaultOpts, IZod2CppOpt } from "./options";
 
@@ -34,10 +34,16 @@ interface IEnumItemSerialData {
     enumName: string;
 }
 
+/**
+ * @description Transpiler for Zod schemas to C++11 code.
+ */
 export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
-    private serializers: string[];
+    protected serializers: string[];
 
-    constructor(opt = {}) {
+    protected useBoost: boolean;
+    protected lib;
+
+    constructor(opt: IZod2CppOpt = {}) {
         super(
             {
                 enableCompositeTypes: false,
@@ -48,6 +54,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.imports.add("#pragma once\n");
 
         this.serializers = [];
+        this.useBoost = true;
+        this.lib = getLibs(this.useBoost);
     }
 
     protected getIntersectionType = (): string => {
@@ -64,13 +72,15 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.output.push("}");
 
         if (this.opt.skipSerialize !== true && this.serializers.length > 0) {
-            this.imports.add(LIB.nlohmann);
+            this.imports.add(this.lib.nlohmann);
 
             this.output.push("");
             this.output.push(`namespace ${this.opt.namespace} {`);
 
-            if (this.imports.has(LIB.optional) && !this.opt.includeNulls) {
-                this.serializers.unshift(...getNlohmannOptionalHelper(this.opt.indent as number));
+            if (this.imports.has(this.lib.optional) && !this.opt.includeNulls) {
+                this.serializers.unshift(
+                    ...getNlohmannOptionalHelper(this.opt.indent as number, this.useBoost)
+                );
             }
 
             this.serializers = this.serializers.map((i) => `${this.indent[1]}${i}`);
@@ -78,7 +88,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.output.push("}");
         }
 
-        if (this.imports.has(LIB.nlohmann)) {
+        if (this.imports.has(this.lib.nlohmann)) {
             this.imports.add(`\n${USING.nlohmann}`);
         }
     }
@@ -88,30 +98,30 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected getBooleanType = () => "bool";
 
     protected getStringType = () => {
-        this.imports.add(LIB.string);
+        this.imports.add(this.lib.string);
         return "std::string";
     };
 
     /** Ex: std::tuple<TypeA, TypeB, ...> */
     protected getTupleType = (itemsType: string[]) => {
-        this.imports.add(LIB.tuple);
+        this.imports.add(this.lib.tuple);
         return `std::tuple<${itemsType.join(", ")}>`;
     };
 
     protected getAnyType = () => {
-        this.imports.add(LIB.nlohmann);
+        this.imports.add(this.lib.nlohmann);
         return "json";
     };
 
     /** Ex: std::set<TypeA> */
     protected getSetType = (itemType: string) => {
-        this.imports.add(LIB.set);
+        this.imports.add(this.lib.set);
         return `std::set<${itemType}>`;
     };
 
     /** Ex: boost::variant<TypeA, TypeB> */
     protected getUnionType = (itemsType: string[]) => {
-        this.imports.add(LIB.variant);
+        this.imports.add(this.lib.variant);
         return `boost::variant<${itemsType.join(", ")}>`;
     };
 
@@ -127,7 +137,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             return "double";
         }
 
-        this.imports.add(LIB.integers);
+        this.imports.add(this.lib.integers);
 
         if (range?.min! >= UINT32_RANGES[0]) {
             if (range?.max! <= UINT32_RANGES[1]) {
@@ -146,7 +156,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: std::vector<std::vector<TypeA>> */
     protected getArrayType(arrayType: string, arrayDeep: number) {
-        this.imports.add(LIB.vector);
+        this.imports.add(this.lib.vector);
 
         let output = `std::vector<${arrayType}>`;
         for (let i = 0; i < arrayDeep - 1; i++) {
@@ -166,12 +176,17 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: std::unordered_map<TypeA> */
     protected getMapType(keyType: string, valueType: string) {
-        this.imports.add(LIB.map);
+        this.imports.add(this.lib.map);
         return `std::unordered_map<${keyType}, ${valueType}>`;
     }
 
     protected getRecordType(keyType: string, valueType: string) {
         return this.getMapType(keyType, valueType);
+    }
+
+    protected _getOptional(type: string) {
+        this.imports.add(this.lib.optional);
+        return `boost::optional<${type}>`;
     }
 
     /** Ex:
@@ -390,8 +405,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
 
         if (memberNode.isOptional || memberNode.isNullable) {
-            this.imports.add(LIB.optional);
-            keyType = `boost::optional<${keyType}>`;
+            keyType = this._getOptional(keyType);
         }
 
         this.push1(`${keyType} ${Case.snake(memberName)};`);
@@ -425,7 +439,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 `void set_${memberName}(const ${memberType}& value) { this->${memberName} = value; }`
             );
         } else {
-            const fullType = `boost::optional<${memberType}>`;
+            const fullType = this._getOptional(memberType);
             result.push(`${fullType} get_${memberName}() const { return this->${memberName}; }`);
             result.push(
                 `void set_${memberName}(${fullType} value) { this->${memberName} = value; }`
@@ -566,7 +580,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Enumerate values data.
      */
     private _createEnumSerializer(parent: string, childs: IEnumItemSerialData[]) {
-        this.imports.add(LIB.exceptions);
+        this.imports.add(this.lib.exceptions);
 
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         this._push1(this.serializers, `switch (x) {`);
@@ -598,7 +612,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Enumerate values data.
      */
     private _createEnumDeserializer(parent: string, childs: IEnumItemSerialData[]) {
-        this.imports.add(LIB.exceptions);
+        this.imports.add(this.lib.exceptions);
 
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
         childs.forEach((i, index) => {
@@ -690,7 +704,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * //     }
      * // }
      */
-    private _createUnionSerializer(unionName: string, itemsType: string[]) {
+    protected _createUnionSerializer(unionName: string, itemsType: string[]) {
+        this.imports.add(this.lib.exceptions);
+
         this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
 
         itemsType.forEach((i, index) => {
@@ -767,6 +783,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         items: Array<{ type: string; discriminantValue?: string }>,
         discriminator?: string
     ) {
+        this.imports.add(this.lib.exceptions);
+
         this._push0(this.serializers, `inline void from_json(const json& j, ${unionName}& x) {`);
 
         const useDiscriminator = discriminator && items.every((i) => i.discriminantValue);
@@ -832,7 +850,84 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     // Push with indentation helpers for additional outputs
-    private _push0 = (item: string[], data: string) => item.push(`${this.indent[0]}${data}`);
-    private _push1 = (item: string[], data: string) => item.push(`${this.indent[1]}${data}`);
-    private _push2 = (item: string[], data: string) => item.push(`${this.indent[2]}${data}`);
+    protected _push0 = (item: string[], data: string) => item.push(`${this.indent[0]}${data}`);
+    protected _push1 = (item: string[], data: string) => item.push(`${this.indent[1]}${data}`);
+    protected _push2 = (item: string[], data: string) => item.push(`${this.indent[2]}${data}`);
+    protected _push3 = (item: string[], data: string) => item.push(`${this.indent[3]}${data}`);
+    protected _push4 = (item: string[], data: string) => item.push(`${this.indent[4]}${data}`);
+}
+
+/**
+ * @description Transpiler for Zod schemas to C++17 code.
+ */
+export class Zod2Cpp17 extends Zod2Cpp {
+    constructor(opt: IZod2CppOpt = {}) {
+        super(opt);
+
+        this.useBoost = false;
+        this.lib = getLibs(this.useBoost);
+    }
+
+    /** Ex: std::variant<TypeA, TypeB> */
+    protected override getUnionType = (itemsType: string[]) => {
+        this.imports.add(this.lib.variant);
+        return `std::variant<${itemsType.join(", ")}>`;
+    };
+
+    protected override _getOptional(type: string) {
+        this.imports.add(this.lib.optional);
+        return `std::optional<${type}>`;
+    }
+
+    /**
+     * @description Generates a `to_json` function for a specified union type, allowing the JSON
+     *              library to correctly serialize any variant within the union.
+     *
+     * @param unionName The name of the union type.
+     * @param itemsType A list of all variant types contained in the union.
+     *
+     * @example
+     * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
+     * // The generated output might look like:
+     * //
+     * // inline void to_json(json& j, const MyUnion& x) {
+     * //     std::visit(
+     * //         [&j](auto&& arg) {
+     * //             using T = std::decay_t<decltype(arg)>;
+     * //             if constexpr (std::is_same_v<T, int>) {
+     * //                 j = arg;
+     * //             } else if constexpr (std::is_same_v<T, std::string>) {
+     * //                 j = arg;
+     * //             } else {
+     * //                 throw std::runtime_error("Unknown MyUnion type.");
+     * //             }
+     * //         },
+     * //         x
+     * //     );
+     * // }
+     */
+    protected override _createUnionSerializer(unionName: string, itemsType: string[]) {
+        this.imports.add(this.lib.exceptions);
+
+        this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
+        this._push1(this.serializers, `std::visit(`);
+        this._push2(this.serializers, `[&j](auto&& arg) {`);
+        this._push3(this.serializers, `using T = std::decay_t<decltype(arg)>;`);
+
+        itemsType.forEach((i, index) => {
+            const condition = (index === 0 ? "if" : "else if") + " constexpr";
+            this._push3(this.serializers, `${condition} (std::is_same_v<T, ${i}>) {`);
+            this._push4(this.serializers, `j = arg;`);
+            this._push3(this.serializers, `}`);
+        });
+
+        this._push3(this.serializers, `else {`);
+        this._push4(this.serializers, `throw std::runtime_error("Unknown ${unionName} type.");`);
+        this._push3(this.serializers, `}`);
+
+        this._push2(this.serializers, `},`);
+        this._push2(this.serializers, `x`);
+        this._push1(this.serializers, `);`);
+        this._push0(this.serializers, `}\n`);
+    }
 }
