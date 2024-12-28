@@ -6,17 +6,17 @@ import { ZodFirstPartyTypeKind } from "zod";
  */
 export type ASTLiteral = {
     type: ZodFirstPartyTypeKind.ZodLiteral;
-    value: any
+    value: any;
 };
 
 export type ASTNumber = {
     type: ZodFirstPartyTypeKind.ZodNumber;
-    constraints: { min?: number, max?: number, isInt: boolean }
+    constraints: { min?: number; max?: number; isInt: boolean };
 };
 
 export type ASTSet = {
     type: ZodFirstPartyTypeKind.ZodSet;
-    value: ASTNode
+    value: ASTNode;
 };
 
 export type ASTTuple = {
@@ -27,13 +27,13 @@ export type ASTTuple = {
 export type ASTRecord = {
     type: ZodFirstPartyTypeKind.ZodRecord;
     key: ASTNode;
-    value: ASTNode
+    value: ASTNode;
 };
 
 export type ASTMap = {
     type: ZodFirstPartyTypeKind.ZodMap;
     key: ASTNode;
-    value: ASTNode
+    value: ASTNode;
 };
 
 export type ASTEnum = {
@@ -57,7 +57,7 @@ export type ASTObject = {
 export type ASTUnion = {
     type: ZodFirstPartyTypeKind.ZodUnion;
     name: string;
-    options: ASTNode[]
+    options: ASTNode[];
 };
 
 export type ASTDiscriminatedUnion = {
@@ -82,56 +82,51 @@ export type ASTCommon = {
     description?: string;
     isNullable?: boolean;
     isOptional?: boolean;
-}
+};
 
 /**
- * Represents a type definition in the AST. Used to reduce node size and identify 
+ * Represents a type definition in the AST. Used to reduce node size and identify
  * schemas that can be referenced in a transpilation process.
  */
-export type ASTDefintion = ASTCommon & ({
+export type ASTDefintion = ASTCommon & {
     type: "definition";
     reference: string;
     referenceType: ZodFirstPartyTypeKind;
     discriminantValue?: string;
-})
+};
 
 /**
  * Represents a general AST node, encompassing various Zod schema types.
  */
-export type ASTNode = ASTCommon & (
-    { type: ZodFirstPartyTypeKind.ZodString } |
-    { type: ZodFirstPartyTypeKind.ZodBoolean } |
-    { type: ZodFirstPartyTypeKind.ZodDate } |
-    { type: ZodFirstPartyTypeKind.ZodAny } |
-    { type: ZodFirstPartyTypeKind.ZodLazy; getType: () => ASTNode } |
-    ASTLiteral |
-    ASTNumber |
-    ASTSet |
-    ASTTuple |
-    ASTRecord |
-    ASTMap |
-    ASTDefintion |
+export type ASTNode = ASTCommon &
+    (
+        | { type: ZodFirstPartyTypeKind.ZodString }
+        | { type: ZodFirstPartyTypeKind.ZodBoolean }
+        | { type: ZodFirstPartyTypeKind.ZodDate }
+        | { type: ZodFirstPartyTypeKind.ZodAny }
+        | { type: ZodFirstPartyTypeKind.ZodLazy; getType: () => ASTNode }
+        | ASTLiteral
+        | ASTNumber
+        | ASTSet
+        | ASTTuple
+        | ASTRecord
+        | ASTMap
+        | ASTDefintion
 
-    // Types that may not require explicit definitions in some languages (allowed composite types)
-    // (e.g., unions or intersections in TypeScript).
-    ASTUnion |
-    ASTDiscriminatedUnion |
-    ASTIntersection
-);
+        // Types that may not require explicit definitions in some languages (allowed composite types)
+        // (e.g., unions or intersections in TypeScript).
+        | ASTUnion
+        | ASTDiscriminatedUnion
+        | ASTIntersection
+    );
 
 /**
  * Represents schemas that can be directly transpiled into types in other programming languages.
  */
-export type TranspilerableTypes = ASTCommon & (
-    ASTEnum |
-    ASTNativeEnum |
-    ASTObject |
-    ASTUnion |
-    ASTDiscriminatedUnion |
-    ASTIntersection
-)
+export type TranspilerableTypes = ASTCommon &
+    (ASTEnum | ASTNativeEnum | ASTObject | ASTUnion | ASTDiscriminatedUnion | ASTIntersection);
 
 export type ASTNodes = {
     nodes: TranspilerableTypes[];
     discriminatorNodes: TranspilerableTypes[];
-}
+};

@@ -2,74 +2,308 @@ import { z } from "zod";
 import { extendZod, ASTNodes, Zod2Ast, Zod2ProtoV3 } from "../../dist";
 extendZod(z);
 
-import * as fs from 'fs';
+import * as fs from "fs";
 import { diffLinesRaw } from "jest-diff";
 import * as pb from "protobufjs";
 
-import { BasicTypes } from "../data/basic_schemas";
 import { header } from "../data/header";
 import { ShopAccountModel } from "../data/shop_account_schema";
+import * as schemas from "../data/zod_schemas";
 
 let shopAccountNodes: ASTNodes;
 
-describe('Zod2Proto3', () => {
+const testOutput = (output: string, expectedOutput: string) => {
+    try {
+        expect(output.trim()).toBe(expectedOutput.trim());
+    } catch (error) {
+        diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
+        throw error;
+    }
+};
 
+describe("Zod2Proto3", () => {
     beforeAll(() => {
         shopAccountNodes = new Zod2Ast().build(ShopAccountModel);
     });
-  
-    test('Basic Types', () => {
-        // Validate that expected proto file is a valid one.
-        pb.loadSync("./test/test_zod2proto3/basic_schemas.expect.proto");
 
-        const basicTypesNodes = new Zod2Ast().build(BasicTypes);
-        const output = new Zod2ProtoV3({header}).transpile(basicTypesNodes);
-        const expectedOutput = fs.readFileSync("./test/test_zod2proto3/basic_schemas.expect.proto").toString();
-        
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        }
-        catch(error) {
-            diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
-            fs.writeFileSync("./test/test_zod2proto3/err-basic_schemas.expect.proto", output);
-            throw error;
-        }
+    test("String Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zString));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
     });
 
-    test('Shop Account', () => {
+    test("Literal String Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralString));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Literal Number Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralNumber));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  uint32 item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Enum Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zEnum));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "enum EnumItem {\n" +
+            "  Enum1 = 0;\n" +
+            "  Enum2 = 1;\n" +
+            "  Enum3 = 2;\n" +
+            "}\n\n" +
+            "message ModelItem {\n" +
+            "  EnumItem item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Native Enum Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zNativeEnum));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "enum NativeEnumItem {\n" +
+            "  NativeEnum1 = 0;\n" +
+            "  NativeEnum2 = 1;\n" +
+            "  NativeEnum3 = 2;\n" +
+            "}\n\n" +
+            "message ModelItem {\n" +
+            "  NativeEnumItem item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Number Schema as Double", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDouble));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  double item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Number Schema as BigInt", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zBigInt));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Number Schema as Int64", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zInt64));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Number Schema as Int32", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zInt32));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int32 item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Boolean Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zBoolean));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  bool item = 1;\n" + "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Object Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zObject));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItem {\n" +
+            "  string key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message ModelItem {\n" +
+            "  ObjectItem item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Date Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDate));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            'import "google/protobuf/timestamp.proto";\n\n' +
+            "message ModelItem {\n" +
+            "  google.protobuf.Timestamp item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Array Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zArray1D));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ModelItem {\n" +
+            "  repeated double item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Record Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zRecord));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ModelItem {\n" +
+            "  map<string, double> item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Map Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zMap));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ModelItem {\n" +
+            "  map<string, double> item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Set Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zSet));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ModelItem {\n" +
+            "  repeated string item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Tuple Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zTuple));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ModelItem {\n" +
+            "  repeated double item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Union Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zUnionWithDef));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItem {\n" +
+            "  string key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message OtherObjectItem {\n" +
+            "  string key = 1;\n" +
+            "  string other_key = 2;\n" +
+            "  string discriminator = 3;\n" +
+            "}\n\n" +
+            "message UnionItem {\n" +
+            "  oneof union_item_oneof {\n" +
+            "    ObjectItem object_item = 1;\n" +
+            "    OtherObjectItem other_object_item = 2;\n" +
+            "  }\n" +
+            "}\n\n" +
+            "message ModelItem {\n" +
+            "  UnionItem item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Any Schema", () => {
+        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zAny));
+        const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            'import "google/protobuf/any.proto";\n\n' +
+            "message ModelItem {\n" +
+            "  google.protobuf.Any item = 1;\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Shop Account", () => {
         // Validate that expected proto file is a valid one.
         pb.loadSync("./test/test_zod2proto3/shop_account_schema.expect.proto");
 
-        const output = new Zod2ProtoV3({packageName: "shopaccount"}).transpile(shopAccountNodes);
-        const expectedOutput =
-            fs.readFileSync("./test/test_zod2proto3/shop_account_schema.expect.proto").toString();
-        
+        const output = new Zod2ProtoV3({
+            header,
+            packageName: "shopaccount",
+        }).transpile(shopAccountNodes);
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2proto3/shop_account_schema.expect.proto")
+            .toString();
+
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
-        }
-        catch(error) {
-            diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
+        } catch (error) {
+            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
             fs.writeFileSync("./test/test_zod2proto3/err-shop_account_schema.expect.proto", output);
             throw error;
         }
     });
 
-    test('Shop Account camelCase', () => {
+    test("Shop Account camelCase", () => {
         // Validate that expected proto file is a valid one.
         pb.loadSync("./test/test_zod2proto3/shop_account_schema.expect_camel.proto");
 
-        const output = new Zod2ProtoV3({packageName: "shopaccount", useCamelCase: true})
-                            .transpile(shopAccountNodes);
-        const expectedOutput =
-            fs.readFileSync("./test/test_zod2proto3/shop_account_schema.expect_camel.proto").toString();
-        
+        const output = new Zod2ProtoV3({
+            header,
+            packageName: "shopaccount",
+            useCamelCase: true,
+        }).transpile(shopAccountNodes);
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2proto3/shop_account_schema.expect_camel.proto")
+            .toString();
+
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
-        }
-        catch(error) {
-            diffLinesRaw(output.split('\n'), expectedOutput.split('\n'));
-            fs.writeFileSync("./test/test_zod2proto3/err-shop_account_schema.expect_camel.proto", output);
+        } catch (error) {
+            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2proto3/err-shop_account_schema.expect_camel.proto",
+                output
+            );
             throw error;
         }
     });
-  });
+});

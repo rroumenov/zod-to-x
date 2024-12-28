@@ -1,3 +1,6 @@
+// This is
+// a multiline
+// header.
 syntax = "proto3";
 
 package shopaccount;

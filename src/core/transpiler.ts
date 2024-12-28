@@ -1,11 +1,19 @@
-import { ZodFirstPartyTypeKind } from 'zod';
+import { ZodFirstPartyTypeKind } from "zod";
 
-import StringUtils, { TIndentationLevels } from '@/utils/string_utils';
+import StringUtils, { TIndentationLevels } from "@/utils/string_utils";
 
 import {
-    ASTCommon, ASTDiscriminatedUnion, ASTEnum, ASTIntersection, ASTNativeEnum, ASTNode, ASTNodes,
-    ASTObject, ASTUnion, TranspilerableTypes
-} from './ast_types';
+    ASTCommon,
+    ASTDiscriminatedUnion,
+    ASTEnum,
+    ASTIntersection,
+    ASTNativeEnum,
+    ASTNode,
+    ASTNodes,
+    ASTObject,
+    ASTUnion,
+    TranspilerableTypes,
+} from "./ast_types";
 
 /**
  * Optional user settings
@@ -46,29 +54,29 @@ interface IInternalOpts {
      * Indicates whether the target language supports composite types like unions and intersections
      * directly, allowing variables to be typed as a union or intersection of other types without
      * the need to define a new type.
-     * 
+     *
      * **Explanation:**
      * Some languages allow you to declare a variable with a type that is a union (`|`) or
      * intersection (`&`) of multiple types without the need to create a specific composite type
      * beforehand. This provides flexibility in type definitions and reduces the need for
      * boilerplate code.
-     * 
+     *
      * **Examples:**
-     * 
+     *
      * **TypeScript:**
      * ```typescript
      * // Union type: var1 can be either TypeA or TypeB
      * let var1: TypeA | TypeB;
-     * 
+     *
      * // Intersection type: var2 must satisfy both TypeA and TypeB
      * let var2: TypeA & TypeB;
      * ```
-     * 
+     *
      * **C++ (not directly supported):**
      * C++ does not support defining a variable as a union or intersection of types without creating
      * a specific type first. Instead, you need to define a new type (e.g., using `union`, `struct`,
      * or inheritance) before declaring a variable.
-     * 
+     *
      * *Union equivalent:*
      * ```cpp
      * // Define a union type
@@ -76,34 +84,32 @@ interface IInternalOpts {
      *     TypeA a;
      *     TypeB b;
      * };
-     * 
+     *
      * // Declare a variable of the union type
      * AorB var1;
      * ```
-     * 
+     *
      * *Intersection equivalent (using multiple inheritance):*
      * ```cpp
      * // Define a struct that inherits from both TypeA and TypeB
      * struct AandB : public TypeA, public TypeB {};
-     * 
+     *
      * // Declare a variable of the intersection type
      * AandB var2;
      * ```
-     * 
+     *
      * **Note:** Because of these differences, when transpiling to languages like C++, keep this
-     * flag disabled to ensure that 'typeName' is required also for ZodUnions and ZodIntersections. 
+     * flag disabled to ensure that 'typeName' is required also for ZodUnions and ZodIntersections.
      */
     enableCompositeTypes: boolean;
 }
-
 
 /**
  * Abstract base class for transpiling Zod schemas into other programming languages.
  * Extend this class and implement the abstract methods to define how each Zod type
  * should be converted to the target language's syntax.
  */
-export abstract class Zod2X<T extends IZodToXOpt>
-{    
+export abstract class Zod2X<T extends IZodToXOpt> {
     protected output: string[];
     protected indent: TIndentationLevels;
     protected imports: Set<string>;
@@ -148,7 +154,7 @@ export abstract class Zod2X<T extends IZodToXOpt>
      * @param isInt - Indicates if the number is an integer.
      * @param range - Optional range constraints for the number.
      */
-    protected abstract getNumberType(isInt: boolean, range: {min?: number, max?: number}): string;
+    protected abstract getNumberType(isInt: boolean, range: { min?: number; max?: number }): string;
 
     /**
      * Returns the representation of a literal string or number in the target language.
@@ -253,11 +259,10 @@ export abstract class Zod2X<T extends IZodToXOpt>
             token.type === ZodFirstPartyTypeKind.ZodEnum ||
             token.type === ZodFirstPartyTypeKind.ZodNativeEnum ||
             token.type === ZodFirstPartyTypeKind.ZodObject ||
-            (token.name && (
-                token.type === ZodFirstPartyTypeKind.ZodUnion ||
-                token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
-                token.type === ZodFirstPartyTypeKind.ZodIntersection)
-            )
+            (token.name &&
+                (token.type === ZodFirstPartyTypeKind.ZodUnion ||
+                    token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
+                    token.type === ZodFirstPartyTypeKind.ZodIntersection))
         );
     }
 
@@ -286,7 +291,7 @@ export abstract class Zod2X<T extends IZodToXOpt>
         if (!this.inOpt.enableCompositeTypes) {
             throw new Error(
                 `Composite Types cannot be performed for this output Language. ` +
-                `Add the missing 'typeName' to transpilerable schemas`
+                    `Add the missing 'typeName' to transpilerable schemas`
             );
         }
     }
@@ -297,73 +302,61 @@ export abstract class Zod2X<T extends IZodToXOpt>
      * @returns A string representing the type in the target language.
      */
     protected getAttributeType(token: ASTNode | TranspilerableTypes) {
-
         let varType: string = "";
 
         if (this.isTranspilerable(token as TranspilerableTypes)) {
             varType = (token as TranspilerableTypes).name as string;
-        }
-        else if (token.type === "definition") {
+        } else if (token.type === "definition") {
             varType = token.reference;
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodString) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodString) {
             varType = this.getStringType();
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodBoolean) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodBoolean) {
             varType = this.getBooleanType();
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodAny) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodAny) {
             varType = this.getAnyType();
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodDate) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodDate) {
             varType = this.getDateType();
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodLiteral) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodLiteral) {
             varType = this.getLiteralStringType(token.value) as string;
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodSet) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodSet) {
             varType = this.getSetType(this.getAttributeType(token.value));
-        }
-        else if(token.type === ZodFirstPartyTypeKind.ZodNumber)
-        {
-            varType = this.getNumberType(
-                token.constraints.isInt, { min: token.constraints.min, max: token.constraints.max }
-            );
-        }
-        else if (token.type === ZodFirstPartyTypeKind.ZodTuple) {
+        } else if (token.type === ZodFirstPartyTypeKind.ZodNumber) {
+            varType = this.getNumberType(token.constraints.isInt, {
+                min: token.constraints.min,
+                max: token.constraints.max,
+            });
+        } else if (token.type === ZodFirstPartyTypeKind.ZodTuple) {
             const tupleAttributeTypes = token.items.map(this.getAttributeType.bind(this));
             varType = this.getTupleType(tupleAttributeTypes);
-        }
-        else if(token.type === ZodFirstPartyTypeKind.ZodMap ||
-                token.type === ZodFirstPartyTypeKind.ZodRecord)
-        {
+        } else if (
+            token.type === ZodFirstPartyTypeKind.ZodMap ||
+            token.type === ZodFirstPartyTypeKind.ZodRecord
+        ) {
             const [key, value] = [token.key, token.value].map(this.getAttributeType.bind(this));
 
             if (token.type === ZodFirstPartyTypeKind.ZodMap) {
                 varType = this.getMapType(key, value);
-            }
-            else {
+            } else {
                 varType = this.getRecordType(key, value);
             }
-        }
-        else if(!(token as TranspilerableTypes).name &&
-                token.type === ZodFirstPartyTypeKind.ZodIntersection)
-        {
+        } else if (
+            !(token as TranspilerableTypes).name &&
+            token.type === ZodFirstPartyTypeKind.ZodIntersection
+        ) {
             this._checkCompositeFlag();
 
             const items = [token.left, token.right].map(this.getAttributeType.bind(this));
             varType = this.getIntersectionType(items);
-        }
-        else if(!(token as TranspilerableTypes).name && (
-                    token.type === ZodFirstPartyTypeKind.ZodUnion ||
-                    token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion))
-        {
+        } else if (
+            !(token as TranspilerableTypes).name &&
+            (token.type === ZodFirstPartyTypeKind.ZodUnion ||
+                token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion)
+        ) {
             this._checkCompositeFlag();
-            
+
             const items: string[] = token.options.map(this.getAttributeType.bind(this));
             varType = this.getUnionType(items);
-        }
-        else {
+        } else {
             console.log("  # Unknown attribute equivalent for ---> ", token.type);
         }
 
@@ -374,25 +367,22 @@ export abstract class Zod2X<T extends IZodToXOpt>
      * Transpiles a single item from the transpiler queue.
      * @param item - The transpilerable type to transpile.
      */
-    private _transpileItem(item: TranspilerableTypes)
-    {
-        if (item.type === ZodFirstPartyTypeKind.ZodEnum ||
-            item.type === ZodFirstPartyTypeKind.ZodNativeEnum)
-        {
+    private _transpileItem(item: TranspilerableTypes) {
+        if (
+            item.type === ZodFirstPartyTypeKind.ZodEnum ||
+            item.type === ZodFirstPartyTypeKind.ZodNativeEnum
+        ) {
             this.transpileEnum(item);
-        }
-        else if (item.type === ZodFirstPartyTypeKind.ZodObject) {
+        } else if (item.type === ZodFirstPartyTypeKind.ZodObject) {
             this.transpileStruct(item);
-        }
-        else if(item.type === ZodFirstPartyTypeKind.ZodUnion ||
-                item.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion)
-        {
+        } else if (
+            item.type === ZodFirstPartyTypeKind.ZodUnion ||
+            item.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion
+        ) {
             this.transpileUnion(item);
-        }
-        else if (item.type === ZodFirstPartyTypeKind.ZodIntersection) {
+        } else if (item.type === ZodFirstPartyTypeKind.ZodIntersection) {
             this.transpileIntersection(item);
-        }
-        else {
+        } else {
             throw new Error(
                 `Unexpected type for transpilation: ${(item as TranspilerableTypes).type}`
             );
@@ -404,8 +394,7 @@ export abstract class Zod2X<T extends IZodToXOpt>
      * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
      * @returns The transpiled code as a string.
      */
-    transpile(transpilerQueue: ASTNodes): string
-    {
+    transpile(transpilerQueue: ASTNodes): string {
         this.runBefore();
 
         if (this.opt.skipDiscriminatorNodes !== true) {
@@ -419,7 +408,7 @@ export abstract class Zod2X<T extends IZodToXOpt>
         let header = [];
 
         if (this.opt.header) {
-            header.push(...this.opt.header.split("\n").map(i => this.getComment(i)));
+            header.push(...this.opt.header.split("\n").map((i) => this.getComment(i)));
         }
 
         if (this.imports.size > 0) {
@@ -429,13 +418,9 @@ export abstract class Zod2X<T extends IZodToXOpt>
                 header.push("");
             }
         }
-            
-        this.output = [
-            ...header,
-            ...this.output
-        ];
+
+        this.output = [...header, ...this.output];
 
         return this.output.join("\n");
     }
 }
-
