@@ -1,0 +1,76 @@
+// This is
+// a multiline
+// header.
+syntax = "proto3";
+
+package supportedschemas;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+enum EnumItem {
+    Enum1 = 0;
+    Enum2 = 1;
+    Enum3 = 2;
+}
+
+enum NativeEnumItem {
+    NativeEnum1 = 0;
+    NativeEnum2 = 1;
+    NativeEnum3 = 2;
+}
+
+message ObjectItem {
+    string key = 1;
+}
+
+message OtherObjectItem {
+    string otherKey = 1;
+}
+
+message UnionItem {
+    oneof unionItemOneof {
+        ObjectItem objectItem = 1;
+        OtherObjectItem otherObjectItem = 2;
+    }
+}
+
+message ObjectItemWithDiscriminator {
+    string key = 1;
+    string discriminator = 2;
+}
+
+message OtherObjectItemWithDiscriminator {
+    string otherKey = 1;
+    string discriminator = 2;
+}
+
+message DiscriminantUnionItem {
+    oneof discriminantUnionItemOneof {
+        ObjectItemWithDiscriminator objectItemWithDiscriminator = 1;
+        OtherObjectItemWithDiscriminator otherObjectItemWithDiscriminator = 2;
+    }
+}
+
+message Proto3SupportedSchemas {
+    string stringItem = 1;
+    string literalStringItem = 2;
+    uint32 literalNumberItem = 3;
+    EnumItem enumItem = 4;
+    NativeEnumItem nativeEnumItem = 5;
+    double doubleItem = 6;
+    int64 bigIntItem = 7;
+    int64 int64Item = 8;
+    int32 int32Item = 9;
+    bool booleanItem = 10;
+    ObjectItem objectItem = 11;
+    google.protobuf.Timestamp dateItem = 12;
+    repeated double arrayItem = 13;
+    map<string, double> recordItem = 14;
+    map<string, double> mapItem = 15;
+    repeated string setItem = 16;
+    repeated double tupleItem = 17;
+    UnionItem unionItem = 18;
+    DiscriminantUnionItem discriminatedUnionItem = 19;
+    google.protobuf.Any anyItem = 20;
+}

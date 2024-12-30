@@ -7,6 +7,8 @@ import { ZodFirstPartyTypeKind } from "zod";
 export type ASTLiteral = {
     type: ZodFirstPartyTypeKind.ZodLiteral;
     value: any;
+    parentEnumName?: string;
+    parentEnumKey?: string;
 };
 
 export type ASTNumber = {

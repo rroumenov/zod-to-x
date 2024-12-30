@@ -5,11 +5,11 @@ extendZod(z);
 import * as fs from "fs";
 import { diffLinesRaw } from "jest-diff";
 
-import { header } from "../data/header";
-import { UserModel } from "../data/user_schema";
-import * as schemas from "../data/zod_schemas";
+import { header } from "../common/header";
+import * as schemas from "../common/zod_schemas";
+import { zTsSupportedSchemas } from "./ts_supported_schemas";
 
-let userModelQueue: ASTNodes;
+let tsSupportedSchemas: ASTNodes;
 
 const testOutput = (output: string, expectedOutput: string) => {
     try {
@@ -22,7 +22,7 @@ const testOutput = (output: string, expectedOutput: string) => {
 
 describe("Zod2Ts", () => {
     beforeAll(() => {
-        userModelQueue = new Zod2Ast().build(UserModel);
+        tsSupportedSchemas = new Zod2Ast().build(zTsSupportedSchemas);
     });
 
     test("String Schema", () => {
@@ -95,7 +95,6 @@ describe("Zod2Ts", () => {
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
-            '  discriminator: "optionA";\n' +
             "}\n\n" +
             "export interface ModelItem {\n" +
             "  item: ObjectItem;\n" +
@@ -162,12 +161,9 @@ describe("Zod2Ts", () => {
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
-            '  discriminator: "optionA";\n' +
             "}\n\n" +
             "export interface OtherObjectItem {\n" +
-            "  key: string;\n" +
             "  otherKey: string;\n" +
-            '  discriminator: "optionB";\n' +
             "}\n\n" +
             "export interface ModelItem {\n" +
             "  item: ObjectItem | OtherObjectItem;\n" +
@@ -182,12 +178,9 @@ describe("Zod2Ts", () => {
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
-            '  discriminator: "optionA";\n' +
             "}\n\n" +
             "export interface OtherObjectItem {\n" +
-            "  key: string;\n" +
             "  otherKey: string;\n" +
-            '  discriminator: "optionB";\n' +
             "}\n\n" +
             "export type UnionItem = ObjectItem | OtherObjectItem;\n\n" +
             "export interface ModelItem {\n" +
@@ -203,12 +196,9 @@ describe("Zod2Ts", () => {
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
-            '  discriminator: "optionA";\n' +
             "}\n\n" +
             "export interface OtherObjectItem {\n" +
-            "  key: string;\n" +
             "  otherKey: string;\n" +
-            '  discriminator: "optionB";\n' +
             "}\n\n" +
             "export interface ModelItem {\n" +
             "  item: ObjectItem & OtherObjectItem;\n" +
@@ -223,12 +213,9 @@ describe("Zod2Ts", () => {
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
-            '  discriminator: "optionA";\n' +
             "}\n\n" +
             "export interface OtherObjectItem {\n" +
-            "  key: string;\n" +
             "  otherKey: string;\n" +
-            '  discriminator: "optionB";\n' +
             "}\n\n" +
             "export type IntersectionItem = ObjectItem & OtherObjectItem;\n\n" +
             "export interface ModelItem {\n" +
@@ -262,32 +249,35 @@ describe("Zod2Ts", () => {
         testOutput(output, expectedOutput);
     });
 
-    test("User Schema as interface", () => {
-        const output = new Zod2Ts({ header }).transpile(userModelQueue);
+    test("Typescript supported schemas - as interface", () => {
+        const output = new Zod2Ts({ header }).transpile(tsSupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/user_schema.expect.ts")
+            .readFileSync("./test/test_zod2ts/ts_supported_schemas.expect.interface.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/err-user_schema.ts", output);
+            fs.writeFileSync(
+                "./test/test_zod2ts/err-ts_supported_schemas.expect.interface.ts",
+                output
+            );
             throw error;
         }
     });
 
-    test("User Schema as class", () => {
-        const output = new Zod2Ts({ header, outType: "class" }).transpile(userModelQueue);
+    test("Typescript supported schemas - as class", () => {
+        const output = new Zod2Ts({ header, outType: "class" }).transpile(tsSupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/user_schema.expect_class.ts")
+            .readFileSync("./test/test_zod2ts/ts_supported_schemas.expect.class.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/err-user_schema-class.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/err-ts_supported_schemas.expect.class.ts", output);
             throw error;
         }
     });

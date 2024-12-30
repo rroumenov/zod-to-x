@@ -6,11 +6,11 @@ import * as fs from "fs";
 import { diffLinesRaw } from "jest-diff";
 import * as pb from "protobufjs";
 
-import { header } from "../data/header";
-import { ShopAccountModel } from "../data/shop_account_schema";
-import * as schemas from "../data/zod_schemas";
+import { header } from "../common/header";
+import * as schemas from "../common/zod_schemas";
+import { zProto3SupportedSchemas } from "./proto3_supported_schemas";
 
-let shopAccountNodes: ASTNodes;
+let proto3SupportedSchemas: ASTNodes;
 
 const testOutput = (output: string, expectedOutput: string) => {
     try {
@@ -23,7 +23,7 @@ const testOutput = (output: string, expectedOutput: string) => {
 
 describe("Zod2Proto3", () => {
     beforeAll(() => {
-        shopAccountNodes = new Zod2Ast().build(ShopAccountModel);
+        proto3SupportedSchemas = new Zod2Ast().build(zProto3SupportedSchemas);
     });
 
     test("String Schema", () => {
@@ -139,7 +139,6 @@ describe("Zod2Proto3", () => {
             'syntax = "proto3";\n\n' +
             "message ObjectItem {\n" +
             "  string key = 1;\n" +
-            "  string discriminator = 2;\n" +
             "}\n\n" +
             "message ModelItem {\n" +
             "  ObjectItem item = 1;\n" +
@@ -228,12 +227,9 @@ describe("Zod2Proto3", () => {
             'syntax = "proto3";\n\n' +
             "message ObjectItem {\n" +
             "  string key = 1;\n" +
-            "  string discriminator = 2;\n" +
             "}\n\n" +
             "message OtherObjectItem {\n" +
-            "  string key = 1;\n" +
-            "  string other_key = 2;\n" +
-            "  string discriminator = 3;\n" +
+            "  string other_key = 1;\n" +
             "}\n\n" +
             "message UnionItem {\n" +
             "  oneof union_item_oneof {\n" +
@@ -261,38 +257,16 @@ describe("Zod2Proto3", () => {
         testOutput(output, expectedOutput);
     });
 
-    test("Shop Account", () => {
+    test("Protobuf V3 supported schemas", () => {
         // Validate that expected proto file is a valid one.
-        pb.loadSync("./test/test_zod2proto3/shop_account_schema.expect.proto");
+        pb.loadSync("./test/test_zod2proto3/proto3_supported_schemas.expect.proto");
 
         const output = new Zod2ProtoV3({
             header,
-            packageName: "shopaccount",
-        }).transpile(shopAccountNodes);
+            packageName: "supportedschemas",
+        }).transpile(proto3SupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2proto3/shop_account_schema.expect.proto")
-            .toString();
-
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            fs.writeFileSync("./test/test_zod2proto3/err-shop_account_schema.expect.proto", output);
-            throw error;
-        }
-    });
-
-    test("Shop Account camelCase", () => {
-        // Validate that expected proto file is a valid one.
-        pb.loadSync("./test/test_zod2proto3/shop_account_schema.expect_camel.proto");
-
-        const output = new Zod2ProtoV3({
-            header,
-            packageName: "shopaccount",
-            useCamelCase: true,
-        }).transpile(shopAccountNodes);
-        const expectedOutput = fs
-            .readFileSync("./test/test_zod2proto3/shop_account_schema.expect_camel.proto")
+            .readFileSync("./test/test_zod2proto3/proto3_supported_schemas.expect.proto")
             .toString();
 
         try {
@@ -300,7 +274,32 @@ describe("Zod2Proto3", () => {
         } catch (error) {
             diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
             fs.writeFileSync(
-                "./test/test_zod2proto3/err-shop_account_schema.expect_camel.proto",
+                "./test/test_zod2proto3/err-proto3_supported_schemas.expect.proto",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("Protobuf V3 supported schemas - as camelCase", () => {
+        // Validate that expected proto file is a valid one.
+        pb.loadSync("./test/test_zod2proto3/proto3_supported_schemas.expect.camel.proto");
+
+        const output = new Zod2ProtoV3({
+            header,
+            packageName: "supportedschemas",
+            useCamelCase: true,
+        }).transpile(proto3SupportedSchemas);
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2proto3/proto3_supported_schemas.expect.camel.proto")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto",
                 output
             );
             throw error;

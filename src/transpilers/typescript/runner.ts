@@ -78,8 +78,15 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         return output;
     }
 
-    protected getLiteralStringType(value: string | number): string | number {
-        return isNaN(Number(value)) ? `"${value}"` : value;
+    protected getLiteralStringType(
+        value: string | number,
+        parentEnumNameKey?: [string, string]
+    ): string | number {
+        return parentEnumNameKey
+            ? `${parentEnumNameKey[0]}.${parentEnumNameKey[1]}`
+            : isNaN(Number(value))
+              ? `"${value}"`
+              : value;
     }
 
     /** Ex: Map<TypeA, TypeB> */

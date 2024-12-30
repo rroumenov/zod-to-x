@@ -1,0 +1,76 @@
+// This is
+// a multiline
+// header.
+syntax = "proto3";
+
+package supportedschemas;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+enum EnumItem {
+    Enum1 = 0;
+    Enum2 = 1;
+    Enum3 = 2;
+}
+
+enum NativeEnumItem {
+    NativeEnum1 = 0;
+    NativeEnum2 = 1;
+    NativeEnum3 = 2;
+}
+
+message ObjectItem {
+    string key = 1;
+}
+
+message OtherObjectItem {
+    string other_key = 1;
+}
+
+message UnionItem {
+    oneof union_item_oneof {
+        ObjectItem object_item = 1;
+        OtherObjectItem other_object_item = 2;
+    }
+}
+
+message ObjectItemWithDiscriminator {
+    string key = 1;
+    string discriminator = 2;
+}
+
+message OtherObjectItemWithDiscriminator {
+    string other_key = 1;
+    string discriminator = 2;
+}
+
+message DiscriminantUnionItem {
+    oneof discriminant_union_item_oneof {
+        ObjectItemWithDiscriminator object_item_with_discriminator = 1;
+        OtherObjectItemWithDiscriminator other_object_item_with_discriminator = 2;
+    }
+}
+
+message Proto3SupportedSchemas {
+    string string_item = 1;
+    string literal_string_item = 2;
+    uint32 literal_number_item = 3;
+    EnumItem enum_item = 4;
+    NativeEnumItem native_enum_item = 5;
+    double double_item = 6;
+    int64 big_int_item = 7;
+    int64 int64_item = 8;
+    int32 int32_item = 9;
+    bool boolean_item = 10;
+    ObjectItem object_item = 11;
+    google.protobuf.Timestamp date_item = 12;
+    repeated double array_item = 13;
+    map<string, double> record_item = 14;
+    map<string, double> map_item = 15;
+    repeated string set_item = 16;
+    repeated double tuple_item = 17;
+    UnionItem union_item = 18;
+    DiscriminantUnionItem discriminated_union_item = 19;
+    google.protobuf.Any any_item = 20;
+}

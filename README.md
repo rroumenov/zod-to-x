@@ -14,36 +14,16 @@
 
 
 ## Why Use [`@zod-to-x`](https://github.com/rroumenov/zod-to-x)?
-In modern software development, managing data consistency across multiple layers and languages is a persistent challenge. [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) tackles this problem head-on by enabling you to define your data models once, in a centralized and expressive way, and then effortlessly transpile these models into multiple programming languages. Here's why [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) stands out:
+Managing data consistency across multiple layers and languages is a common challenge in modern software development. [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) solves this by allowing you to define your data models once and effortlessly transpile them into multiple programming languages. Here’s why it stands out:
 
-1. Centralized Data Definition  
-With [`@zod-to-x`](https://github.com/rroumenov/zod-to-x), you define your data structures in one place using the powerful Zod library. This eliminates redundancy, reduces the risk of inconsistencies, and simplifies maintenance across your codebase.
+1. **Centralized Data Definition**  
+Define your data structures in one place using the powerful [`@zod`]((https://github.com/colinhacks/zod)) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`]((https://github.com/colinhacks/zod)) ecosystem like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema)
 
-2. Multi-Language Compatibility  
-Gone are the days of manually rewriting data models for different platforms. [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) lets you generate data types for:
+2. **Multi-Language Compatibility**  
+Generate data models for TypeScript, Protobuf V3 and C++ (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
 
-    - TypeScript: Build strong, type-safe interfaces or classes for front-end and back-end applications.
-    - Protobuf V3: Seamlessly integrate with gRPC and other Protobuf-based systems.
-    - More Languages: Support for additional languages like C++ is on the roadmap.
-
-3. Enhanced Productivity  
-By automating the transpilation of data models, [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) allows your team to focus on writing business logic instead of boilerplate code. Changes to schemas are propagated automatically, saving time and minimizing errors.
-
-4. Built on Zod's Robust Ecosystem  
-[`@zod-to-x`](https://github.com/rroumenov/zod-to-x) extends the capabilities of Zod, a popular and intuitive schema validation library. This means you can:
-
-    - Leverage Zod's wide array of schema types and validations.
-    - Maintain compatibility with existing Zod-based projects.
-    - Easily integrate with tools like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema).
-
-5. Flexible Output Options  
-Whether you need plain interfaces, full-fledged classes with constructors, or Protobuf definitions, [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) can adapt to your specific needs with customizable output formats.
-
-6. Transparent and Extendable  
-The library is designed to be lightweight, transparent, and easy to integrate into existing workflows. Its extendable architecture ensures it can evolve to meet your project’s growing demands.
-
-7. Ideal for Cross-Language Development  
-If your application spans multiple languages—like a front-end in TypeScript, a back-end in Python, and microservices in Protobuf—[`@zod-to-x`](https://github.com/rroumenov/zod-to-x) simplifies the process of keeping data structures consistent across the stack.
+3. **Enhanced Productivity**  
+Automate the transpilation of data models to save time, reduce errors, and let your team focus on business logic instead of boilerplate code.
 
 
 
@@ -67,39 +47,36 @@ This extension appends a `zod2x` method to:
 - ZodUnion
 - ZodDiscriminatedUnion
 - ZodIntersection
+- ZodLiteral
 
 ## Quick start
-### 1) Define a data model using Zod schemas
 ```ts
 import { z } from "zod";
+import { extendZod, Zod2Ast, Zod2Ts } from "zod-to-x";
+extendZod(z); // The extend step can be skipped if it has already been done.
 
-// Skip the extend step if it has already been done.
-import { extendZod } from "zod-to-x";
-extendZod(z);
-
+/**
+ * 1) Define a data model using Zod schemas
+ */
 const VisitorSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   email: z.string().email(),
   visitDate: z.date(),
   comments: z.string().optional(),
-}).zod2x("Visitor");    // Add your expected output type name using the 'zod2x' method.
+}).zod2x("Visitor"); // Add your expected output type name using the 'zod2x' method.
 
-```
-
-### 2) Build an AST node of the Zod schema
-```ts
-import { Zod2Ast } from "zod-to-x";
-
+/**
+ * 2) Build an AST node of the Zod schema
+ */
 const visitorNodes = new Zod2Ast().build(VisitorSchema);
-```
 
-### 3) Generate types in the desired language
-```ts
-import { Zod2Ts } from "zod-to-x";
-
-const tsVisitor: string = new Zod2Ts().transpile(visitorNodes);
-console.log(tsVisitor)
+/**
+ * 3) Generate types in the desired language.
+ *    Depending on the transpiled language, data models can be generated using classes.
+ */
+const tsVisitorAsInterface: string = new Zod2Ts().transpile(visitorNodes);
+console.log(tsVisitorAsInterface)
 // output:
 // export interface Visitor {
 //     id: string;
@@ -108,14 +85,9 @@ console.log(tsVisitor)
 //     visitDate: Date;
 //     comments?: string;
 // }
-```
-Depending on the transpiled language, data models can be generated using classes:
 
-```ts
-import { Zod2Ts } from "zod-to-x";
-
-const tsVisitor: string = new Zod2Ts({outType: "class"}).transpile(visitorNodes);
-console.log(tsVisitor)
+const tsVisitorAsClass: string = new Zod2Ts({outType: "class"}).transpile(visitorNodes);
+console.log(tsVisitorAsClass)
 // output:
 // export class Visitor {
 //     id: string;
@@ -135,11 +107,11 @@ console.log(tsVisitor)
 ```
 
 
-A complete and more complex schema definition with its outputs can be found in the `test` folder:
-- [Zod Schemas](test/data)
+Example of supported schemas with its outputs can be found in the `test` folder:
+- [Zod Schemas](test/common)
 - [Typescript outputs](test/test_zod2ts)
 - [Protobuf V3 outputs](test/test_zod2proto3/)
-- [C++ 11 outputs](test/test_zod2cpp/)
+- [C++ outputs](test/test_zod2cpp/)
 
 
 
@@ -150,29 +122,29 @@ Common options:
 - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
 - **skipDiscriminatorNodes**: prevents the inclusion of `ZodEnum` or `ZodNativeEnum` schemas that are used solely as discriminator keys in a `ZodDiscriminatedUnion`. Defaults to `false`.
 
-### Typescript  
-#### Options:
+### 1) Typescript  
+- Options:
   - **outType**: Output transpilation using Typescript interfaces or Classes. Defaults to `interface`.
 
-### Protobuf V3
-#### Options:
+### 2) Protobuf V3
+- Options:
   - **packageName**: Name of the protobuf file package.
   - **useCamelCase**: Protobuf follows the snake_case convention for field names, but camelCase can also be used. Defaults to `false`.
 
-#### Limitations:
+- Limitations:
   - `oneof` fields support only unions of `ZodObject` schemas.
+  - `ZodTuple` is supported only for items of the same type.
 
 
-### C++
-  - `Nlohmann` dependency is used for data serialization/deserialization.
-  - For *C++11*, `Boost` dependency is used. For *C++17* or newer, standard libraries are used.
-#### Options:
+### 3) C++
+`Nlohmann` dependency is used for data serialization/deserialization. For *C++11*, `Boost` dependency is used. For *C++17* or newer, standard libraries are used.
+- Options:
   - **includeNulls**: When serializing, include all values even if `null`. Defaults to `false`.
   - **namespace**: Name of the namespace containing the output code.
   - **outType**: Output transpilation using C++ Structs or Classes. Defaults to `struct`.
   - **skipSerialize**: Remove Nlohmann JSON serialization/deserialization. Defaults to `false`.
 
-#### Limitations:
+- Limitations:
   - `ZodIntersection` is supported only for intersection of `ZodObject` schemas.
 
 
@@ -191,18 +163,19 @@ Common options:
 | `z.nativeEnum()`      | Native `enum`               | `enum`                                        | `enum class T: int`
 | `z.array()`           | `T[]`                       | `repeated` field                              | `std::vector<T>`
 | `z.set()`             | `Set<T>`                    | `repeated` field                              | `std::set<T>`
-| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field <sup>(1)</sup>               | `std::tuple<T1, T2, T3>`
+| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field                              | `std::tuple<T1, T2, T3>`
 | `z.object()`          | `interface` or `class`      | `message`                                     | `struct` or `class`
 | `z.record()`          | `Record<string, T>`         | `map<string, K>`                              | `std::unordered_map<T>`
 | `z.map()`             | `Map<string, T>`            | `map<string, K>`                              | `std::unordered_map<T>`
-| `z.union()`           | `T1 \| T2` or `type`        | `oneof`                                       | `std::variant<T, K>` (`boost::variant<T, K>` for C++11)
-| `z.intersection()` <sup>(2)</sup>| `T1 & T2` or `type`         | Not supported                      | `struct` or `class` with `inheritance`
+| `z.union()` <sup>(2)</sup> | `T1 \| T2` or `type`   | `oneof`                                       | `std::variant<T, K>` (`boost::variant<T, K>` for C++11)
+| `z.discriminatedUnion()`| `T1 \| T2` or `type`      | `oneof`                                       | `std::variant<T, K>` (`boost::variant<T, K>` for C++11)
+| `z.intersection()` <sup>(1)</sup> | `T1 & T2` or `type`         | Not supported                     | `struct` or `class` with `inheritance`
 | `z.any()`             | `any`                       | `google.protobuf.Any`                         | `nlohmann::json`
 | `z.optional()`        | `T \| undefined`            | Not supported                                 | `std::optional<T>` (`boost::optional<T>` for C++11)
 | `z.nullable()`        | `T \| null`                 | Not supported                                 | `std::optional<T>` (`boost::optional<T>` for C++11)
 
-<sup>(1)</sup> Only for tuple with items of the same type.  
-<sup>(2)</sup> Consider to use Zod's merge instead of ZodIntersection when possible.
+<sup>(1)</sup> Consider to use Zod's merge instead of ZodIntersection when possible.  
+<sup>(2)</sup> Consider to use ZodDiscriminatedUnion when possible. In languages like C++, deserialization is O(1) against the O(n) of the ZodUnion.
 
 ## Additional utils
 - `zod2JsonSchemaDefinitions`  
