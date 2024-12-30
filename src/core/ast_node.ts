@@ -26,13 +26,13 @@ import {
     ZodUnion,
 } from "zod";
 
-import { ASTDefintion, ASTNode, ASTNodes, TranspilerableTypes } from "./ast_types";
+import { ASTDefintion, ASTNode, ASTNodes, ASTObject, TranspilerableTypes } from "./ast_types";
 
 interface IZodToAstOpt {
     /**
-     * Indicates when a ZodEnum is passed as ZodDiscriminatedUnion option.
+     * Indicates when a ZodEnum is passed as ZodLiteral option.
      */
-    isUnionDiscriminator?: boolean;
+    isInjectedEnum?: boolean;
 
     /**
      * The key used in ZodDiscriminatedUnion type.
@@ -177,10 +177,23 @@ export class Zod2Ast {
                 description: schema.description,
             };
         } else if (schema instanceof ZodLiteral) {
+            let parentEnumName: string | undefined = undefined;
+            let parentEnumKey: string | undefined = undefined;
+
+            if (def.zod2x?.parentEnum) {
+                parentEnumName = def.zod2x?.parentEnum._def.zod2x?.typeName;
+                parentEnumKey = this._getEnumValues(def.zod2x?.parentEnum as ZodEnum<any>).find(
+                    (i) => i[1] === def.value
+                )?.[0];
+                this.zodToAST(def.zod2x?.parentEnum, { isInjectedEnum: true });
+            }
+
             return {
                 type: ZodFirstPartyTypeKind.ZodLiteral,
                 value: def.value,
                 description: schema.description,
+                parentEnumName,
+                parentEnumKey,
             };
         } else if (schema instanceof ZodRecord) {
             return {
@@ -225,7 +238,7 @@ export class Zod2Ast {
                 description: def.description,
             };
 
-            if (opt?.isUnionDiscriminator) {
+            if (opt?.isInjectedEnum) {
                 if (!this.nodes.has(name) && !this.discriminatorNodes.has(name)) {
                     this.discriminatorNodes.set(name, item);
                 }
@@ -248,14 +261,6 @@ export class Zod2Ast {
                 const properties: Record<string, ASTNode> = {};
                 for (const key in def.shape()) {
                     properties[key] = this.zodToAST(def.shape()[key]);
-
-                    if (opt?.discriminantKey && key === opt?.discriminantKey) {
-                        if (properties[key].type === ZodFirstPartyTypeKind.ZodLiteral) {
-                            discriminantValue = String(properties[key].value);
-                        } else {
-                            console.warn(`Consider to set '${key}' key of '${name}' as ZodLiteral`);
-                        }
-                    }
                 }
 
                 this.nodes.set(name, {
@@ -264,6 +269,21 @@ export class Zod2Ast {
                     properties,
                     description: schema.description,
                 });
+            }
+
+            if (opt?.discriminantKey) {
+                const item = this.nodes.get(name) as ASTObject;
+
+                if (Object.keys(item.properties).includes(opt.discriminantKey)) {
+                    const key = opt.discriminantKey;
+                    if (item.properties[key].type === ZodFirstPartyTypeKind.ZodLiteral) {
+                        /* Used for serialization purposes, it is parsed as string for
+                         * convenience */
+                        discriminantValue = String(item.properties[key].value);
+                    } else {
+                        console.warn(`Consider to set '${key}' key of '${name}' as ZodLiteral`);
+                    }
+                }
             }
 
             return this._createDefinition(name, def.typeName, discriminantValue);
@@ -279,10 +299,6 @@ export class Zod2Ast {
                 description: schema.description,
                 discriminantKey: def.discriminator,
             };
-
-            if (def.zod2x?.discriminatorEnum) {
-                this.zodToAST(def.zod2x?.discriminatorEnum, { isUnionDiscriminator: true });
-            }
 
             if (name && !this.nodes.has(name)) {
                 this.nodes.set(name, item);

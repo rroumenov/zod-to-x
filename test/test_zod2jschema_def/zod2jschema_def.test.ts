@@ -4,7 +4,7 @@ extendZod(z);
 
 import { diffLinesRaw } from "jest-diff";
 
-import { UserModel } from "../data/user_schema";
+import { UserModel } from "./user_schema";
 
 describe("zod2JsonSchemaDefinitions", () => {
     test("User model definitions", () => {

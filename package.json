@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [
@@ -10,6 +10,7 @@
     "build": "tsc && tsc-alias",
     "format:check": "prettier --check .",
     "test": "jest",
+    "test:cpp": "bash ./test/test_zod2cpp/test_cpp.sh",
     "ts-run": "ts-node -r tsconfig-paths/register",
     "prepare": "husky"
   },

@@ -1,6 +1,3 @@
-/**
- * This schema is valid for testing transpilers that admit composite types, like Typescript.
- */
 import { z, ZodType } from "zod";
 
 const Name = z.string();
@@ -56,12 +53,12 @@ const CommonSubscription = z
     .zod2x("CommonSubscription");
 
 const FreeSubscription = CommonSubscription.extend({
-    subscriptionType: z.literal("free"),
+    subscriptionType: z.literal("free").zod2x(SubscriptionType),
     adsEnabled: z.boolean(),
 }).zod2x("FreeSubscription");
 
 const PremiumSubscription = CommonSubscription.extend({
-    subscriptionType: z.literal("premium"),
+    subscriptionType: z.literal("premium").zod2x(SubscriptionType),
     maxDevices: z.number().int().positive(),
     hdStreaming: z.boolean(),
 }).zod2x("PremiumSubscription");
@@ -69,7 +66,7 @@ const PremiumSubscription = CommonSubscription.extend({
 const SupportPriority = z.enum(["standard", "priority", "dedicated"]).zod2x("SupportPriority");
 
 const EnterpriseSubscription = CommonSubscription.extend({
-    subscriptionType: z.literal("enterprise"),
+    subscriptionType: z.literal("enterprise").zod2x(SubscriptionType),
     companyName: z.string(),
     userLimit: z.number().int().positive(),
     supportPriority: SupportPriority,
@@ -81,7 +78,7 @@ const Subscription = z
         PremiumSubscription,
         EnterpriseSubscription,
     ])
-    .zod2x({ typeName: "Subscription", discriminatorEnum: SubscriptionType });
+    .zod2x({ typeName: "Subscription" });
 
 export const UserModel = z
     .object({

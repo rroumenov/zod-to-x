@@ -159,8 +159,12 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     /**
      * Returns the representation of a literal string or number in the target language.
      * @param value - The literal value to represent.
+     * @param parentEnumNameKey - Optional tuple containing the parent enum name and key reference.
      */
-    protected abstract getLiteralStringType(value: string | number): string | number;
+    protected abstract getLiteralStringType(
+        value: string | number,
+        parentEnumNameKey?: [string, string]
+    ): string | number;
 
     /**
      * Returns the keyword representing a generic 'any' type in the target language.
@@ -317,7 +321,11 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         } else if (token.type === ZodFirstPartyTypeKind.ZodDate) {
             varType = this.getDateType();
         } else if (token.type === ZodFirstPartyTypeKind.ZodLiteral) {
-            varType = this.getLiteralStringType(token.value) as string;
+            const parentEnum =
+                token.parentEnumName && token.parentEnumKey
+                    ? ([token.parentEnumName, token.parentEnumKey] as [string, string])
+                    : undefined;
+            varType = this.getLiteralStringType(token.value, parentEnum) as string;
         } else if (token.type === ZodFirstPartyTypeKind.ZodSet) {
             varType = this.getSetType(this.getAttributeType(token.value));
         } else if (token.type === ZodFirstPartyTypeKind.ZodNumber) {

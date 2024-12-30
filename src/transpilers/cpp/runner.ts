@@ -77,9 +77,14 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.output.push("");
             this.output.push(`namespace ${this.opt.namespace} {`);
 
-            if (this.imports.has(this.lib.optional) && !this.opt.includeNulls) {
+            if (this.imports.has(this.lib.optional)) {
                 this.serializers.unshift(
-                    ...getNlohmannOptionalHelper(this.opt.indent as number, this.useBoost)
+                    ...getNlohmannOptionalHelper(
+                        this.opt.indent as number,
+                        this.opt.includeNulls === true,
+                        this.useBoost,
+                        this.opt.namespace!
+                    )
                 );
             }
 
@@ -165,13 +170,19 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         return output;
     }
 
-    protected getLiteralStringType(value: string | number) {
-        return isNaN(Number(value))
-            ? this.getStringType()
-            : this.getNumberType(Number.isInteger(value), {
-                  min: value as number,
-                  max: value as number,
-              });
+    protected override getLiteralStringType(
+        value: string | number,
+        parentEnumNameKey?: [string, string]
+    ) {
+        return (
+            parentEnumNameKey?.[0] ??
+            (isNaN(Number(value))
+                ? this.getStringType()
+                : this.getNumberType(Number.isInteger(value), {
+                      min: value as number,
+                      max: value as number,
+                  }))
+        );
     }
 
     /** Ex: std::unordered_map<TypeA> */
@@ -465,7 +476,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         childs.forEach((i) => {
-            if (i.required || this.opt.includeNulls === true) {
+            if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.${i.snakeName};`);
             } else {
                 this._push1(
@@ -523,7 +534,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         childs.forEach((i) => {
-            if (i.required || this.opt.includeNulls === true) {
+            if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.get_${i.snakeName}();`);
             } else {
                 this._push1(

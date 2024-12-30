@@ -12,7 +12,7 @@ export const zLiteralNumber = z.literal(1);
 // Enumerates
 export const zEnum = z.enum(["Enum1", "Enum2", "Enum3"]).zod2x("EnumItem");
 
-export enum NativeEnumItem {
+enum NativeEnumItem {
     NativeEnum1 = 1,
     NativeEnum2 = 2,
     NativeEnum3 = "NativeEnum3",
@@ -33,17 +33,28 @@ export const zBoolean = z.boolean();
 export const zObject = z
     .object({
         key: zString,
-        discriminator: z.literal("optionA"),
     })
     .zod2x("ObjectItem");
 
-export const zOtherObject = z
+const zOtherObject = z
     .object({
-        key: zString,
         otherKey: zString,
-        discriminator: z.literal("optionB"),
     })
     .zod2x("OtherObjectItem");
+
+const zObjectWithDiscriminator = z
+    .object({
+        key: zString,
+        discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
+    })
+    .zod2x("ObjectItemWithDiscriminator");
+
+const zOtherObjectWithDiscriminator = z
+    .object({
+        otherKey: zString,
+        discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
+    })
+    .zod2x("OtherObjectItemWithDiscriminator");
 
 // Dates
 export const zDate = z.date();
@@ -58,16 +69,20 @@ export const zMap = z.map(zString, zDouble);
 export const zSet = z.set(zString);
 export const zTuple = z.tuple([zDouble, zDouble]);
 export const zTupleMulti = z.tuple([zDouble, zString, zBoolean]);
-export const zUnion = z.union([zObject, zOtherObject]);
-export const zUnionWithDef = z.union([zObject, zOtherObject]).zod2x("UnionItem");
-
-export const zDiscriminantUnion = z.discriminatedUnion("discriminator", [zObject, zOtherObject]);
-export const zDiscriminantUnionWithDef = z
-    .discriminatedUnion("discriminator", [zObject, zOtherObject])
-    .zod2x("DiscriminantUnionItem");
 
 export const zIntersection = z.intersection(zObject, zOtherObject);
 export const zIntersectionWithDef = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
+
+export const zUnion = z.union([zObject, zOtherObject]);
+export const zUnionWithDef = z.union([zObject, zOtherObject]).zod2x("UnionItem");
+
+export const zDiscriminantUnion = z.discriminatedUnion("discriminator", [
+    zObjectWithDiscriminator,
+    zOtherObjectWithDiscriminator,
+]);
+export const zDiscriminantUnionWithDef = z
+    .discriminatedUnion("discriminator", [zObjectWithDiscriminator, zOtherObjectWithDiscriminator])
+    .zod2x("DiscriminantUnionItem");
 
 // Special types
 export const zAny = z.any();
