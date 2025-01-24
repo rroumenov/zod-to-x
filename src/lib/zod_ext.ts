@@ -85,7 +85,7 @@ function getZod2XConstructor() {
     };
 }
 
-export function extendZod(zod: typeof z) {
+export function extendZod(zod: any /*typeof z ---> any type until solve type incompatibilities*/) {
     // Ensure single definitions
 
     if (typeof zod.ZodObject.prototype.zod2x === "undefined") {

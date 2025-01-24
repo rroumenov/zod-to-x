@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [
@@ -40,9 +40,11 @@
   "lint-staged": {
     "*.ts": "prettier --write"
   },
+  "peerDependencies": {
+    "zod": ">=3.22.0"
+  },
   "dependencies": {
-    "case": "1.6.3",
-    "zod": "^3.23.8"
+    "case": "1.6.3"
   },
   "devDependencies": {
     "@types/jest": "29.5.14",
