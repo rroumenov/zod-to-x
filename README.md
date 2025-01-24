@@ -28,10 +28,11 @@ Automate the transpilation of data models to save time, reduce errors, and let y
 
 
 ## Installation
-### 1) Install [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) and [`@zod`]((https://github.com/colinhacks/zod)) dependency.
+### 1) Install [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) and [`@zod(*)`]((https://github.com/colinhacks/zod)) dependency.
 ```bash
-npm install zod-to-x
+npm install zod-to-x zod
 ```
+(*) [`zod@3.22.0`](https://www.npmjs.com/package/zod/v/3.22.0) version or greather is required.
 
 ### 2) Extend Zod using the `extendZod` method after the first [`@zod`]((https://github.com/colinhacks/zod)) import:
 ```ts

@@ -83,7 +83,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         parentEnumNameKey?: [string, string]
     ): string | number {
         return parentEnumNameKey
-            ? `${parentEnumNameKey[0]}.${parentEnumNameKey[1]}`
+            ? `${parentEnumNameKey[0]}.${Case.pascal(parentEnumNameKey[1])}`
             : isNaN(Number(value))
               ? `"${value}"`
               : value;
@@ -112,7 +112,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
         data.values.forEach((i) => {
             // If enum key starts with number, it is stored between quotes.
-            const keyValue = isNaN(Number(i[0].at(0))) ? i[0] : `"${i[0]}"`;
+            const key = Case.pascal(i[0]);
+            const keyValue = isNaN(Number(key.at(0))) ? key : `"${key}"`;
 
             // Enum value is stored between quotes if not nativeEnum.
             const enumValue = typeof i[1] === "string" ? `"${i[1]}"` : `${i[1]}`;

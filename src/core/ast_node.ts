@@ -4,6 +4,7 @@ import {
     ZodBigInt,
     ZodBoolean,
     ZodDate,
+    ZodDefault,
     ZodDiscriminatedUnion,
     ZodEnum,
     ZodFirstPartyTypeKind,
@@ -25,6 +26,8 @@ import {
     ZodTypeAny,
     ZodUnion,
 } from "zod";
+
+import { log } from "@/utils/logger";
 
 import { ASTDefintion, ASTNode, ASTNodes, ASTObject, TranspilerableTypes } from "./ast_types";
 
@@ -157,6 +160,12 @@ export class Zod2Ast {
             const subSchema = this.zodToAST(def.innerType);
             return {
                 isOptional: true,
+                ...subSchema,
+                description: schema.description || subSchema.description,
+            };
+        } else if (schema instanceof ZodDefault) {
+            const subSchema = this.zodToAST(def.innerType);
+            return {
                 ...subSchema,
                 description: schema.description || subSchema.description,
             };
@@ -323,7 +332,13 @@ export class Zod2Ast {
             }
 
             return item;
-        } else throw new Error(`Unsupported Zod type: ${schema}`);
+        } else {
+            log.warn(`Unsupported Zod type: ${JSON.stringify(schema)}`);
+            return {
+                type: ZodFirstPartyTypeKind.ZodAny,
+                description: `Unsupported Zod type: ${schema._def.typeName}`,
+            };
+        }
     }
 
     /**
