@@ -29,9 +29,26 @@ import {
 
 import { log } from "@/utils/logger";
 
-import { ASTDefintion, ASTNode, ASTNodes, ASTObject, TranspilerableTypes } from "./ast_types";
+import {
+    ASTCommon,
+    ASTDefintion,
+    ASTNode,
+    ASTNodes,
+    ASTObject,
+    ASTUnion,
+    TranspilerableTypes,
+} from "./ast_types";
+import { AstNodeError, AstTypeNameDefinitionError } from "./errors";
 
-interface IZodToAstOpt {
+interface IZod2AstOpt {
+    /**
+     * When true, it will throw an error if a bad data modeling practice is detected.
+     * Default is true.
+     */
+    strict?: boolean;
+}
+
+interface ISchemasMetadata {
     /**
      * Indicates when a ZodEnum is passed as ZodLiteral option.
      */
@@ -64,10 +81,22 @@ export class Zod2Ast {
      */
     private lazyPointers: Array<[ASTDefintion, ZodTypeAny]>;
 
-    constructor() {
+    /**
+     * Warnings generated during the AST creation to aware user about bad practices
+     */
+    private warnings: string[];
+
+    private opt: IZod2AstOpt;
+
+    constructor(opt: IZod2AstOpt = {}) {
         this.nodes = new Map<string, any>();
         this.discriminatorNodes = new Map<string, any>();
         this.lazyPointers = [];
+        this.warnings = [];
+
+        this.opt = {
+            strict: opt.strict ?? true,
+        };
     }
 
     /**
@@ -110,11 +139,97 @@ export class Zod2Ast {
     }
 
     /**
+     * Intersects the properties of two AST nodes and returns the combined properties.
+     *
+     * @param left - The left AST definition to intersect.
+     * @param right - The right AST definition to intersect.
+     * @returns An object containing the combined properties of the left and right AST nodes.
+     */
+    private _intersectAstNodes(
+        left: ASTDefintion,
+        right: ASTDefintion
+    ): Pick<ASTObject, "properties"> {
+        const leftData = this.nodes.get(left.reference) as ASTCommon & ASTObject;
+        const rightData = this.nodes.get(right.reference) as ASTCommon & ASTObject;
+
+        return {
+            properties: {
+                ...leftData.properties,
+                ...rightData.properties,
+            },
+        };
+    }
+
+    /**
+     * Merges multiple AST definitions into a single AST object containing combined properties.
+     * - Equal properties mush have the same type and array dimension.
+     * - If a property is optional in one definition and required in another, it will be considered
+     *      optional in the merged object.
+     * - If a property is nullable in one definition and non-nullable in another, it will be
+     *      considered nullable in the merged object.
+     *
+     * @param options - An array of AST definitions to be merged.
+     * @returns An object containing the merged properties.
+     * @throws AstNodeError - If properties with different types or array dimensions are encountered.
+     */
+    private _unionAstNodes(options: ASTDefintion[]): Pick<ASTObject, "properties"> {
+        const data = options.map((i) => this.nodes.get(i.reference) as ASTCommon & ASTObject);
+        return {
+            properties: data.reduce((acc: Record<string, ASTNode>, i, j) => {
+                for (const key in i.properties) {
+                    if (acc[key]) {
+                        acc[key] = structuredClone(acc[key]);
+
+                        if (acc[key].type !== i.properties[key].type) {
+                            this.warnings.push(
+                                `Merging properties with different types: ${acc[key].type} ` +
+                                    `(from ${data[j - 1]?.name}) and ${i.properties[key].type} ` +
+                                    `(from ${i.name})`
+                            );
+
+                            acc[key].type = i.properties[key].type;
+                        }
+
+                        if (acc[key].arrayDimension !== i.properties[key].arrayDimension) {
+                            this.warnings.push(
+                                `Merging properties with different array dimensions: ` +
+                                    `${acc[key].arrayDimension} (from ${data[j - 1]?.name}) and ` +
+                                    `${i.properties[key].arrayDimension} (from ${i.name})`
+                            );
+
+                            acc[key].arrayDimension = Math.max(
+                                acc[key].arrayDimension || 0,
+                                i.properties[key].arrayDimension || 0
+                            );
+                        }
+
+                        if (acc[key].isNullable !== i.properties[key].isNullable) {
+                            acc[key].isNullable = true;
+                        }
+
+                        if (acc[key].isOptional !== i.properties[key].isOptional) {
+                            acc[key].isOptional = true;
+                        }
+
+                        if (i.properties[key].description) {
+                            acc[key].description = i.properties[key].description;
+                        }
+                    } else {
+                        acc[key] = i.properties[key];
+                    }
+                }
+
+                return acc;
+            }, {}),
+        };
+    }
+
+    /**
      * Build the AST node of provided Zod Schema
      * @param schema
      * @returns
      */
-    private zodToAST(schema: ZodTypeAny, opt?: IZodToAstOpt): ASTNode {
+    private _zodToAST(schema: ZodTypeAny, opt?: ISchemasMetadata): ASTNode {
         const def = schema._def;
 
         if (schema instanceof ZodString) {
@@ -150,27 +265,27 @@ export class Zod2Ast {
                 description: schema.description,
             };
         } else if (schema instanceof ZodNullable) {
-            const subSchema = this.zodToAST(def.innerType);
+            const subSchema = this._zodToAST(def.innerType);
             return {
                 isNullable: true,
                 ...subSchema,
                 description: schema.description || subSchema.description,
             };
         } else if (schema instanceof ZodOptional) {
-            const subSchema = this.zodToAST(def.innerType);
+            const subSchema = this._zodToAST(def.innerType);
             return {
                 isOptional: true,
                 ...subSchema,
                 description: schema.description || subSchema.description,
             };
         } else if (schema instanceof ZodDefault) {
-            const subSchema = this.zodToAST(def.innerType);
+            const subSchema = this._zodToAST(def.innerType);
             return {
                 ...subSchema,
                 description: schema.description || subSchema.description,
             };
         } else if (schema instanceof ZodArray) {
-            const subSchema = this.zodToAST(def.type);
+            const subSchema = this._zodToAST(def.type);
 
             return {
                 ...subSchema,
@@ -182,7 +297,7 @@ export class Zod2Ast {
         } else if (schema instanceof ZodSet) {
             return {
                 type: ZodFirstPartyTypeKind.ZodSet,
-                value: this.zodToAST(def.valueType),
+                value: this._zodToAST(def.valueType),
                 description: schema.description,
             };
         } else if (schema instanceof ZodLiteral) {
@@ -194,7 +309,7 @@ export class Zod2Ast {
                 parentEnumKey = this._getEnumValues(def.zod2x?.parentEnum as ZodEnum<any>).find(
                     (i) => i[1] === def.value
                 )?.[0];
-                this.zodToAST(def.zod2x?.parentEnum, { isInjectedEnum: true });
+                this._zodToAST(def.zod2x?.parentEnum, { isInjectedEnum: true });
             }
 
             return {
@@ -207,8 +322,8 @@ export class Zod2Ast {
         } else if (schema instanceof ZodRecord) {
             return {
                 type: ZodFirstPartyTypeKind.ZodRecord,
-                key: this.zodToAST(def.keyType),
-                value: this.zodToAST(def.valueType),
+                key: this._zodToAST(def.keyType),
+                value: this._zodToAST(def.valueType),
                 description: schema.description,
             };
         } else if (schema instanceof ZodLazy) {
@@ -226,23 +341,30 @@ export class Zod2Ast {
         } else if (schema instanceof ZodTuple) {
             return {
                 type: ZodFirstPartyTypeKind.ZodTuple,
-                items: def.items.map(this.zodToAST.bind(this)),
+                items: def.items.map(this._zodToAST.bind(this)),
                 description: schema.description,
             };
         } else if (schema instanceof ZodMap) {
             return {
                 type: ZodFirstPartyTypeKind.ZodMap,
-                key: this.zodToAST(def.keyType),
-                value: this.zodToAST(def.valueType),
+                key: this._zodToAST(def.keyType),
+                value: this._zodToAST(def.valueType),
                 description: schema.description,
             };
         } else if (schema instanceof ZodNativeEnum || schema instanceof ZodEnum) {
             /** Transpilerable items */
-            let name: string = def.zod2x?.typeName!;
+            const name: string = def.zod2x?.typeName!;
+
+            if (!name) {
+                throw new AstTypeNameDefinitionError(
+                    "ZodEnum/ZodNativeEnum type must have a typeName. " +
+                        "Use zod2x method to provide one."
+                );
+            }
 
             const item: TranspilerableTypes = {
                 type: def.typeName,
-                name: def.zod2x?.typeName,
+                name,
                 values: this._getEnumValues(schema),
                 description: def.description,
             };
@@ -263,18 +385,24 @@ export class Zod2Ast {
 
             return this._createDefinition(name, def.typeName);
         } else if (schema instanceof ZodObject) {
-            let name: string = def.zod2x?.typeName!;
+            const name: string = def.zod2x?.typeName!;
             let discriminantValue: string | undefined = undefined;
+
+            if (!name) {
+                throw new AstTypeNameDefinitionError(
+                    "ZodObject type must have a typeName. Use zod2x method to provide one."
+                );
+            }
 
             if (!this.nodes.has(name)) {
                 const properties: Record<string, ASTNode> = {};
                 for (const key in def.shape()) {
-                    properties[key] = this.zodToAST(def.shape()[key]);
+                    properties[key] = this._zodToAST(def.shape()[key]);
                 }
 
                 this.nodes.set(name, {
                     type: ZodFirstPartyTypeKind.ZodObject,
-                    name: def.zod2x?.typeName,
+                    name,
                     properties,
                     description: schema.description,
                 });
@@ -297,17 +425,46 @@ export class Zod2Ast {
 
             return this._createDefinition(name, def.typeName, discriminantValue);
         } else if (schema instanceof ZodUnion || schema instanceof ZodDiscriminatedUnion) {
-            let name: string = def.zod2x?.typeName as string;
+            const name: string = def.zod2x?.typeName as string;
 
-            const item: ASTNode | TranspilerableTypes = {
+            if (!name) {
+                throw new AstTypeNameDefinitionError(
+                    "ZodUnion/ZodDiscriminatedUnion type must have a typeName. " +
+                        "Use zod2x method to provide one."
+                );
+            }
+
+            const item: TranspilerableTypes = {
                 type: def.typeName,
-                name: def.zod2x?.typeName,
+                name,
                 options: def.options.map((i: ZodTypeAny) =>
-                    this.zodToAST(i, { discriminantKey: def.discriminator })
+                    this._zodToAST(i, { discriminantKey: def.discriminator })
                 ),
                 description: schema.description,
                 discriminantKey: def.discriminator,
             };
+
+            if (!def.options.every((i: ZodTypeAny) => i instanceof ZodObject)) {
+                this.warnings.push(
+                    "Union of non-object types is a bad data modeling practice, " +
+                        "and could lead to unexpected results."
+                );
+            } else if (schema instanceof ZodUnion) {
+                this.warnings.push(
+                    "Using ZodUnion is a bad data modeling practice. " +
+                        "Use ZodDiscriminatedUnion instead."
+                );
+
+                (item as unknown as ASTCommon & ASTUnion).newObject = {
+                    name,
+                    type: ZodFirstPartyTypeKind.ZodObject,
+                    properties: this._unionAstNodes(item.options as ASTDefintion[]).properties,
+                    description:
+                        (schema.description ? `${schema.description} - ` : "") +
+                        `Built from union of ` +
+                        `${item.options.map((i) => (i as ASTDefintion).reference).join(", ")}`,
+                };
+            }
 
             if (name && !this.nodes.has(name)) {
                 this.nodes.set(name, item);
@@ -316,15 +473,42 @@ export class Zod2Ast {
 
             return item;
         } else if (schema instanceof ZodIntersection) {
-            let name: string = def.zod2x?.typeName as string;
+            const name: string = def.zod2x?.typeName as string;
 
-            const item: ASTNode | TranspilerableTypes = {
+            if (!name) {
+                throw new AstTypeNameDefinitionError(
+                    "ZodIntersection type must have a typeName. Use zod2x method to provide one."
+                );
+            }
+
+            const item: TranspilerableTypes = {
                 type: ZodFirstPartyTypeKind.ZodIntersection,
-                name: def.zod2x?.typeName,
-                left: this.zodToAST(def.left),
-                right: this.zodToAST(def.right),
+                name,
+                left: this._zodToAST(def.left),
+                right: this._zodToAST(def.right),
                 description: schema.description,
             };
+
+            if (def.left._def.typeName !== "ZodObject" || def.right._def.typeName !== "ZodObject") {
+                this.warnings.push(
+                    "Intersection of non-object is a bad data modeling practice, " +
+                        "and could lead to unexpected results."
+                );
+            } else {
+                item.newObject = {
+                    type: ZodFirstPartyTypeKind.ZodObject,
+                    name,
+                    properties: this._intersectAstNodes(
+                        item.left as ASTDefintion,
+                        item.right as ASTDefintion
+                    ).properties,
+                    description:
+                        (schema.description ? `${schema.description} - ` : "") +
+                        `Built from intersection of ` +
+                        `${(item.left as ASTDefintion).reference} and ` +
+                        `${(item.right as ASTDefintion).reference}`,
+                };
+            }
 
             if (name && !this.nodes.has(name)) {
                 this.nodes.set(name, item);
@@ -347,11 +531,11 @@ export class Zod2Ast {
      * @returns Transpilerable nodes.
      */
     build<T extends ZodRawShape>(schema: ZodObject<T>): ASTNodes {
-        this.zodToAST(schema);
+        this._zodToAST(schema);
 
         while (this.lazyPointers.length > 0) {
             const [pointer, schema] = this.lazyPointers.shift()!;
-            const lazyResolve = this.zodToAST(schema);
+            const lazyResolve = this._zodToAST(schema);
 
             /** Pointer to the pending AST node is updated with the lazy resolve */
             Object.keys(pointer).forEach((key) => {
@@ -363,9 +547,14 @@ export class Zod2Ast {
             });
         }
 
+        if (this.opt.strict !== false && this.warnings.length > 0) {
+            throw new AstNodeError(this.warnings.join("\n"));
+        }
+
         return {
             nodes: [...this.nodes.values()],
             discriminatorNodes: [...this.discriminatorNodes.values()],
+            warnings: this.warnings,
         };
     }
 }

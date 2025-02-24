@@ -27,10 +27,10 @@ export const zCppSupportedSchemas = z
         setItem: zs.zSet,
         tupleItem: zs.zTupleMulti,
 
-        unionItem: zs.zUnionWithDef,
-        discriminatedUnionItem: zs.zDiscriminantUnionWithDef,
+        unionItem: zs.zUnion,
+        discriminatedUnionItem: zs.zDiscriminantUnion,
 
-        intersectionItem: zs.zIntersectionWithDef,
+        intersectionItem: zs.zIntersection,
 
         anyItem: zs.zAny,
         optionalItem: zs.zOptional,

@@ -22,11 +22,11 @@ const testOutput = (output: string, expectedOutput: string) => {
 
 describe("Zod2Ts", () => {
     beforeAll(() => {
-        tsSupportedSchemas = new Zod2Ast().build(zTsSupportedSchemas);
+        tsSupportedSchemas = new Zod2Ast({ strict: false }).build(zTsSupportedSchemas);
     });
 
     test("String Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zString));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zString));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: string;\n" + "}";
 
@@ -34,7 +34,9 @@ describe("Zod2Ts", () => {
     });
 
     test("Literal String Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralString));
+        const ast = new Zod2Ast({ strict: false }).build(
+            schemas.modelBuilder(schemas.zLiteralString)
+        );
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + '  item: "literal";\n' + "}";
 
@@ -42,7 +44,9 @@ describe("Zod2Ts", () => {
     });
 
     test("Literal Number Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralNumber));
+        const ast = new Zod2Ast({ strict: false }).build(
+            schemas.modelBuilder(schemas.zLiteralNumber)
+        );
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: 1;\n" + "}";
 
@@ -50,7 +54,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Enum Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zEnum));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zEnum));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export enum EnumItem {\n" +
@@ -66,7 +70,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Native Enum Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zNativeEnum));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zNativeEnum));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export enum NativeEnumItem {\n" +
@@ -82,7 +86,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Number Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDouble));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zDouble));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: number;\n" + "}";
 
@@ -90,7 +94,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Object Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zObject));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zObject));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ObjectItem {\n" +
@@ -104,7 +108,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Date Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDate));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zDate));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: Date;\n" + "}";
 
@@ -112,7 +116,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Array Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zArray2D));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zArray2D));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Array<number[]>;\n" + "}";
@@ -121,7 +125,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Record Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zRecord));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zRecord));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Record<string, number>;\n" + "}";
@@ -130,7 +134,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Map Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zMap));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zMap));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Map<string, number>;\n" + "}";
@@ -139,7 +143,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Set Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zSet));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zSet));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: Set<string>;\n" + "}";
 
@@ -147,7 +151,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Tuple Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zTuple));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zTuple));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: [number, number];\n" + "}";
@@ -155,25 +159,8 @@ describe("Zod2Ts", () => {
         testOutput(output, expectedOutput);
     });
 
-    test("Union Schema - Composite Types", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zUnion));
-        const output = new Zod2Ts({ indent: 2 }).transpile(ast);
-        const expectedOutput =
-            "export interface ObjectItem {\n" +
-            "  key: string;\n" +
-            "}\n\n" +
-            "export interface OtherObjectItem {\n" +
-            "  otherKey: string;\n" +
-            "}\n\n" +
-            "export interface ModelItem {\n" +
-            "  item: ObjectItem | OtherObjectItem;\n" +
-            "}";
-
-        testOutput(output, expectedOutput);
-    });
-
-    test("Union Schema - without Composite Types", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zUnionWithDef));
+    test("Union Schema", () => {
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zUnion));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ObjectItem {\n" +
@@ -190,25 +177,10 @@ describe("Zod2Ts", () => {
         testOutput(output, expectedOutput);
     });
 
-    test("Intersection Schema - Composite Types", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zIntersection));
-        const output = new Zod2Ts({ indent: 2 }).transpile(ast);
-        const expectedOutput =
-            "export interface ObjectItem {\n" +
-            "  key: string;\n" +
-            "}\n\n" +
-            "export interface OtherObjectItem {\n" +
-            "  otherKey: string;\n" +
-            "}\n\n" +
-            "export interface ModelItem {\n" +
-            "  item: ObjectItem & OtherObjectItem;\n" +
-            "}";
-
-        testOutput(output, expectedOutput);
-    });
-
-    test("Intersection Schema - without Composite Types", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zIntersectionWithDef));
+    test("Intersection Schema", () => {
+        const ast = new Zod2Ast({ strict: false }).build(
+            schemas.modelBuilder(schemas.zIntersection)
+        );
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "export interface ObjectItem {\n" +
@@ -226,7 +198,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Any Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zAny));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zAny));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: any;\n" + "}";
 
@@ -234,7 +206,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Optional Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zOptional));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zOptional));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item?: string;\n" + "}";
 
@@ -242,7 +214,7 @@ describe("Zod2Ts", () => {
     });
 
     test("Nullable Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zNullable));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zNullable));
         const output = new Zod2Ts({ indent: 2 }).transpile(ast);
         const expectedOutput = "export interface ModelItem {\n" + "  item: string | null;\n" + "}";
 

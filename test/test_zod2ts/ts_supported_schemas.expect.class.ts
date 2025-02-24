@@ -29,7 +29,16 @@ export class OtherObjectItem {
     }
 }
 
-export type UnionItem = ObjectItem | OtherObjectItem;
+// Built from union of ObjectItem, OtherObjectItem
+export class UnionItem {
+    key: string;
+    otherKey: string;
+
+    constructor(data: UnionItem) {
+        this.key = data.key;
+        this.otherKey = data.otherKey;
+    }
+}
 
 export class ObjectItemWithDiscriminator {
     key: string;
@@ -53,7 +62,16 @@ export class OtherObjectItemWithDiscriminator {
 
 export type DiscriminantUnionItem = ObjectItemWithDiscriminator | OtherObjectItemWithDiscriminator;
 
-export type IntersectionItem = ObjectItem & OtherObjectItem;
+// Built from intersection of ObjectItem and OtherObjectItem
+export class IntersectionItem {
+    key: string;
+    otherKey: string;
+
+    constructor(data: IntersectionItem) {
+        this.key = data.key;
+        this.otherKey = data.otherKey;
+    }
+}
 
 export class TsSupportedSchemas {
     stringItem: string;
@@ -75,9 +93,7 @@ export class TsSupportedSchemas {
     tupleItem: [number, string, boolean];
     unionItem: UnionItem;
     discriminatedUnionItem: DiscriminantUnionItem;
-    unionItemComposite: ObjectItem | OtherObjectItem;
     intersectionItem: IntersectionItem;
-    intersectionItemComposite: ObjectItem & OtherObjectItem;
     anyItem: any;
     optionalItem?: string;
     nullableItem: string | null;
@@ -102,9 +118,7 @@ export class TsSupportedSchemas {
         this.tupleItem = data.tupleItem;
         this.unionItem = data.unionItem;
         this.discriminatedUnionItem = data.discriminatedUnionItem;
-        this.unionItemComposite = data.unionItemComposite;
         this.intersectionItem = data.intersectionItem;
-        this.intersectionItemComposite = data.intersectionItemComposite;
         this.anyItem = data.anyItem;
         this.optionalItem = data.optionalItem;
         this.nullableItem = data.nullableItem;

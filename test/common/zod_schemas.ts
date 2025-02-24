@@ -70,17 +70,9 @@ export const zSet = z.set(zString);
 export const zTuple = z.tuple([zDouble, zDouble]);
 export const zTupleMulti = z.tuple([zDouble, zString, zBoolean]);
 
-export const zIntersection = z.intersection(zObject, zOtherObject);
-export const zIntersectionWithDef = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
-
-export const zUnion = z.union([zObject, zOtherObject]);
-export const zUnionWithDef = z.union([zObject, zOtherObject]).zod2x("UnionItem");
-
-export const zDiscriminantUnion = z.discriminatedUnion("discriminator", [
-    zObjectWithDiscriminator,
-    zOtherObjectWithDiscriminator,
-]);
-export const zDiscriminantUnionWithDef = z
+export const zIntersection = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
+export const zUnion = z.union([zObject, zOtherObject]).zod2x("UnionItem");
+export const zDiscriminantUnion = z
     .discriminatedUnion("discriminator", [zObjectWithDiscriminator, zOtherObjectWithDiscriminator])
     .zod2x("DiscriminantUnionItem");
 

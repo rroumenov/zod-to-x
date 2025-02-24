@@ -23,11 +23,11 @@ const testOutput = (output: string, expectedOutput: string) => {
 
 describe("Zod2Proto3", () => {
     beforeAll(() => {
-        proto3SupportedSchemas = new Zod2Ast().build(zProto3SupportedSchemas);
+        proto3SupportedSchemas = new Zod2Ast({ strict: false }).build(zProto3SupportedSchemas);
     });
 
     test("String Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zString));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zString));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
@@ -36,7 +36,9 @@ describe("Zod2Proto3", () => {
     });
 
     test("Literal String Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralString));
+        const ast = new Zod2Ast({ strict: false }).build(
+            schemas.modelBuilder(schemas.zLiteralString)
+        );
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
@@ -45,7 +47,9 @@ describe("Zod2Proto3", () => {
     });
 
     test("Literal Number Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zLiteralNumber));
+        const ast = new Zod2Ast({ strict: false }).build(
+            schemas.modelBuilder(schemas.zLiteralNumber)
+        );
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  uint32 item = 1;\n" + "}\n";
@@ -54,7 +58,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Enum Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zEnum));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zEnum));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -71,7 +75,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Native Enum Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zNativeEnum));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zNativeEnum));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -88,7 +92,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Double", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDouble));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zDouble));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  double item = 1;\n" + "}\n";
@@ -97,7 +101,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as BigInt", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zBigInt));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zBigInt));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
@@ -106,7 +110,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Int64", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zInt64));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zInt64));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
@@ -115,7 +119,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Int32", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zInt32));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zInt32));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int32 item = 1;\n" + "}\n";
@@ -124,7 +128,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Boolean Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zBoolean));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zBoolean));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  bool item = 1;\n" + "}\n";
@@ -133,7 +137,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Object Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zObject));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zObject));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -148,7 +152,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Date Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zDate));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zDate));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -161,7 +165,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Array Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zArray1D));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zArray1D));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -173,7 +177,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Record Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zRecord));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zRecord));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -185,7 +189,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Map Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zMap));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zMap));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -197,7 +201,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Set Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zSet));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zSet));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -209,7 +213,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Tuple Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zTuple));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zTuple));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -221,7 +225,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Union Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zUnionWithDef));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zUnion));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -245,7 +249,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Any Schema", () => {
-        const ast = new Zod2Ast().build(schemas.modelBuilder(schemas.zAny));
+        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zAny));
         const output = new Zod2ProtoV3({ indent: 2 }).transpile(ast);
         const expectedOutput =
             'syntax = "proto3";\n\n' +

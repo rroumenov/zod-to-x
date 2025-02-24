@@ -1,6 +1,16 @@
 import { ZodFirstPartyTypeKind } from "zod";
 
 /**
+ * Shared properties for all AST node types.
+ */
+export type ASTCommon = {
+    arrayDimension?: number;
+    description?: string;
+    isNullable?: boolean;
+    isOptional?: boolean;
+};
+
+/**
  * AST (Abstract Syntax Tree) type for each Zod Schema that encapsulates
  * additional information beyond just the schema type.
  */
@@ -60,6 +70,12 @@ export type ASTUnion = {
     type: ZodFirstPartyTypeKind.ZodUnion;
     name: string;
     options: ASTNode[];
+
+    /**
+     * Allows to create a new object with the union properties. Used in languages that do not
+     * have a variant type or discriminated union cannot be used.
+     */
+    newObject?: ASTCommon & ASTObject;
 };
 
 export type ASTDiscriminatedUnion = {
@@ -74,16 +90,12 @@ export type ASTIntersection = {
     name: string;
     left: ASTNode;
     right: ASTNode;
-};
 
-/**
- * Shared properties for all AST node types.
- */
-export type ASTCommon = {
-    arrayDimension?: number;
-    description?: string;
-    isNullable?: boolean;
-    isOptional?: boolean;
+    /**
+     * Allows to create a new object with the union properties. Used in languages that do not
+     * support multiple inheritance.
+     */
+    newObject?: ASTCommon & ASTObject;
 };
 
 /**
@@ -131,4 +143,5 @@ export type TranspilerableTypes = ASTCommon &
 export type ASTNodes = {
     nodes: TranspilerableTypes[];
     discriminatorNodes: TranspilerableTypes[];
+    warnings: string[];
 };

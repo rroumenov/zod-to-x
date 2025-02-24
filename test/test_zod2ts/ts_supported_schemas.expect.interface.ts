@@ -57,9 +57,7 @@ export interface TsSupportedSchemas {
     tupleItem: [number, string, boolean];
     unionItem: UnionItem;
     discriminatedUnionItem: DiscriminantUnionItem;
-    unionItemComposite: ObjectItem | OtherObjectItem;
     intersectionItem: IntersectionItem;
-    intersectionItemComposite: ObjectItem & OtherObjectItem;
     anyItem: any;
     optionalItem?: string;
     nullableItem: string | null;

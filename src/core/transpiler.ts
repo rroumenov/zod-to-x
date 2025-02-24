@@ -47,64 +47,6 @@ export interface IZodToXOpt extends Record<string, any> {
 }
 
 /**
- * Internal transpiler configuration
- */
-interface IInternalOpts {
-    /**
-     * Indicates whether the target language supports composite types like unions and intersections
-     * directly, allowing variables to be typed as a union or intersection of other types without
-     * the need to define a new type.
-     *
-     * **Explanation:**
-     * Some languages allow you to declare a variable with a type that is a union (`|`) or
-     * intersection (`&`) of multiple types without the need to create a specific composite type
-     * beforehand. This provides flexibility in type definitions and reduces the need for
-     * boilerplate code.
-     *
-     * **Examples:**
-     *
-     * **TypeScript:**
-     * ```typescript
-     * // Union type: var1 can be either TypeA or TypeB
-     * let var1: TypeA | TypeB;
-     *
-     * // Intersection type: var2 must satisfy both TypeA and TypeB
-     * let var2: TypeA & TypeB;
-     * ```
-     *
-     * **C++ (not directly supported):**
-     * C++ does not support defining a variable as a union or intersection of types without creating
-     * a specific type first. Instead, you need to define a new type (e.g., using `union`, `struct`,
-     * or inheritance) before declaring a variable.
-     *
-     * *Union equivalent:*
-     * ```cpp
-     * // Define a union type
-     * union AorB {
-     *     TypeA a;
-     *     TypeB b;
-     * };
-     *
-     * // Declare a variable of the union type
-     * AorB var1;
-     * ```
-     *
-     * *Intersection equivalent (using multiple inheritance):*
-     * ```cpp
-     * // Define a struct that inherits from both TypeA and TypeB
-     * struct AandB : public TypeA, public TypeB {};
-     *
-     * // Declare a variable of the intersection type
-     * AandB var2;
-     * ```
-     *
-     * **Note:** Because of these differences, when transpiling to languages like C++, keep this
-     * flag disabled to ensure that 'typeName' is required also for ZodUnions and ZodIntersections.
-     */
-    enableCompositeTypes: boolean;
-}
-
-/**
  * Abstract base class for transpiling Zod schemas into other programming languages.
  * Extend this class and implement the abstract methods to define how each Zod type
  * should be converted to the target language's syntax.
@@ -116,15 +58,12 @@ export abstract class Zod2X<T extends IZodToXOpt> {
 
     protected opt: Partial<T>;
 
-    private inOpt: IInternalOpts;
-
-    protected constructor(inOpt: IInternalOpts, opt: Partial<T>) {
+    protected constructor(opt: Partial<T>) {
         this.output = [];
         this.imports = new Set<string>();
         this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
         this.opt = opt;
-        this.inOpt = inOpt;
     }
 
     /**
@@ -263,10 +202,9 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             token.type === ZodFirstPartyTypeKind.ZodEnum ||
             token.type === ZodFirstPartyTypeKind.ZodNativeEnum ||
             token.type === ZodFirstPartyTypeKind.ZodObject ||
-            (token.name &&
-                (token.type === ZodFirstPartyTypeKind.ZodUnion ||
-                    token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
-                    token.type === ZodFirstPartyTypeKind.ZodIntersection))
+            token.type === ZodFirstPartyTypeKind.ZodUnion ||
+            token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
+            token.type === ZodFirstPartyTypeKind.ZodIntersection
         );
     }
 
@@ -284,19 +222,6 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected addComment(data = "", indent = "") {
         if (data && this.opt.includeComments) {
             this.output.push(this.getComment(data, indent));
-        }
-    }
-
-    /**
-     * Checks if composite types (unions and intersections) are enabled.
-     * Throws an error if composite types are not supported by the target language.
-     */
-    private _checkCompositeFlag() {
-        if (!this.inOpt.enableCompositeTypes) {
-            throw new Error(
-                `Composite Types cannot be performed for this output Language. ` +
-                    `Add the missing 'typeName' to transpilerable schemas`
-            );
         }
     }
 
@@ -347,23 +272,6 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             } else {
                 varType = this.getRecordType(key, value);
             }
-        } else if (
-            !(token as TranspilerableTypes).name &&
-            token.type === ZodFirstPartyTypeKind.ZodIntersection
-        ) {
-            this._checkCompositeFlag();
-
-            const items = [token.left, token.right].map(this.getAttributeType.bind(this));
-            varType = this.getIntersectionType(items);
-        } else if (
-            !(token as TranspilerableTypes).name &&
-            (token.type === ZodFirstPartyTypeKind.ZodUnion ||
-                token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion)
-        ) {
-            this._checkCompositeFlag();
-
-            const items: string[] = token.options.map(this.getAttributeType.bind(this));
-            varType = this.getUnionType(items);
         } else {
             console.log("  # Unknown attribute equivalent for ---> ", token.type);
         }
