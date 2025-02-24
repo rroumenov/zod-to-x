@@ -29,12 +29,10 @@ export const zTsSupportedSchemas = z
         setItem: zs.zSet,
         tupleItem: zs.zTupleMulti,
 
-        unionItem: zs.zUnionWithDef,
-        discriminatedUnionItem: zs.zDiscriminantUnionWithDef,
-        unionItemComposite: zs.zUnion,
+        unionItem: zs.zUnion,
+        discriminatedUnionItem: zs.zDiscriminantUnion,
 
-        intersectionItem: zs.zIntersectionWithDef,
-        intersectionItemComposite: zs.zIntersection,
+        intersectionItem: zs.zIntersection,
 
         anyItem: zs.zAny,
         optionalItem: zs.zOptional,

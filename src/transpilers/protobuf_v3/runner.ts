@@ -8,11 +8,13 @@ import {
     ASTNativeEnum,
     ASTObject,
     ASTUnion,
-    IZodToXOpt,
+    NotTranspilerableTypeError,
     TranspilerableTypes,
     Zod2X,
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
+
+import { defaultOpts, IZod2ProtoV3Opt } from "./options";
 
 const allowedKeyTypes = [
     "int32",
@@ -29,34 +31,9 @@ const allowedKeyTypes = [
     "string",
 ];
 
-interface IZod2ProtoV3Opt extends Omit<IZodToXOpt, "skipDiscriminatorNodes"> {
-    /**
-     * Name of the protobuf file package.
-     */
-    packageName?: string;
-
-    /**
-     * Protobuf follows the snake_case convention for field names, but camelCase can also be used.
-     */
-    useCamelCase?: boolean;
-}
-
-const defaultOpts: IZod2ProtoV3Opt = {
-    includeComments: true,
-    indent: 4,
-    useCamelCase: false,
-
-    skipDiscriminatorNodes: true, // Not required for protobuf files
-};
-
 export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     constructor(opt: IZod2ProtoV3Opt = {}) {
-        super(
-            {
-                enableCompositeTypes: true,
-            },
-            { ...defaultOpts, ...opt }
-        );
+        super({ ...defaultOpts, ...opt });
     }
 
     protected getUnionType = (): string => {
@@ -115,7 +92,7 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
      * @returns A string representing the Protobuf type for the tuple.
      *          If all tuple elements are of the same type, it returns a `repeated` field of that
      *          type.
-     * @throws Error if the tuple contains mixed types.
+     * @throws NotTranspilerableTypeError if the tuple contains mixed types.
      */
     protected getTupleType = (itemsType: string[]): string => {
         const uniqueTypes = new Set(itemsType);
@@ -123,21 +100,23 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         if (uniqueTypes.size === 1) {
             return this.getArrayType(itemsType[0], 1);
         } else {
-            throw new Error(
+            throw new NotTranspilerableTypeError(
                 "Protobuf v3 does not support mixed-type tuples. Consider defining a message type."
             );
         }
     };
 
     protected getIntersectionType = (itemsType: string[]): string => {
-        throw new Error("Protobuf v3 does not support intersection types directly.");
+        throw new NotTranspilerableTypeError(
+            "Protobuf v3 does not support intersection types directly."
+        );
     };
 
     protected getArrayType(arrayType: string, arrayDeep: number): string {
         if (arrayDeep === 1) {
             return `repeated ${arrayType}`;
         } else {
-            throw new Error(
+            throw new NotTranspilerableTypeError(
                 "Protobuf v3 does not support multidimensional arrays directly. " +
                     "You need to define nested message types for deeper arrays"
             );
@@ -150,13 +129,15 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         } else if (typeof value === "number") {
             return this.getNumberType(Number.isInteger(value), { min: value, max: value });
         } else {
-            throw new Error(`Protobuf v3 does not support Literals for this value type: ${value}`);
+            throw new NotTranspilerableTypeError(
+                `Protobuf v3 does not support Literals for this value type: ${value}`
+            );
         }
     }
 
     protected getMapType(keyType: string, valueType: string): string {
         if (!allowedKeyTypes.includes(keyType)) {
-            throw new Error(
+            throw new NotTranspilerableTypeError(
                 `Protobuf map keys must be an integral or string type, got '${keyType}'.`
             );
         }
@@ -175,7 +156,9 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 
         data.values.forEach(([key, value], index) => {
             if (Number.isInteger(key.at(0))) {
-                throw new Error(`Enumerate item name cannot start with number: ${key}`);
+                throw new NotTranspilerableTypeError(
+                    `Enumerate item name cannot start with number: ${key}`
+                );
             }
 
             this.push1(`${key} = ${index};`);
@@ -185,7 +168,7 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     }
 
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
-        throw new Error(`Protobuf does not support message intersections.`);
+        throw new NotTranspilerableTypeError(`Protobuf does not support message intersections.`);
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
@@ -235,7 +218,9 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         const attributesTypes = data.options.map(this.getAttributeType.bind(this));
 
         if (attributesTypes.find((i) => i.startsWith("map<") || i.startsWith("repeated "))) {
-            throw new Error("Map and Repeated fields are not suported by Protobuf oneOf");
+            throw new NotTranspilerableTypeError(
+                "Map and Repeated fields are not suported by Protobuf oneOf"
+            );
         }
 
         this.push0(`message ${data.name} {`);

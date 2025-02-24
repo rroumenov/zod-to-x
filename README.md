@@ -7,9 +7,11 @@
 - [Why use `@zod-to-x`](#why-use-zod-to-x)
 - [Installation](#installation)
 - [Quick start](#quick-start)
+- [Intersections and Unions](#intersections-and-unions)
 - [Supported output languages](#supported-output-languages)
 - [Mapping of supported Zod Types](#mapping-of-supported-zod-types)
 - [Additional utils](#additional-utils)
+- [Changelog](#changelog)
 
 
 
@@ -17,7 +19,7 @@
 Managing data consistency across multiple layers and languages is a common challenge in modern software development. [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) solves this by allowing you to define your data models once and effortlessly transpile them into multiple programming languages. Here’s why it stands out:
 
 1. **Centralized Data Definition**  
-Define your data structures in one place using the powerful [`@zod`]((https://github.com/colinhacks/zod)) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`]((https://github.com/colinhacks/zod)) ecosystem like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema)
+Define your data structures in one place using the powerful [`@zod`](https://github.com/colinhacks/zod) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`](https://github.com/colinhacks/zod) ecosystem like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema)
 
 2. **Multi-Language Compatibility**  
 Generate data models for TypeScript, Protobuf V3 and C++ (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
@@ -26,15 +28,14 @@ Generate data models for TypeScript, Protobuf V3 and C++ (with languages like Go
 Automate the transpilation of data models to save time, reduce errors, and let your team focus on business logic instead of boilerplate code.
 
 
-
 ## Installation
-### 1) Install [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) and [`@zod(*)`]((https://github.com/colinhacks/zod)) dependency.
+### 1) Install [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) and [`@zod(*)`](https://github.com/colinhacks/zod) dependency.
 ```bash
 npm install zod-to-x zod
 ```
 (*) [`zod@3.22.0`](https://www.npmjs.com/package/zod/v/3.22.0) version or greather is required.
 
-### 2) Extend Zod using the `extendZod` method after the first [`@zod`]((https://github.com/colinhacks/zod)) import:
+### 2) Extend Zod using the `extendZod` method after the first [`@zod`](https://github.com/colinhacks/zod) import:
 ```ts
 import { z } from "zod";
 import { extendZod } from "zod-to-x";
@@ -116,12 +117,134 @@ Example of supported schemas with its outputs can be found in the `test` folder:
 
 
 
+## Intersections and Unions
+Starting from `v1.3.0`, a best practices helper is enabled by default when handling data intersections and unions:
+- Intersections and Unions can only be performed between ZodObject schemas.
+- Discriminant unions shall be used instead of Unions.
+
+These rules help ensure that each data model follows the single responsibility principle. Otherwise, an error will be thrown when building an `ASTNode`.
+
+**NOTE**: You can disable these rules at your own risk by setting the `strict` flag to `false` when building the `ASTNode` data model. However, any unexpected behavior or issues resulting from this will not be supported.
+
+### Expected outputs
+- **For Intersections**: whenever possible, an intersection is transpiled into a struct/class that inherits from the intersected data models. Otherwise, a new struct/class is created, where attributes are the result of merging the intersected data models. Any shared key is overridden by the last matching type.
+```ts
+const DataA = z.object({ keyA: z.string(), keyC: z.string() }).zod2x("DataA");
+const DataB = z.object({ keyB: z.string(), keyC: z.number() }).zod2x("DataB");
+const Intersection = z.intersection(DataA, DataB).zod2x("Intersection");
+
+// C++ case (with inheritance)
+// struct Intersection : public DataA, public DataB {
+//   // Intersection fields are inherited from base structs.
+// };
+
+// Typescript case (with attribute merging)
+// class Intersection {
+//   keyA: string;
+//   keyB: string;
+//   keyC: number; // Shared key overriden using the last type.
+// };
+```
+- **For Unions**: whenever possible, a union is transpiled into a variant type composed of the united data models. Otherwise, a new struct/class is created, where attributes are the result of merging the intersected data models. Any common key is preserved as is (if only its requirement differs, it is changed to optional). Other keys are also set as optional.
+```ts
+const DataA = z.object({ keyA: z.string(), keyD: z.string() }).zod2x("DataA");
+const DataB = z.object({ keyB: z.string(), keyD: z.string() }).zod2x("DataB");
+const Intersection = z.intersection(DataA, DataB).zod2x("Intersection");
+
+// C++ case (with variant type)
+// using Intersection = std::variant<DataA, DataB>;
+
+// Typescript case (with attributes merge)
+// class Intersection {
+//   keyA?: string; // Different keys are set as optional
+//   keyB?: string;
+//   keyD: number; // Shared key preserved as is.
+// };
+```
+
+
+
+### Tips for discriminated unions
+To enhance data modeling and the serialization/deserialization of a discriminated union type, two key steps should be considered:
+- Using `ZodEnum` or `ZodNativeEnum` the define the discriminator key options.
+- Using `ZodLiteral` to define the specific value of the discriminator key.
+
+Example of discriminant definition:
+```ts
+// Define message types
+export const MsgType = z.enum(["TypeA", "TypeB"]).zod2x("MsgType");
+
+// Define different message structures based on the 'msgType' value.
+const MessageA = z
+    .object({
+        key: z.string(),
+
+        // Assign the type using the corresponding MsgType value and link it with 'zod2x'.
+        msgType: z.literal(MsgType.Values.TypeA).zod2x(MsgType),  
+    })
+    .zod2x("MessageA");
+
+const MessageB = z
+    .object({
+        otherKey: z.string(),
+
+        // Same process as MessageA.
+        msgType: z.literal(MsgType.Values.TypeB).zod2x(MsgType),
+    })
+    .zod2x("MessageB");
+
+// Define the main Message type using ZodDiscriminatedUnion.
+export const Message = z
+    .discriminatedUnion("msgType", [MessageA, MessageB])
+    .zod2x("Message");
+```
+
+Example of C++ output:
+```cpp
+// Discriminated union with direct serialization/deserialization
+inline void from_json(const json& j, Message& x) {
+    const auto& k = j.at("msgType").get<std::string>();
+    if (k == "TypeA") {
+        x = j.get<MessageA>();
+    }
+    else if (k == "TypeB") {
+        x = j.get<MessageB>();
+    }
+    else {
+        throw std::runtime_error("Failed to deserialize Message: unknown format");
+    }
+}
+
+
+
+// Using a regular union or a discriminated union without the above approach:
+// Fallback to try-catch for serialization/deserialization
+inline void from_json(const json& j, Message& x) {
+  try {
+      x = j.get<MessageA>();
+      return;
+  } catch (const std::exception&) {
+  }
+  try {
+      x = j.get<MessageB>();
+      return;
+  } catch (const std::exception&) {
+      throw std::runtime_error("Failed to deserialize Message: unknown format");
+  }
+}
+```
+
+
 ## Supported output languages
 Common options:
 - **header**: Text to add as a comment at the beginning of the output.
 - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
 - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
 - **skipDiscriminatorNodes**: prevents the inclusion of `ZodEnum` or `ZodNativeEnum` schemas that are used solely as discriminator keys in a `ZodDiscriminatedUnion`. Defaults to `false`.
+
+### 0) ASTNode
+- Options:
+  - **strict**: When true, it will throw an error if a bad data modeling practice is detected. Default is `true`.
 
 ### 1) Typescript  
 - Options:
@@ -133,7 +256,6 @@ Common options:
   - **useCamelCase**: Protobuf follows the snake_case convention for field names, but camelCase can also be used. Defaults to `false`.
 
 - Limitations:
-  - `oneof` fields support only unions of `ZodObject` schemas.
   - `ZodTuple` is supported only for items of the same type.
 
 
@@ -144,9 +266,6 @@ Common options:
   - **namespace**: Name of the namespace containing the output code.
   - **outType**: Output transpilation using C++ Structs or Classes. Defaults to `struct`.
   - **skipSerialize**: Remove Nlohmann JSON serialization/deserialization. Defaults to `false`.
-
-- Limitations:
-  - `ZodIntersection` is supported only for intersection of `ZodObject` schemas.
 
 
 
@@ -317,3 +436,6 @@ console.log(userJsonSchema);
 //   "$schema": "http://json-schema.org/draft-07/schema#"
 // }
 ```
+
+## Changelog
+View the changelog at [Releases](https://github.com/rroumenov/zod-to-x/releases).

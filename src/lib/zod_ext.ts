@@ -51,7 +51,7 @@ declare module "zod" {
 
     interface ZodDiscriminatedUnion<
         Discriminator extends string,
-        Options extends z.ZodDiscriminatedUnionOption<Discriminator>[],
+        Options extends readonly z.ZodDiscriminatedUnionOption<Discriminator>[],
     > {
         zod2x(this: ZodDiscriminatedUnion<Discriminator, Options>, typeName: string): this;
         zod2x(

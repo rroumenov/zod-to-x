@@ -29,8 +29,8 @@ export const zProto3SupportedSchemas = z
         setItem: zs.zSet,
         tupleItem: zs.zTuple,
 
-        unionItem: zs.zUnionWithDef,
-        discriminatedUnionItem: zs.zDiscriminantUnionWithDef,
+        unionItem: zs.zUnion,
+        discriminatedUnionItem: zs.zDiscriminantUnion,
 
         anyItem: zs.zAny,
     })

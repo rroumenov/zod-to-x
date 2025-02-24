@@ -10,34 +10,15 @@ import {
     ASTNode,
     ASTObject,
     ASTUnion,
-    IZodToXOpt,
     TranspilerableTypes,
     Zod2X,
 } from "@/core";
 
-interface IZod2TsOpt extends IZodToXOpt {
-    /**
-     * Output transpilation using Typescript interfaces or Classes.
-     */
-    outType?: "interface" | "class";
-}
-
-const defaultOpts: IZod2TsOpt = {
-    includeComments: true,
-    indent: 4,
-    skipDiscriminatorNodes: false,
-
-    outType: "interface",
-};
+import { defaultOpts, IZod2TsOpt } from "./options";
 
 export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     constructor(opt: IZod2TsOpt = {}) {
-        super(
-            {
-                enableCompositeTypes: true,
-            },
-            { ...defaultOpts, ...opt }
-        );
+        super({ ...defaultOpts, ...opt });
     }
 
     protected runAfter(): void {}
@@ -124,13 +105,34 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         this.push0("}\n");
     }
 
-    /** Ex: type TypeC = TypeA & TypeB */
+    /** Ex:
+     * // Interface output
+     * // Class output if non-object intersection
+     * type TypeC = TypeA & TypeB
+     *
+     * // Class output all-object intersection
+     * class TypeC {
+     *     ...attributesTypeA,
+     *     ...attributesTypeB
+     *
+     *     constructor(data: TypeC) {
+     *         ...attributesAssignment
+     *     }
+     * }
+     * */
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
-        this.addComment(data.description);
+        if (this.opt.outType === "class" && data.newObject) {
+            this.addComment(data.newObject?.description);
+            this._transpileStructAsClass(data.newObject);
+        } else {
+            this.addComment(data.description);
 
-        const attributesTypes = [data.left, data.right].map(this.getAttributeType.bind(this));
+            const attributesTypes = [data.left, data.right].map(this.getAttributeType.bind(this));
 
-        this.push0(`export type ${data.name} = ${this.getIntersectionType(attributesTypes)};\n`);
+            this.push0(
+                `export type ${data.name} = ${this.getIntersectionType(attributesTypes)};\n`
+            );
+        }
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
@@ -143,13 +145,32 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
     }
 
-    /** Ex: type TypeC = TypeA | TypeB */
+    /** Ex:
+     * // Interface output
+     * // Class output for Discriminated Union or non-objects union
+     * type TypeC = TypeA | TypeB
+     *
+     * // Class output for all-object Union
+     * class TypeC {
+     *     ...attributesTypeA,
+     *     ...attributesTypeB
+     *
+     *     constructor(data: TypeC) {
+     *         ...attributesAssignment
+     *     }
+     * }
+     * */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
-        this.addComment(data.description);
+        if (this.opt.outType === "class" && (data as ASTUnion & ASTCommon).newObject) {
+            this.addComment((data as ASTUnion & ASTCommon).newObject?.description);
+            this._transpileStructAsClass((data as ASTUnion & ASTCommon).newObject!);
+        } else {
+            this.addComment(data.description);
 
-        const attributesTypes = data.options.map(this.getAttributeType.bind(this));
+            const attributesTypes = data.options.map(this.getAttributeType.bind(this));
 
-        this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+            this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+        }
     }
 
     /** Ex:

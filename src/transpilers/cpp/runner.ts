@@ -11,6 +11,7 @@ import {
     ASTNode,
     ASTObject,
     ASTUnion,
+    NotTranspilerableTypeError,
     TranspilerableTypes,
     Zod2X,
 } from "@/core";
@@ -44,12 +45,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected lib;
 
     constructor(opt: IZod2CppOpt = {}) {
-        super(
-            {
-                enableCompositeTypes: false,
-            },
-            { ...defaultOpts, ...opt }
-        );
+        super({ ...defaultOpts, ...opt });
 
         this.imports.add("#pragma once\n");
 
@@ -253,7 +249,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 data.right.referenceType === ZodFirstPartyTypeKind.ZodObject
             )
         ) {
-            throw new Error(`${data.name}: only intersection of ZodObjects is supported.`);
+            throw new NotTranspilerableTypeError(
+                `${data.name}: only intersection of ZodObjects is supported.`
+            );
         }
 
         const leftType = this.getAttributeType(data.left);
