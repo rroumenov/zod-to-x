@@ -1,6 +1,7 @@
 # zod-to-x
 [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
 
+Try it at [`Playcode.io`](https://playcode.io/2277071).
 
 
 ## Table of contents
