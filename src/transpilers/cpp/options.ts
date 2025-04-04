@@ -8,6 +8,10 @@ export interface IZod2CppOpt extends IZodToXOpt {
 
     /**
      * Define namespace name which contains the output code.
+     *
+     * @remarks
+     * - If layered modeling is used, its value its overriden by the layer namespace provided from
+     *   the decorator.
      */
     namespace?: string;
 
@@ -26,6 +30,7 @@ export const defaultOpts: IZod2CppOpt = {
     includeComments: true,
     indent: 4,
     skipDiscriminatorNodes: false,
+    useImports: true,
 
     namespace: "zodtocpp",
     outType: "struct",

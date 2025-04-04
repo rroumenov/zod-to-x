@@ -11,6 +11,7 @@ export const defaultOpts: IZod2TsOpt = {
     includeComments: true,
     indent: 4,
     skipDiscriminatorNodes: false,
+    useImports: true,
 
     outType: "interface",
 };

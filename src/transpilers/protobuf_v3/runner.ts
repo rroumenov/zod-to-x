@@ -41,6 +41,16 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         return "";
     };
 
+    protected addImportFromFile(filename: string, namespace: string): string {
+        // Zod2ProtoV3 does not support layered modeling.
+        return "";
+    }
+
+    protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
+        // Zod2ProtoV3 does not support layered modeling.
+        return "";
+    }
+
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getBooleanType = (): string => "bool";
     protected getStringType = (): string => "string";

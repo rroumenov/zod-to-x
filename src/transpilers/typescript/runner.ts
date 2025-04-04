@@ -24,6 +24,17 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     protected runAfter(): void {}
     protected runBefore(): void {}
 
+    protected addImportFromFile(filename: string, namespace: string): string {
+        const filenameWithoutExtension = filename.endsWith(".ts")
+            ? filename.slice(0, -3)
+            : filename;
+        return `import * as ${namespace} from "./${filenameWithoutExtension}";`;
+    }
+
+    protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
+        return `${namespace}.${typeName}`;
+    }
+
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getAnyType = (): string => "any";
     protected getBooleanType = (): string => "boolean";

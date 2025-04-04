@@ -14,6 +14,7 @@ import {
     ASTUnion,
     TranspilerableTypes,
 } from "./ast_types";
+import { isTranspilerableZodType } from "./zod_helpers";
 
 /**
  * Optional user settings
@@ -44,6 +45,11 @@ export interface IZodToXOpt extends Record<string, any> {
      * enum types to the generated output when unnecessary.
      */
     skipDiscriminatorNodes?: boolean;
+
+    /**
+     * Every external type will be imported from the file where it is defined. Default: true
+     */
+    useImports?: boolean;
 }
 
 /**
@@ -72,6 +78,20 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      */
     protected abstract runBefore(): void;
     protected abstract runAfter(): void;
+
+    /**
+     * Adds an import statement for a specific file.
+     * @param filename - The name of the file to import from.
+     * @param namespace - The namespace to use for the imported types.
+     */
+    protected abstract addImportFromFile(filename: string, namespace: string): string;
+
+    /**
+     * Returns the accessible type name from an external namespace.
+     * @param namespace
+     * @param typeName
+     */
+    protected abstract getTypeFromExternalNamespace(namespace: string, typeName: string): string;
 
     /**
      * Returns a comment.
@@ -198,14 +218,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * @returns `true` if the type is transpilerable; otherwise, `false`.
      */
     protected isTranspilerable(token: TranspilerableTypes) {
-        return (
-            token.type === ZodFirstPartyTypeKind.ZodEnum ||
-            token.type === ZodFirstPartyTypeKind.ZodNativeEnum ||
-            token.type === ZodFirstPartyTypeKind.ZodObject ||
-            token.type === ZodFirstPartyTypeKind.ZodUnion ||
-            token.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
-            token.type === ZodFirstPartyTypeKind.ZodIntersection
-        );
+        return isTranspilerableZodType(token.type);
     }
 
     // Push with indentation helpers
@@ -236,7 +249,10 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         if (this.isTranspilerable(token as TranspilerableTypes)) {
             varType = (token as TranspilerableTypes).name as string;
         } else if (token.type === "definition") {
-            varType = token.reference;
+            varType =
+                this.opt.useImports === true && token.parentNamespace
+                    ? this.getTypeFromExternalNamespace(token.parentNamespace, token.reference)
+                    : token.reference;
         } else if (token.type === ZodFirstPartyTypeKind.ZodString) {
             varType = this.getStringType();
         } else if (token.type === ZodFirstPartyTypeKind.ZodBoolean) {
@@ -305,23 +321,30 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         }
     }
 
-    /**
-     * Transpiles a queue of AST nodes into the target language.
-     * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
-     * @returns The transpiled code as a string.
-     */
-    transpile(transpilerQueue: ASTNodes): string {
-        this.runBefore();
+    private _getTranspilerableNodes(transpilerQueue: ASTNodes): Map<string, TranspilerableTypes> {
+        return new Map([
+            ...(this.opt.useImports === false ? transpilerQueue.externalNodes : []),
+            ...(this.opt.skipDiscriminatorNodes !== true ? transpilerQueue.discriminatorNodes : []),
+            ...transpilerQueue.nodes,
+        ]);
+    }
 
-        if (this.opt.skipDiscriminatorNodes !== true) {
-            transpilerQueue.discriminatorNodes.forEach(this._transpileItem.bind(this));
-        }
+    private _getImports(externalNodes: Map<string, TranspilerableTypes>): void {
+        const importData = new Map<string, string>();
 
-        transpilerQueue.nodes.forEach(this._transpileItem.bind(this));
+        externalNodes.forEach((i) => {
+            if (i.parentFile && i.parentNamespace && !importData.has(i.parentFile)) {
+                importData.set(i.parentFile, i.parentNamespace);
+            }
+        });
 
-        this.runAfter();
+        importData.forEach((namespace, file) => {
+            this.imports.add(this.addImportFromFile(file, namespace));
+        });
+    }
 
-        let header = [];
+    private _getHeader(): string[] {
+        const header = [];
 
         if (this.opt.header) {
             header.push(...this.opt.header.split("\n").map((i) => this.getComment(i)));
@@ -335,7 +358,26 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             }
         }
 
-        this.output = [...header, ...this.output];
+        return header;
+    }
+
+    /**
+     * Transpiles a queue of AST nodes into the target language.
+     * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
+     * @returns The transpiled code as a string.
+     */
+    transpile(transpilerQueue: ASTNodes): string {
+        this.runBefore();
+
+        this._getTranspilerableNodes(transpilerQueue).forEach(this._transpileItem.bind(this));
+
+        this.runAfter();
+
+        if (this.opt.useImports === true) {
+            this._getImports(transpilerQueue.externalNodes);
+        }
+
+        this.output = [...this._getHeader(), ...this.output];
 
         return this.output.join("\n");
     }

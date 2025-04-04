@@ -107,6 +107,12 @@ export type ASTDefintion = ASTCommon & {
     reference: string;
     referenceType: ZodFirstPartyTypeKind;
     discriminantValue?: string;
+
+    /**
+     * Namespace where the transpilerable model is defined. Used to use import statements in the
+     * transpiled code.
+     */
+    parentNamespace?: string;
 };
 
 /**
@@ -138,10 +144,18 @@ export type ASTNode = ASTCommon &
  * Represents schemas that can be directly transpiled into types in other programming languages.
  */
 export type TranspilerableTypes = ASTCommon &
-    (ASTEnum | ASTNativeEnum | ASTObject | ASTUnion | ASTDiscriminatedUnion | ASTIntersection);
+    (ASTEnum | ASTNativeEnum | ASTObject | ASTUnion | ASTDiscriminatedUnion | ASTIntersection) & {
+        /**
+         * File where the transpilerable model is defined and the reference used to group imports.
+         * Used to generate import statements in the transpiled code.
+         */
+        parentFile?: string;
+        parentNamespace?: string;
+    };
 
 export type ASTNodes = {
-    nodes: TranspilerableTypes[];
-    discriminatorNodes: TranspilerableTypes[];
+    nodes: Map<string, TranspilerableTypes>;
+    externalNodes: Map<string, TranspilerableTypes>;
+    discriminatorNodes: Map<string, TranspilerableTypes>;
     warnings: string[];
 };
