@@ -18,4 +18,5 @@ export const defaultOpts: IZod2ProtoV3Opt = {
     useCamelCase: false,
 
     skipDiscriminatorNodes: true, // Not required for protobuf files
+    useImports: false, // Not required for protobuf files
 };

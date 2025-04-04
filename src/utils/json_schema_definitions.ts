@@ -18,7 +18,7 @@ import {
  * definitions object.
  *
  * This function traverses the provided Zod schema and its nested schemas to collect all schemas
- * that have a custom `typeName` defined in `schema._def.zod2x.typeName`. It accumulates these
+ * that have a custom `typeName` defined in `schema._zod2x.typeName`. It accumulates these
  * schemas into a `definitions` object, which maps each `typeName` to its corresponding schema.
  * This is useful for generating JSON Schema definitions or for any scenario where you need to
  * collect and reference custom types.
@@ -41,7 +41,7 @@ export function zod2JsonSchemaDefinitions(
     }
     visited.add(schema);
 
-    const typeName = (schema as any)._def.zod2x?.typeName;
+    const typeName = (schema as any)._zod2x?.typeName;
 
     if (typeName && definitions[typeName]) {
         return definitions;

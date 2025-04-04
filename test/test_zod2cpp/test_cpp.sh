@@ -1,19 +1,26 @@
 #!/bin/bash
-dir_cpp11=`dirname $(find . -name cpp_supported_schemas.test.cpp)`
-cd $dir_cpp11
-g++ -std=c++11 cpp_supported_schemas.test.cpp -o test.exe
-if [ $? -eq 0 ]; then
-    ./test.exe
-    rm test.exe
-else
-    echo "C++11 build failed"
-fi
+for file in $(find . -type f -regex ".*cpp11/.*\.test\.cpp"); do
+    dir_cpp11=$(dirname "$file")
+    cd "$dir_cpp11"
+    g++ -std=c++11 "$(basename "$file")" -o test.exe
+    if [ $? -eq 0 ]; then
+        ./test.exe
+        rm test.exe
+    else
+        echo "C++11 build failed for $file"
+    fi
+    cd - > /dev/null
+done
 
-cd ../cpp17
-g++ -std=c++17 cpp_supported_schemas.test17.cpp -o test17.exe
-if [ $? -eq 0 ]; then
-    ./test17.exe
-    rm test17.exe
-else
-    echo "C++17 build failed"
-fi
+for file in $(find . -type f -regex ".*cpp17/.*\.test\.cpp"); do
+    dir_cpp17=$(dirname "$file")
+    cd "$dir_cpp17"
+    g++ -std=c++17 "$(basename "$file")" -o test.exe
+    if [ $? -eq 0 ]; then
+        ./test.exe
+        rm test.exe
+    else
+        echo "C++17 build failed for $file"
+    fi
+    cd - > /dev/null
+done

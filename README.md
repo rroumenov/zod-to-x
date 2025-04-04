@@ -1,4 +1,22 @@
-# zod-to-x
+<p align="center">
+  <img src="zod2x_image.png" alt="zod-to-x" style="max-width: 100%; height: auto;"><br>
+  <em style="font-size: smaller;">Image generated using Canvas AI.</em>
+</p>
+<p align="center">
+  <a href="https://github.com/rroumenov/zod-to-x/releases" target="_blank" style="text-decoration: none;">
+    <button style="padding: 6px 12px; font-size: 14px; background-color: #2ea44f; color: white; border: 1px solid rgba(27, 31, 35, 0.15); border-radius: 6px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';">
+      View Changelog
+    </button>
+  </a>
+  <a href="https://playcode.io/2277071" target="_blank" style="text-decoration: none; margin-left: 10px;">
+    <button style="padding: 6px 12px; font-size: 14px; background-color: #0366d6; color: white; border: 1px solid rgba(27, 31, 35, 0.15); border-radius: 6px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';">
+      Try it on Playcode
+    </button>
+  </a>
+</p>
+
+
+
 [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
 
 
@@ -8,10 +26,10 @@
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Intersections and Unions](#intersections-and-unions)
+- [Layered modeling](#layered-modeling) <sup>*(new)*</sup>
 - [Supported output languages](#supported-output-languages)
 - [Mapping of supported Zod Types](#mapping-of-supported-zod-types)
 - [Additional utils](#additional-utils)
-- [Changelog](#changelog)
 
 
 
@@ -33,7 +51,7 @@ Automate the transpilation of data models to save time, reduce errors, and let y
 ```bash
 npm install zod-to-x zod
 ```
-(*) [`zod@3.22.0`](https://www.npmjs.com/package/zod/v/3.22.0) version or greather is required.
+(*) [`zod@3.22.3`](https://www.npmjs.com/package/zod/v/3.22.0) version or greather is required.
 
 ### 2) Extend Zod using the `extendZod` method after the first [`@zod`](https://github.com/colinhacks/zod) import:
 ```ts
@@ -233,6 +251,101 @@ inline void from_json(const json& j, Message& x) {
   }
 }
 ```
+
+
+## Layered modeling
+To improve Separation of Concerns (SoC), the Dependency Rule, and Maintainability, a new layer-based modeling approach was introduced in `v1.4.0`. This approach establishes relationships between models in separate files, which are transpiled into file imports. This feature provides a powerful tool not only for type systems with robust architectures, such as Clean, Hexagonal, or Layered, but also enforces their usage.
+
+To achieve this, two new components are included:
+- **Zod2XModel**: With layered modeling, data is defined using classes. Inheriting this abstract class provides metadata management to handle relationships and also simplifies transpilation by including a `transpile()` method that receives the target language class.
+- **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*.
+
+### Usage example
+1. Define a Domain model, such as a User entity:
+```ts
+@Domain({ namespace: "USER", file: "user.entity" })
+class UserModels extends Zod2XModel {
+
+    userRole = z.enum(["Admin", "User"]).zod2x("UserRole"); // (*)
+
+    userEntity = z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1),
+        email: z.string().email(),
+        age: z.number().int().nonnegative().optional(),
+        role: this.userRole,
+    }); // (*)
+}
+
+const userModels = new UserModels();
+console.log(userModels.transpile(Transpilers.Zod2Ts));
+// Output:
+// export enum UserRole {
+//     Admin = "Admin",
+//     User = "User",
+// }
+
+// export interface UserEntity {
+//     id: string;
+//     name: string;
+//     email: string;
+//     age?: number;
+//     role: UserRole;
+// }
+
+// export interface UserModels {
+//     userRole: UserRole;
+//     userEntity: UserEntity;
+// }
+
+```
+**(*)** Thanks to the Layer decorator, the use of `zod2x` for type naming can now be omitted, simplifying and clarifying the process of model definition. By default, it will take the property name and apply a Pascal case convention (example: *myProperty* -> *MyProperty*).  
+You can still use it if you want to enforce a different type name.
+
+2. Define an Application model, such as a User DTO:
+```ts
+// Create DTOs using previously defined user models.
+@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+class UserDtos extends Zod2XModel {
+
+    createUserUseCaseDto = userModels.userEntity.omit({ id: true });  // (*)
+
+    createUserUseCaseResultDto = userModels.userEntity
+        .omit({ role: true })
+        .extend({
+            createdAt: z.date(),
+            updatedAt: z.date(),
+        }); // (*)
+}
+
+const userDtos = new UserDtos();
+console.log(userDtos.transpile(Transpilers.Zod2Ts))
+// Output:
+// import * as USER from "./user.entity";    <--- Reusing models from other layers.
+
+// export interface CreateUserUseCaseDto {
+//     name: string;
+//     email: string;
+//     age?: number;
+//     role: USER.UserRole;
+// }
+
+// export interface CreateUserUseCaseResultDto {
+//     id: string;
+//     name: string;
+//     email: string;
+//     age?: number;
+//     createdAt: Date;
+//     updatedAt: Date;
+// }
+
+// export interface UserDtos {
+//     createUserUseCaseDto: CreateUserUseCaseDto;
+//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
+// }
+
+```
+**(*)** Any modification of an existing model (in this case, `userEntity`) will lose the relation with that model, but not its children. In the case of the `CreateUserUseCaseDto` type, the `role` field will remain linked to the existing one in the `user.entity` file.
 
 
 ## Supported output languages
@@ -436,6 +549,3 @@ console.log(userJsonSchema);
 //   "$schema": "http://json-schema.org/draft-07/schema#"
 // }
 ```
-
-## Changelog
-View the changelog at [Releases](https://github.com/rroumenov/zod-to-x/releases).

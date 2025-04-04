@@ -20,7 +20,7 @@ bool testType(T typeItem, const json& testJson) {
     return result;
 }
 
-json testJson = {
+json jSupportedSchemas = {
     {"stringItem", "testString"},
     {"literalStringItem", "literalString"},
     {"literalNumberItem", 42},
@@ -43,4 +43,21 @@ json testJson = {
     {"anyItem", {{"anyKey", "anyValue"}}},
     {"optionalItem", "optionalValue"},
     {"nullableItem", nullptr}
+};
+
+json jUserDtos = {
+    { "createUserUseCaseDto", {
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "role", "Admin" }
+    }},
+    { "createUserUseCaseResultDto", {
+        { "id", "101" },
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "createdAt", "2025-03-30T14:00:00Z" },
+        { "updatedAt", "2025-03-30T15:00:00Z" }
+    }}
 };

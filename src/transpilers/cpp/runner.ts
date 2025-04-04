@@ -61,6 +61,15 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     protected runBefore() {}
 
+    protected addImportFromFile(filename: string, _: string): string {
+        const filenameWithExtension = filename.endsWith(".hpp") ? filename : `${filename}.hpp`;
+        return `#include "${filenameWithExtension}"`;
+    }
+
+    protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
+        return `${namespace}::${typeName}`;
+    }
+
     protected runAfter() {
         this.output = this.output.map((i) => `${this.indent[1]}${i}`);
 

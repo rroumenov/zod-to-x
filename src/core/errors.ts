@@ -21,3 +21,10 @@ export class NotTranspilerableTypeError extends Error {
         this.name = "NotTranspilerableTypeError";
     }
 }
+
+export class BadLayerDefinitionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "BadLayerDefinitionError";
+    }
+}
