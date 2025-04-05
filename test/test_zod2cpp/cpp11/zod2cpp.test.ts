@@ -9,6 +9,7 @@ import { zCppSupportedSchemas } from "../cpp_supported_schemas";
 import { header } from "../../common/header";
 import * as schemas from "../../common/zod_schemas";
 import { userDtos, userModels } from "../../common/layered_schemas";
+import { userDtos as userDtosMixin } from "../../common/layered_mixin_schemas";
 
 let cppSupportedSchemas: Zod2XTypes.ASTNodes;
 
@@ -897,6 +898,44 @@ describe("Zod2Cpp", () => {
 
     test("C++ layered modeling - application as class", () => {
         const output = userDtos.transpile(Zod2XTranspilers.Zod2Cpp, {
+            outType: "class",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/layered-class/user.dtos.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered-class/err-user.dtos.hpp", output);
+            throw error;
+        }
+    });
+
+    test("C++ layered modeling mixin- application", () => {
+        const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Cpp, {
+            outType: "struct",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/layered/user.dtos.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered/err-user.dtos.hpp", output);
+            throw error;
+        }
+    });
+
+    test("C++ layered modeling mixin - application as class", () => {
+        const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Cpp, {
             outType: "class",
             header,
             includeNulls: true,

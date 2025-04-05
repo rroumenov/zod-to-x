@@ -9,6 +9,7 @@ import { header } from "../common/header";
 import * as schemas from "../common/zod_schemas";
 import { zTsSupportedSchemas } from "./ts_supported_schemas";
 import { userDtos, userModels } from "../common/layered_schemas";
+import { userDtos as userDtosMixin } from "../common/layered_mixin_schemas";
 
 let tsSupportedSchemas: Zod2XTypes.ASTNodes;
 
@@ -304,6 +305,39 @@ describe("Zod2Ts", () => {
 
     test("Typescript layered modeling - application as class", () => {
         const output = userDtos.transpile(Zod2XTranspilers.Zod2Ts, { header, outType: "class" });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/layered-class/user.dtos.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2ts/layered-class/err-user.dtos.ts", output);
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling mixin - application", () => {
+        const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Ts, { header });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/layered/user.dtos.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2ts/layered/err-user.dtos.ts", output);
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling mixin - application as class", () => {
+        const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Ts, {
+            header,
+            outType: "class",
+        });
         const expectedOutput = fs
             .readFileSync("./test/test_zod2ts/layered-class/user.dtos.ts")
             .toString();
