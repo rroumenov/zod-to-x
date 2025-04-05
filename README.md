@@ -3,15 +3,14 @@
   <em style="font-size: smaller;">Image generated using Canvas AI.</em>
 </p>
 <p align="center">
-  <a href="https://github.com/rroumenov/zod-to-x/releases" target="_blank" style="text-decoration: none;">
-    <button style="padding: 6px 12px; font-size: 14px; background-color: #2ea44f; color: white; border: 1px solid rgba(27, 31, 35, 0.15); border-radius: 6px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';">
-      View Changelog
-    </button>
+  <a href="https://github.com/rroumenov/zod-to-x/releases" target="_blank">
+    <img src="https://img.shields.io/badge/View%20Changelog-brightgreen?style=for-the-badge" alt="View Changelog">
   </a>
-  <a href="https://playcode.io/2277071" target="_blank" style="text-decoration: none; margin-left: 10px;">
-    <button style="padding: 6px 12px; font-size: 14px; background-color: #0366d6; color: white; border: 1px solid rgba(27, 31, 35, 0.15); border-radius: 6px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';">
-      Try it on Playcode
-    </button>
+  <a href="https://playcode.io/2277071" target="_blank" style="margin-left: 10px;">
+    <img src="https://img.shields.io/badge/Try%20it%20on%20Playcode-blue?style=for-the-badge" alt="Try it on Playcode">
+  </a>
+  <a href="https://github.com/rroumenov/zod-to-x/issues" target="_blank" style="margin-left: 10px;">
+    <img src="https://img.shields.io/badge/Need%20Help%3F-orange?style=for-the-badge" alt="Need Help?">
   </a>
 </p>
 
@@ -259,6 +258,7 @@ To improve Separation of Concerns (SoC), the Dependency Rule, and Maintainabilit
 To achieve this, two new components are included:
 - **Zod2XModel**: With layered modeling, data is defined using classes. Inheriting this abstract class provides metadata management to handle relationships and also simplifies transpilation by including a `transpile()` method that receives the target language class.
 - **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*.
+- **Zod2XMixin**: A function that enables the creation of layers by extending multiple data models, thereby simplifying their definition and organization.
 
 ### Usage example
 1. Define a Domain model, such as a User entity:
@@ -346,6 +346,61 @@ console.log(userDtos.transpile(Transpilers.Zod2Ts))
 
 ```
 **(*)** Any modification of an existing model (in this case, `userEntity`) will lose the relation with that model, but not its children. In the case of the `CreateUserUseCaseDto` type, the `role` field will remain linked to the existing one in the `user.entity` file.
+
+3 - Are your models too large? Simplify them!  
+If you are dealing with complex models whose definitions are too extensive, split them into multiple classes and then combine them using `Zod2XMixin` as shown below:
+```ts
+// Sub-models do not require a layer decorator; it is applied automatically when inherited by the main model.
+
+// Sub-model 1
+class CreateUserUseCaseDto {
+    createUserUseCaseDto = userModels.userEntity.omit({ id: true });
+}
+
+// Sub-model 2
+class CreateUserUseCaseResultDto {
+    createUserUseCaseResultDto = userModels.userEntity
+        .omit({ role: true })
+        .extend({
+            createdAt: z.date(),
+            updatedAt: z.date(),
+        });
+}
+
+// Main model
+@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+class UserDtos extends Zod2XMixin(
+    [CreateUserUseCaseDto, CreateUserUseCaseResultDto], // Inherit the desired sub-models.
+    Zod2XModel  // Zod2XModel must still be the base class.
+) {}
+
+export const userDtos = new UserDtos();
+console.log(userDtos.transpile(Transpilers.Zod2Ts))
+// Output (same as above):
+// import * as USER from "./user.entity";    <--- Reusing models from other layers.
+
+// export interface CreateUserUseCaseDto {
+//     name: string;
+//     email: string;
+//     age?: number;
+//     role: USER.UserRole;
+// }
+
+// export interface CreateUserUseCaseResultDto {
+//     id: string;
+//     name: string;
+//     email: string;
+//     age?: number;
+//     createdAt: Date;
+//     updatedAt: Date;
+// }
+
+// export interface UserDtos {
+//     createUserUseCaseDto: CreateUserUseCaseDto;
+//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
+// }
+```
+
 
 
 ## Supported output languages

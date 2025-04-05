@@ -10,8 +10,8 @@ type TargetOpt<K extends TargetKeys> = ConstructorParameters<Target<K>>[0];
 type AstOpt = Pick<IZod2AstOpt, "strict">;
 
 /**
- * Abstract class that provides the foundational structure for defining layered models, managing
- * metadata, and exposing transpile method for all supported languages.
+ * Class that provides the foundational structure for defining layered models, managing metadata,
+ * and exposing transpile method for all supported languages.
  * It is intended to be extended by specific model implementations.
  *
  * @remarks
@@ -31,7 +31,7 @@ type AstOpt = Pick<IZod2AstOpt, "strict">;
  * const userModelTypescript = userModel.transpile(Transpilers.Zod2Ts);
  * ```
  */
-export abstract class Zod2XModel {
+export class Zod2XModel {
     private astNodes: ASTNodes | null = null;
 
     private getModelName(): string {
