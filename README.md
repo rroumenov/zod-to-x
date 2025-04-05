@@ -71,7 +71,7 @@ This extension appends a `zod2x` method to:
 ## Quick start
 ```ts
 import { z } from "zod";
-import { extendZod, Zod2Ast, Zod2Ts } from "zod-to-x";
+import { extendZod, Zod2Ast, Zod2XTranspilers } from "zod-to-x";
 extendZod(z); // The extend step can be skipped if it has already been done.
 
 /**
@@ -94,7 +94,7 @@ const visitorNodes = new Zod2Ast().build(VisitorSchema);
  * 3) Generate types in the desired language.
  *    Depending on the transpiled language, data models can be generated using classes.
  */
-const tsVisitorAsInterface: string = new Zod2Ts().transpile(visitorNodes);
+const tsVisitorAsInterface: string = new Zod2XTranspilers.Zod2Ts().transpile(visitorNodes);
 console.log(tsVisitorAsInterface)
 // output:
 // export interface Visitor {
@@ -105,7 +105,7 @@ console.log(tsVisitorAsInterface)
 //     comments?: string;
 // }
 
-const tsVisitorAsClass: string = new Zod2Ts({outType: "class"}).transpile(visitorNodes);
+const tsVisitorAsClass: string = new Zod2XTranspilers.Zod2Ts({outType: "class"}).transpile(visitorNodes);
 console.log(tsVisitorAsClass)
 // output:
 // export class Visitor {
@@ -255,7 +255,7 @@ inline void from_json(const json& j, Message& x) {
 ## Layered modeling
 To improve Separation of Concerns (SoC), the Dependency Rule, and Maintainability, a new layer-based modeling approach was introduced in `v1.4.0`. This approach establishes relationships between models in separate files, which are transpiled into file imports. This feature provides a powerful tool not only for type systems with robust architectures, such as Clean, Hexagonal, or Layered, but also enforces their usage.
 
-To achieve this, two new components are included:
+To achieve this, new components are included:
 - **Zod2XModel**: With layered modeling, data is defined using classes. Inheriting this abstract class provides metadata management to handle relationships and also simplifies transpilation by including a `transpile()` method that receives the target language class.
 - **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*.
 - **Zod2XMixin**: A function that enables the creation of layers by extending multiple data models, thereby simplifying their definition and organization.
@@ -319,7 +319,7 @@ class UserDtos extends Zod2XModel {
 }
 
 const userDtos = new UserDtos();
-console.log(userDtos.transpile(Transpilers.Zod2Ts))
+console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 // Output:
 // import * as USER from "./user.entity";    <--- Reusing models from other layers.
 
@@ -375,7 +375,7 @@ class UserDtos extends Zod2XMixin(
 ) {}
 
 export const userDtos = new UserDtos();
-console.log(userDtos.transpile(Transpilers.Zod2Ts))
+console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 // Output (same as above):
 // import * as USER from "./user.entity";    <--- Reusing models from other layers.
 
