@@ -29,7 +29,6 @@ export interface IZod2CppOpt extends IZodToXOpt {
 export const defaultOpts: IZod2CppOpt = {
     includeComments: true,
     indent: 4,
-    skipDiscriminatorNodes: false,
     useImports: true,
 
     namespace: "zodtocpp",

@@ -1,12 +1,12 @@
 // This is
 // a multiline
 // header.
-syntax = "proto3";
 
+syntax = "proto3";
 package supportedschemas;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 
 enum EnumItem {
     Enum1 = 0;
@@ -45,8 +45,8 @@ message OtherObjectItemWithDiscriminator {
     string discriminator = 2;
 }
 
-message DiscriminantUnionItem {
-    oneof discriminant_union_item_oneof {
+message DiscriminatedUnionItem {
+    oneof discriminated_union_item_oneof {
         ObjectItemWithDiscriminator object_item_with_discriminator = 1;
         OtherObjectItemWithDiscriminator other_object_item_with_discriminator = 2;
     }
@@ -71,6 +71,6 @@ message Proto3SupportedSchemas {
     repeated string set_item = 16;
     repeated double tuple_item = 17;
     UnionItem union_item = 18;
-    DiscriminantUnionItem discriminated_union_item = 19;
+    DiscriminatedUnionItem discriminated_union_item = 19;
     google.protobuf.Any any_item = 20;
 }

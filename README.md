@@ -257,7 +257,10 @@ To improve Separation of Concerns (SoC), the Dependency Rule, and Maintainabilit
 
 To achieve this, new components are included:
 - **Zod2XModel**: With layered modeling, data is defined using classes. Inheriting this abstract class provides metadata management to handle relationships and also simplifies transpilation by including a `transpile()` method that receives the target language class.
-- **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*.
+- **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*. Parameters:  
+  - **namespace**: Defines the namespace under which the types are grouped.
+  - **file**: Specifies the expected output file where the transpiled types will be saved.
+  - **externalInheritance**: When a type from one layer is imported into another layer without modifications, it is transpiled as a new type inheriting from the imported type. This ensures type consistency across layers while maintaining reusability. See example (4) below. The default value is `true`.
 - **Zod2XMixin**: A function that enables the creation of layers by extending multiple data models, thereby simplifying their definition and organization.
 
 ### Usage example
@@ -401,6 +404,67 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 // }
 ```
 
+4 - Difference of using **externalInheritance** (defaults) or not.  
+```ts
+// Default output (externalInheritance = true)
+@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+class UserDtos extends Zod2XModel {
+
+    createUserUseCaseDto = userModels.userEntity.omit({ id: true });
+
+    createUserUseCaseResultDto = userModels.userEntity;
+}
+
+// Output:
+// import * as USER from "./user.entity";
+
+// export interface CreateUserUseCaseDto {
+//     name: string;
+//     email: string;
+//     age?: number;
+//     role: USER.UserRole;
+// }
+
+// export interface CreateUserUseCaseResultDto extends USER.UserEntity {}
+
+// export interface UserDtos {
+//     createUserUseCaseDto: CreateUserUseCaseDto;
+//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
+// }
+
+// ---------------
+// If `USER.UserEntity` were a Union or a Discriminated Union, the output would be a Type equivalent to `USER.UserEntity` rather than an Interface that extends it.  
+
+```
+
+```ts
+// Output without externalInheritance
+@Application({ namespace: "USER_DTOS", file: "user.dtos",  externalInheritance: false})
+class UserDtos extends Zod2XModel {
+
+    createUserUseCaseDto = userModels.userEntity.omit({ id: true });
+
+    createUserUseCaseResultDto = userModels.userEntity;
+}
+
+// Output:
+// import * as USER from "./user.entity";
+
+// export interface CreateUserUseCaseDto {
+//     name: string;
+//     email: string;
+//     age?: number;
+//     role: USER.UserRole;
+// }
+
+// export interface UserDtos {
+//     createUserUseCaseDto: CreateUserUseCaseDto;
+//     createUserUseCaseResultDto: USER.UserEntity;
+// }
+
+// ---------------
+// In this case, the type of `createUserUseCaseResultDto` is inferred from the parent model (`UserDtos`), but there is no explicit definition of the type itself.
+```
 
 
 ## Supported output languages
@@ -408,7 +472,6 @@ Common options:
 - **header**: Text to add as a comment at the beginning of the output.
 - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
 - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
-- **skipDiscriminatorNodes**: prevents the inclusion of `ZodEnum` or `ZodNativeEnum` schemas that are used solely as discriminator keys in a `ZodDiscriminatedUnion`. Defaults to `false`.
 
 ### 0) ASTNode
 - Options:

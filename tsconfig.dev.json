@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUnusedLocals": false, // Disable unused locals check for development
+    "sourceMap": true, // Enable source maps for debugging
+    "removeComments": false // Keep comments for easier debugging
+  },
+  "include": ["src/**/*"]
+}

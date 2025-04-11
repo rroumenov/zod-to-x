@@ -36,20 +36,20 @@ export const zObject = z
     })
     .zod2x("ObjectItem");
 
-const zOtherObject = z
+export const zOtherObject = z
     .object({
         otherKey: zString,
     })
     .zod2x("OtherObjectItem");
 
-const zObjectWithDiscriminator = z
+export const zObjectWithDiscriminator = z
     .object({
         key: zString,
         discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
     })
     .zod2x("ObjectItemWithDiscriminator");
 
-const zOtherObjectWithDiscriminator = z
+export const zOtherObjectWithDiscriminator = z
     .object({
         otherKey: zString,
         discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
@@ -74,7 +74,7 @@ export const zIntersection = z.intersection(zObject, zOtherObject).zod2x("Inters
 export const zUnion = z.union([zObject, zOtherObject]).zod2x("UnionItem");
 export const zDiscriminantUnion = z
     .discriminatedUnion("discriminator", [zObjectWithDiscriminator, zOtherObjectWithDiscriminator])
-    .zod2x("DiscriminantUnionItem");
+    .zod2x("DiscriminatedUnionItem");
 
 // Special types
 export const zAny = z.any();

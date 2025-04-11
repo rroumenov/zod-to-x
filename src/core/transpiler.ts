@@ -39,14 +39,6 @@ export interface IZodToXOpt extends Record<string, any> {
     includeComments?: boolean;
 
     /**
-     * When set to `true`, this option excludes discriminator enums from the output types.
-     * Specifically, it prevents the inclusion of `ZodEnum` or `ZodNativeEnum` schemas that are used
-     * solely as discriminator keys in a `ZodDiscriminatedUnion`. This helps avoid adding
-     * enum types to the generated output when unnecessary.
-     */
-    skipDiscriminatorNodes?: boolean;
-
-    /**
      * Every external type will be imported from the file where it is defined. Default: true
      */
     useImports?: boolean;
@@ -60,13 +52,17 @@ export interface IZodToXOpt extends Record<string, any> {
 export abstract class Zod2X<T extends IZodToXOpt> {
     protected output: string[];
     protected indent: TIndentationLevels;
+    protected preImports: Set<string>;
     protected imports: Set<string>;
+    protected postImports: Set<string>;
 
     protected opt: Partial<T>;
 
     protected constructor(opt: Partial<T>) {
         this.output = [];
+        this.preImports = new Set<string>();
         this.imports = new Set<string>();
+        this.postImports = new Set<string>();
         this.indent = StringUtils.getIndentationLevels(opt.indent || 4);
 
         this.opt = opt;
@@ -92,6 +88,20 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * @param typeName
      */
     protected abstract getTypeFromExternalNamespace(namespace: string, typeName: string): string;
+
+    /**
+     * For Layered Modeling.
+     * If a property type is an imported type, without any modification, the transpiled type will be
+     * an inherited type from the imported type.
+     * @param name
+     * @param parentNamespace
+     * @param parentTypeName
+     */
+    protected abstract addExtendedType(
+        name: string,
+        parentNamespace: string,
+        parentTypeName: string
+    ): void;
 
     /**
      * Returns a comment.
@@ -296,6 +306,23 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     }
 
     /**
+     * Adds an external type import to the transpiler's imports if the provided transpiled item
+     * is located into another file and namespace, and if the `useImports` option is not disabled.
+     *
+     * @param item - An object of type `TranspilerableTypes` containing information
+     *                  about the type to be imported, including its parent file and namespace.
+     * @returns `true` if the import was successfully added, otherwise `false`.
+     */
+    protected addExternalTypeImport(item: TranspilerableTypes): boolean {
+        if (item.parentFile && item.parentNamespace && this.opt.useImports !== false) {
+            this.imports.add(this.addImportFromFile(item.parentFile, item.parentNamespace));
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Transpiles a single item from the transpiler queue.
      * @param item - The transpilerable type to transpile.
      */
@@ -321,41 +348,37 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         }
     }
 
-    private _getTranspilerableNodes(transpilerQueue: ASTNodes): Map<string, TranspilerableTypes> {
-        return new Map([
-            ...(this.opt.useImports === false ? transpilerQueue.externalNodes : []),
-            ...(this.opt.skipDiscriminatorNodes !== true ? transpilerQueue.discriminatorNodes : []),
-            ...transpilerQueue.nodes,
-        ]);
-    }
-
-    private _getImports(externalNodes: Map<string, TranspilerableTypes>): void {
-        const importData = new Map<string, string>();
-
-        externalNodes.forEach((i) => {
-            if (i.parentFile && i.parentNamespace && !importData.has(i.parentFile)) {
-                importData.set(i.parentFile, i.parentNamespace);
-            }
-        });
-
-        importData.forEach((namespace, file) => {
-            this.imports.add(this.addImportFromFile(file, namespace));
-        });
-    }
-
+    /**
+     * Constructs and returns an array of strings representing the header section
+     * of the transpiled output. The header may include custom comments, pre-imports,
+     * imports, and post-imports, depending on the provided options and internal state.
+     *
+     * Each section is separated by an empty string for readability.
+     *
+     * @returns An array of strings representing the header section.
+     *
+     */
     private _getHeader(): string[] {
         const header = [];
 
         if (this.opt.header) {
             header.push(...this.opt.header.split("\n").map((i) => this.getComment(i)));
+            header.push("");
+        }
+
+        if (this.preImports.size > 0) {
+            header.push(...this.preImports);
+            header.push("");
         }
 
         if (this.imports.size > 0) {
-            header.push(...this.imports);
+            header.push(...[...this.imports].sort());
+            header.push("");
+        }
 
-            if (!header.at(-1)?.endsWith("\n")) {
-                header.push("");
-            }
+        if (this.postImports.size > 0) {
+            header.push(...this.postImports);
+            header.push("");
         }
 
         return header;
@@ -369,13 +392,9 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     transpile(transpilerQueue: ASTNodes): string {
         this.runBefore();
 
-        this._getTranspilerableNodes(transpilerQueue).forEach(this._transpileItem.bind(this));
+        transpilerQueue.nodes.forEach(this._transpileItem.bind(this));
 
         this.runAfter();
-
-        if (this.opt.useImports === true) {
-            this._getImports(transpilerQueue.externalNodes);
-        }
 
         this.output = [...this._getHeader(), ...this.output];
 

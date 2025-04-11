@@ -10,6 +10,21 @@ export type ASTCommon = {
     isOptional?: boolean;
 };
 
+export type ASTLayerMetadata = {
+    /**
+     * File where the transpilerable model is defined and the reference used to group imports.
+     * Used to generate import statements in the transpiled code.
+     */
+    parentFile?: string;
+    parentNamespace?: string;
+
+    /**
+     * For Layered Modeling.
+     * Stores the used type from an external model. Used to create models inheritance.
+     */
+    parentTypeName?: string;
+};
+
 /**
  * AST (Abstract Syntax Tree) type for each Zod Schema that encapsulates
  * additional information beyond just the schema type.
@@ -52,19 +67,29 @@ export type ASTEnum = {
     type: ZodFirstPartyTypeKind.ZodEnum;
     name: string;
     values: [string, string | number][];
-};
+
+    /**
+     * The enum is injected using zod2x method during ZodDiscriminatedUnion creation.
+     */
+    isFromDiscriminatedUnion?: boolean;
+} & ASTLayerMetadata;
 
 export type ASTNativeEnum = {
     type: ZodFirstPartyTypeKind.ZodNativeEnum;
     name: string;
     values: [string, string | number][];
-};
+
+    /**
+     * The enum is injected using zod2x method during ZodDiscriminatedUnion creation.
+     */
+    isFromDiscriminatedUnion?: boolean;
+} & ASTLayerMetadata;
 
 export type ASTObject = {
     type: ZodFirstPartyTypeKind.ZodObject;
     name: string;
     properties: Record<string, ASTNode>;
-};
+} & ASTLayerMetadata;
 
 export type ASTUnion = {
     type: ZodFirstPartyTypeKind.ZodUnion;
@@ -76,14 +101,14 @@ export type ASTUnion = {
      * have a variant type or discriminated union cannot be used.
      */
     newObject?: ASTCommon & ASTObject;
-};
+} & ASTLayerMetadata;
 
 export type ASTDiscriminatedUnion = {
     type: ZodFirstPartyTypeKind.ZodDiscriminatedUnion;
     name: string;
     options: ASTNode[];
     discriminantKey?: string;
-};
+} & ASTLayerMetadata;
 
 export type ASTIntersection = {
     type: ZodFirstPartyTypeKind.ZodIntersection;
@@ -96,7 +121,7 @@ export type ASTIntersection = {
      * support multiple inheritance.
      */
     newObject?: ASTCommon & ASTObject;
-};
+} & ASTLayerMetadata;
 
 /**
  * Represents a type definition in the AST. Used to reduce node size and identify
@@ -144,18 +169,9 @@ export type ASTNode = ASTCommon &
  * Represents schemas that can be directly transpiled into types in other programming languages.
  */
 export type TranspilerableTypes = ASTCommon &
-    (ASTEnum | ASTNativeEnum | ASTObject | ASTUnion | ASTDiscriminatedUnion | ASTIntersection) & {
-        /**
-         * File where the transpilerable model is defined and the reference used to group imports.
-         * Used to generate import statements in the transpiled code.
-         */
-        parentFile?: string;
-        parentNamespace?: string;
-    };
+    (ASTEnum | ASTNativeEnum | ASTObject | ASTUnion | ASTDiscriminatedUnion | ASTIntersection);
 
 export type ASTNodes = {
     nodes: Map<string, TranspilerableTypes>;
-    externalNodes: Map<string, TranspilerableTypes>;
-    discriminatorNodes: Map<string, TranspilerableTypes>;
     warnings: string[];
 };

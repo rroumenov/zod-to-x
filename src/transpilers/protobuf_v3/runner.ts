@@ -31,6 +31,10 @@ const allowedKeyTypes = [
     "string",
 ];
 
+/**
+ * @deprecated Zod2ProtoV3 will not be considered as a transpilerable programming language, but as
+ *             another utility such as `zod2JsonSchemaDefinitions`.
+ */
 export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     constructor(opt: IZod2ProtoV3Opt = {}) {
         super({ ...defaultOpts, ...opt });
@@ -49,6 +53,11 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
         // Zod2ProtoV3 does not support layered modeling.
         return "";
+    }
+
+    protected addExtendedType(name: string, parentNamespace: string, parentTypeName: string): void {
+        // Zod2ProtoV3 does not support layered modeling.
+        return;
     }
 
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
@@ -160,6 +169,11 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     }
 
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
+        if (data.isFromDiscriminatedUnion === true) {
+            // Injected enum from ZodDiscriminatedUnion are not transpiled.
+            return;
+        }
+
         this.addComment(data.description);
 
         this.push0(`enum ${data.name} {`);
@@ -245,10 +259,10 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     }
 
     protected runBefore(): void {
-        this.imports.add(`syntax = "proto3";\n`);
+        this.preImports.add(`syntax = "proto3";`);
 
         if (this.opt?.packageName) {
-            this.imports.add(`package ${this.opt?.packageName};\n`);
+            this.preImports.add(`package ${this.opt?.packageName};`);
         }
     }
 

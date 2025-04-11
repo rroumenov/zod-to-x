@@ -37,6 +37,36 @@ export interface IZod2xLayerMetadata {
      * from layer 3.
      */
     index: number;
+
+    /**
+     * Indicates if types inherited from other layers should be transpiled as extendable types and
+     * then used (true) or just used as imports (false).
+     *
+     * For example:
+     * // Definition
+     * class MyModels extends Zod2XModel {
+     *   myType: ExternalNamespace.OtherType
+     * }
+     *
+     * Case true:
+     *   // Output example for typescript:
+     *   import * as ExternalNamespace from "external_file";
+     *
+     *   interface MyType extends ExternalNamespace.OtherType {}
+     *
+     *   interface MyModels {
+     *     myType: MyType;
+     *   }
+     *
+     * Case false:
+     *   // Output example for typescript:
+     *   import * as ExternalNamespace from "external_file";
+     *
+     *   interface MyModels {
+     *     myType: ExternalNamespace.OtherType;
+     *   }
+     */
+    externalInheritance?: boolean;
 }
 
 export interface IZod2xMetadata {
@@ -51,7 +81,20 @@ export interface IZod2xMetadata {
      */
     parentEnum?: ZodEnum<any> | ZodNativeEnum<any>;
 
+    /**
+     * For Layered Modeling.
+     * The file where the schema is transpiled. Used to allow importing types from other files.
+     */
     layer?: IZod2xLayerMetadata;
+
+    /**
+     * For Layered Modeling.
+     * When a type of another file is used without modifying it, by default it is sustituted by
+     * the import without creating a new type. If wanted. it can be forced to create a new type
+     * which will be the extension of the original type if `zod2xExtendable` is used.
+     */
+    parentTypeName?: string;
+    parentLayer?: IZod2xLayerMetadata;
 }
 
 declare module "zod" {
