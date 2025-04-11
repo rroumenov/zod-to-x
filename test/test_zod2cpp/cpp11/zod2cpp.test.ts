@@ -6,6 +6,10 @@ import * as fs from "fs";
 import { diffLinesRaw } from "jest-diff";
 
 import { zCppSupportedSchemas } from "../cpp_supported_schemas";
+import {
+    cppSupportedSchemasApplicationModel,
+    cppSupportedSchemasModel,
+} from "../cpp_supported_schemas.layered";
 import { header } from "../../common/header";
 import * as schemas from "../../common/zod_schemas";
 import { userDtos, userModels } from "../../common/layered_schemas";
@@ -33,8 +37,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -60,8 +64,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -112,8 +116,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <stdexcept>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <stdexcept>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class EnumItem: int {\n" +
@@ -156,8 +160,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <stdexcept>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <stdexcept>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class NativeEnumItem: int {\n" +
@@ -323,8 +327,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
@@ -357,9 +361,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
-            "#include <unordered_map>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <unordered_map>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -383,9 +387,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
-            "#include <unordered_map>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <unordered_map>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -409,9 +413,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
+            "#include <nlohmann/json.hpp>\n" +
             "#include <set>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -435,9 +439,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
-            "#include <tuple>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <tuple>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -461,10 +465,10 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
             "#include <boost/variant.hpp>\n" +
+            "#include <nlohmann/json.hpp>\n" +
             "#include <stdexcept>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
@@ -537,10 +541,10 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <stdexcept>\n" +
-            "#include <string>\n" +
             "#include <boost/variant.hpp>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <stdexcept>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class EnumItem: int {\n" +
@@ -556,9 +560,9 @@ describe("Zod2Cpp", () => {
             "    std::string other_key;\n" +
             "    EnumItem discriminator;\n" +
             "  };\n\n" +
-            "  using DiscriminantUnionItem = boost::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;\n\n" +
+            "  using DiscriminatedUnionItem = boost::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;\n\n" +
             "  struct ModelItem {\n" +
-            "    DiscriminantUnionItem item;\n" +
+            "    DiscriminatedUnionItem item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
@@ -592,7 +596,7 @@ describe("Zod2Cpp", () => {
             '    x.other_key = j.at("otherKey").get<std::string>();\n' +
             '    x.discriminator = j.at("discriminator").get<EnumItem>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const DiscriminantUnionItem& x) {\n" +
+            "  inline void to_json(json& j, const DiscriminatedUnionItem& x) {\n" +
             "    if (x.type() == typeid(ObjectItemWithDiscriminator)) {\n" +
             "      j = boost::get<ObjectItemWithDiscriminator>(x);\n" +
             "    }\n" +
@@ -600,10 +604,10 @@ describe("Zod2Cpp", () => {
             "      j = boost::get<OtherObjectItemWithDiscriminator>(x);\n" +
             "    }\n" +
             "    else {\n" +
-            '      throw std::runtime_error("Unknown DiscriminantUnionItem type.");\n' +
+            '      throw std::runtime_error("Unknown DiscriminatedUnionItem type.");\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, DiscriminantUnionItem& x) {\n" +
+            "  inline void from_json(const json& j, DiscriminatedUnionItem& x) {\n" +
             '    const auto& k = j.at("discriminator").get<std::string>();\n' +
             '    if (k == "Enum1") {\n' +
             "      x = j.get<ObjectItemWithDiscriminator>();\n" +
@@ -613,14 +617,14 @@ describe("Zod2Cpp", () => {
             "    }\n" +
             "    else {\n" +
             "      // None of the types matched. Error\n" +
-            '      throw std::runtime_error("Failed to deserialize DiscriminantUnionItem: unknown format");\n' +
+            '      throw std::runtime_error("Failed to deserialize DiscriminatedUnionItem: unknown format");\n' +
             "    }\n" +
             "  }\n\n" +
             "  inline void to_json(json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
             "  inline void from_json(const json& j, ModelItem& x) {\n" +
-            '    x.item = j.at("item").get<DiscriminantUnionItem>();\n' +
+            '    x.item = j.at("item").get<DiscriminatedUnionItem>();\n' +
             "  }\n\n" +
             "}";
 
@@ -634,8 +638,8 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
@@ -712,9 +716,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
             "#include <boost/optional.hpp>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -755,9 +759,9 @@ describe("Zod2Cpp", () => {
         const output = new Zod2XTranspilers.Zod2Cpp({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
-            "#include <string>\n" +
             "#include <boost/optional.hpp>\n" +
-            "#include <nlohmann/json.hpp>\n\n" +
+            "#include <nlohmann/json.hpp>\n" +
+            "#include <string>\n\n" +
             "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
@@ -801,7 +805,9 @@ describe("Zod2Cpp", () => {
             namespace: "zodtocppclass",
         }).transpile(cppSupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/cpp_supported_schemas.expect.class.hpp")
+            .readFileSync(
+                "./test/test_zod2cpp/cpp11/class-expected/cpp_supported_schemas.expect.class.hpp"
+            )
             .toString();
 
         try {
@@ -809,7 +815,7 @@ describe("Zod2Cpp", () => {
         } catch (error) {
             diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
             fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/err-cpp_supported_schemas.expect.class.hpp",
+                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.expect.class.hpp",
                 output
             );
             throw error;
@@ -824,7 +830,9 @@ describe("Zod2Cpp", () => {
             namespace: "zodtocppstruct",
         }).transpile(cppSupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/cpp_supported_schemas.expect.struct.hpp")
+            .readFileSync(
+                "./test/test_zod2cpp/cpp11/struct-expected/cpp_supported_schemas.expect.struct.hpp"
+            )
             .toString();
 
         try {
@@ -832,7 +840,7 @@ describe("Zod2Cpp", () => {
         } catch (error) {
             diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
             fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/err-cpp_supported_schemas.expect.struct.hpp",
+                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.expect.struct.hpp",
                 output
             );
             throw error;
@@ -846,14 +854,17 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered/user.entity.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.entity.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered/err-user.entity.hpp", output);
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/struct-expected/err-user.entity.hpp",
+                output
+            );
             throw error;
         }
     });
@@ -865,14 +876,14 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered/user.dtos.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.dtos.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered/err-user.dtos.hpp", output);
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp", output);
             throw error;
         }
     });
@@ -884,14 +895,17 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered-class/user.entity.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.entity.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered-class/err-user.entity.hpp", output);
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/class-expected/err-user.entity.hpp",
+                output
+            );
             throw error;
         }
     });
@@ -903,14 +917,14 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered-class/user.dtos.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.dtos.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered-class/err-user.dtos.hpp", output);
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp", output);
             throw error;
         }
     });
@@ -922,14 +936,14 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered/user.dtos.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.dtos.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered/err-user.dtos.hpp", output);
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp", output);
             throw error;
         }
     });
@@ -941,14 +955,130 @@ describe("Zod2Cpp", () => {
             includeNulls: true,
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2cpp/cpp11/layered-class/user.dtos.hpp")
+            .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.dtos.hpp")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/layered-class/err-user.dtos.hpp", output);
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp", output);
+            throw error;
+        }
+    });
+
+    test("C++ supported schemas layered modeling - entity", () => {
+        const output = cppSupportedSchemasModel.transpile(
+            Zod2XTranspilers.Zod2Cpp,
+            {
+                outType: "struct",
+                header,
+                includeNulls: true,
+            },
+            {
+                strict: false,
+            }
+        );
+        const expectedOutput = fs
+            .readFileSync(
+                "./test/test_zod2cpp/cpp11/struct-expected/cpp_supported_schemas.entity.hpp"
+            )
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.entity.hpp",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("C++ supported schemas layered modeling - application", () => {
+        const output = cppSupportedSchemasApplicationModel.transpile(
+            Zod2XTranspilers.Zod2Cpp,
+            {
+                outType: "struct",
+                header,
+                includeNulls: true,
+            },
+            {
+                strict: false,
+            }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/cpp_supported_schemas.app.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.app.hpp",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("C++ supported schemas layered modeling - entity as class", () => {
+        const output = cppSupportedSchemasModel.transpile(
+            Zod2XTranspilers.Zod2Cpp,
+            {
+                outType: "class",
+                header,
+                includeNulls: true,
+            },
+            {
+                strict: false,
+            }
+        );
+        const expectedOutput = fs
+            .readFileSync(
+                "./test/test_zod2cpp/cpp11/class-expected/cpp_supported_schemas.entity.hpp"
+            )
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.entity.hpp",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("C++ supported schemas layered modeling - application as class", () => {
+        const output = cppSupportedSchemasApplicationModel.transpile(
+            Zod2XTranspilers.Zod2Cpp,
+            {
+                outType: "class",
+                header,
+                includeNulls: true,
+            },
+            {
+                strict: false,
+            }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/class-expected/cpp_supported_schemas.app.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.app.hpp",
+                output
+            );
             throw error;
         }
     });

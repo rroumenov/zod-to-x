@@ -47,8 +47,6 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     constructor(opt: IZod2CppOpt = {}) {
         super({ ...defaultOpts, ...opt });
 
-        this.imports.add("#pragma once\n");
-
         this.serializers = [];
         this.useBoost = true;
         this.lib = getLibs(this.useBoost);
@@ -70,9 +68,30 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         return `${namespace}::${typeName}`;
     }
 
-    protected runAfter() {
-        this.output = this.output.map((i) => `${this.indent[1]}${i}`);
+    protected addExtendedType(
+        name: string,
+        parentNamespace: string,
+        parentTypeName: string,
+        isUnionOrDiscriminatedUnion?: boolean
+    ) {
+        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, parentTypeName);
 
+        if (isUnionOrDiscriminatedUnion) {
+            this.push0(`using ${name} = ${extendedType};\n`);
+        } else {
+            if (this.opt.outType === "class") {
+                this.push0(`class ${name} : public ${extendedType} {};\n`);
+            } else {
+                this.push0(`struct ${name} : public ${extendedType} {};\n`);
+            }
+        }
+    }
+
+    protected runAfter() {
+        this.preImports.add("#pragma once");
+
+        // Add the output inside the namespace
+        this.output = this.output.map((i) => `${this.indent[1]}${i}`);
         this.output.unshift(`namespace ${this.opt.namespace} {`);
         this.output.push("}");
 
@@ -99,7 +118,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
 
         if (this.imports.has(this.lib.nlohmann)) {
-            this.imports.add(`\n${USING.nlohmann}`);
+            this.postImports.add(`${USING.nlohmann}`);
         }
     }
 
@@ -212,6 +231,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon) {
+        if (this.addExternalTypeImport(data)) {
+            return;
+        }
+
         this.addComment(data.description);
 
         const serializeData: IEnumItemSerialData[] = [];
@@ -245,6 +268,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileIntersection(data: ASTIntersection & ASTCommon) {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            }
+            return;
+        }
+
         console.warn(`${data.name}: use zod's merge instead of intersection whenever possible.`);
         console.warn(`${data.name}: no field name conflicts is assumed.`);
 
@@ -286,6 +316,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, true);
+            }
+            return;
+        }
+
         this.addComment(data.description);
 
         const attributesData = data.options.map((i) => {
@@ -308,6 +345,13 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            }
+            return;
+        }
+
         this.addComment(data.description);
 
         if (this.opt.outType === "class") {

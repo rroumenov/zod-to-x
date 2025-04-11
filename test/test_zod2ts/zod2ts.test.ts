@@ -8,6 +8,10 @@ import { diffLinesRaw } from "jest-diff";
 import { header } from "../common/header";
 import * as schemas from "../common/zod_schemas";
 import { zTsSupportedSchemas } from "./ts_supported_schemas";
+import {
+    tsSupportedSchemasApplicationModel,
+    tsSupportedSchemasModel,
+} from "./ts_supported_schemas.layered";
 import { userDtos, userModels } from "../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../common/layered_mixin_schemas";
 
@@ -226,7 +230,9 @@ describe("Zod2Ts", () => {
     test("Typescript supported schemas - as interface", () => {
         const output = new Zod2XTranspilers.Zod2Ts({ header }).transpile(tsSupportedSchemas);
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/ts_supported_schemas.expect.interface.ts")
+            .readFileSync(
+                "./test/test_zod2ts/interface-expected/ts_supported_schemas.expect.interface.ts"
+            )
             .toString();
 
         try {
@@ -234,7 +240,7 @@ describe("Zod2Ts", () => {
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
             fs.writeFileSync(
-                "./test/test_zod2ts/err-ts_supported_schemas.expect.interface.ts",
+                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.expect.interface.ts",
                 output
             );
             throw error;
@@ -246,14 +252,17 @@ describe("Zod2Ts", () => {
             tsSupportedSchemas
         );
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/ts_supported_schemas.expect.class.ts")
+            .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.expect.class.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/err-ts_supported_schemas.expect.class.ts", output);
+            fs.writeFileSync(
+                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.expect.class.ts",
+                output
+            );
             throw error;
         }
     });
@@ -261,14 +270,14 @@ describe("Zod2Ts", () => {
     test("Typescript layered modeling - domain", () => {
         const output = userModels.transpile(Zod2XTranspilers.Zod2Ts, { header });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered/user.entity.ts")
+            .readFileSync("./test/test_zod2ts/interface-expected/user.entity.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered/err-user.entity.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.entity.ts", output);
             throw error;
         }
     });
@@ -276,14 +285,14 @@ describe("Zod2Ts", () => {
     test("Typescript layered modeling - application", () => {
         const output = userDtos.transpile(Zod2XTranspilers.Zod2Ts, { header });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered/user.dtos.ts")
+            .readFileSync("./test/test_zod2ts/interface-expected/user.dtos.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered/err-user.dtos.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.dtos.ts", output);
             throw error;
         }
     });
@@ -291,14 +300,14 @@ describe("Zod2Ts", () => {
     test("Typescript layered modeling - domain as class", () => {
         const output = userModels.transpile(Zod2XTranspilers.Zod2Ts, { header, outType: "class" });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered-class/user.entity.ts")
+            .readFileSync("./test/test_zod2ts/class-expected/user.entity.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered-class/err-user.entity.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.entity.ts", output);
             throw error;
         }
     });
@@ -306,14 +315,14 @@ describe("Zod2Ts", () => {
     test("Typescript layered modeling - application as class", () => {
         const output = userDtos.transpile(Zod2XTranspilers.Zod2Ts, { header, outType: "class" });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered-class/user.dtos.ts")
+            .readFileSync("./test/test_zod2ts/class-expected/user.dtos.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered-class/err-user.dtos.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.dtos.ts", output);
             throw error;
         }
     });
@@ -321,14 +330,14 @@ describe("Zod2Ts", () => {
     test("Typescript layered modeling mixin - application", () => {
         const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Ts, { header });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered/user.dtos.ts")
+            .readFileSync("./test/test_zod2ts/interface-expected/user.dtos.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered/err-user.dtos.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.dtos.ts", output);
             throw error;
         }
     });
@@ -339,14 +348,102 @@ describe("Zod2Ts", () => {
             outType: "class",
         });
         const expectedOutput = fs
-            .readFileSync("./test/test_zod2ts/layered-class/user.dtos.ts")
+            .readFileSync("./test/test_zod2ts/class-expected/user.dtos.ts")
             .toString();
 
         try {
             expect(output.trim()).toBe(expectedOutput.trim());
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/layered-class/err-user.dtos.ts", output);
+            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.dtos.ts", output);
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling supported schemas - entity", () => {
+        const output = tsSupportedSchemasModel.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/ts_supported_schemas.entity.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.entity.ts",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling supported schemas - entity as class", () => {
+        const output = tsSupportedSchemasModel.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.entity.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.entity.ts",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling supported schemas - application", () => {
+        const output = tsSupportedSchemasApplicationModel.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/ts_supported_schemas.app.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.app.ts",
+                output
+            );
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling supported schemas - application as class", () => {
+        const output = tsSupportedSchemasApplicationModel.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.app.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync(
+                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.app.ts",
+                output
+            );
             throw error;
         }
     });

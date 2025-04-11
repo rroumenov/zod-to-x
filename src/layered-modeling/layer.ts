@@ -1,7 +1,11 @@
 import Case from "case";
 import { ZodTypeAny } from "zod";
 
-import { isTranspilerableZodType } from "@/core/zod_helpers";
+import {
+    cloneTranspiledExtendable,
+    isTranspiledExtendable,
+    isTranspilerableZodType,
+} from "@/core/zod_helpers";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 
 enum EZod2XLayer {
@@ -85,19 +89,45 @@ export function Layer(opt: IZod2xLayerMetadata) {
 
                         zodItem["_zod2x"] = metadata;
                     } else if (!metadata.typeName) {
+                        // Only possible if `zod2xExtendable` is used.
                         metadata.typeName = name;
                     }
 
                     if (metadata.layer === undefined) {
+                        // Metadata is set independently because typeName could already exist if
+                        // zod2x was used before.
                         metadata.layer = opt;
                     }
+
+                    if (
+                        opt.externalInheritance !== false &&
+                        isTranspiledExtendable(zodItem._def.typeName)
+                    ) {
+                        if (metadata.layer.file !== opt.file) {
+                            // Type used from another layer. A new type is created inheriting the
+                            // original type.
+                            zodItem = cloneTranspiledExtendable(zodItem);
+                            zodItem._zod2x = {
+                                parentLayer: metadata.layer,
+                                parentTypeName: metadata.typeName,
+                                layer: opt,
+                                typeName: name,
+                            };
+                        }
+                    }
+
+                    return zodItem;
                 };
 
                 Object.getOwnPropertyNames(this).forEach((prop) => {
                     const zodType = (this as any)[prop]?._def?.typeName;
 
                     if (isTranspilerableZodType(zodType)) {
-                        setMetadata(Case.pascal(prop), (this as any)[prop], opt);
+                        (this as any)[prop] = setMetadata(
+                            Case.pascal(prop),
+                            (this as any)[prop],
+                            opt
+                        );
                     }
                 });
             }
@@ -116,7 +146,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
  *
  * @returns The configured Domain layer.
  */
-export function Domain(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">) {
+export function Domain(opt: Omit<IZod2xLayerMetadata, "index">) {
     return Layer({ ...opt, index: EZod2XLayer.DOMAIN });
 }
 
@@ -132,7 +162,7 @@ export function Domain(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">) {
  * @returns The result of invoking the `Layer` function with the provided options and
  *          the `APPLICATION` layer index.
  */
-export function Application(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">) {
+export function Application(opt: Omit<IZod2xLayerMetadata, "index">) {
     return Layer({ ...opt, index: EZod2XLayer.APPLICATION });
 }
 
@@ -148,7 +178,7 @@ export function Application(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">
  *
  * @returns A configured Infrastructure layer.
  */
-export function Infrastructure(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">) {
+export function Infrastructure(opt: Omit<IZod2xLayerMetadata, "index">) {
     return Layer({ ...opt, index: EZod2XLayer.INFRASTRUCTURE });
 }
 
@@ -161,6 +191,6 @@ export function Infrastructure(opt: Pick<IZod2xLayerMetadata, "file" | "namespac
  *   - `name`: The name of the layer.
  * @returns The configured Presentation layer.
  */
-export function Presentation(opt: Pick<IZod2xLayerMetadata, "file" | "namespace">) {
+export function Presentation(opt: Omit<IZod2xLayerMetadata, "index">) {
     return Layer({ ...opt, index: EZod2XLayer.PRESENTATION });
 }

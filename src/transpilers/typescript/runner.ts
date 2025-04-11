@@ -1,3 +1,4 @@
+import { ZodFirstPartyTypeKind } from "zod";
 import Case from "case";
 
 import {
@@ -33,6 +34,31 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
     protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
         return `${namespace}.${typeName}`;
+    }
+
+    protected addExtendedType(
+        name: string,
+        parentNamespace: string,
+        parentTypeName: string,
+        opt?: { isUnion?: boolean; isDiscriminatedUnion?: boolean }
+    ) {
+        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, parentTypeName);
+
+        if (this.opt.outType === "class") {
+            if (opt?.isDiscriminatedUnion) {
+                this.push0(`export type ${name} = ${extendedType};\n`);
+            } else {
+                this.push0(`export class ${name} extends ${extendedType} {}\n`);
+            }
+        } else {
+            if (opt?.isUnion) {
+                this.push0(`export type ${name} = ${extendedType};\n`);
+            } else if (opt?.isDiscriminatedUnion) {
+                this.push0(`export type ${name} = ${extendedType};\n`);
+            } else {
+                this.push0(`export interface ${name} extends ${extendedType} {}\n`);
+            }
+        }
     }
 
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
@@ -98,6 +124,10 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *  }
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
+        if (this.addExternalTypeImport(data)) {
+            return;
+        }
+
         this.addComment(data.description);
 
         this.push0(`export enum ${data.name} {`);
@@ -132,6 +162,13 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            }
+            return;
+        }
+
         if (this.opt.outType === "class" && data.newObject) {
             this.addComment(data.newObject?.description);
             this._transpileStructAsClass(data.newObject);
@@ -147,6 +184,13 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            }
+            return;
+        }
+
         this.addComment(data.description);
 
         if (this.opt.outType === "class") {
@@ -172,6 +216,16 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
+        if (this.addExternalTypeImport(data)) {
+            if (data.parentTypeName) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, {
+                    isUnion: data.type === ZodFirstPartyTypeKind.ZodUnion,
+                    isDiscriminatedUnion: data.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion,
+                });
+            }
+            return;
+        }
+
         if (this.opt.outType === "class" && (data as ASTUnion & ASTCommon).newObject) {
             this.addComment((data as ASTUnion & ASTCommon).newObject?.description);
             this._transpileStructAsClass((data as ASTUnion & ASTCommon).newObject!);

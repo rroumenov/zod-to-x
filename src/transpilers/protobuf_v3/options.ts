@@ -17,6 +17,5 @@ export const defaultOpts: IZod2ProtoV3Opt = {
     indent: 4,
     useCamelCase: false,
 
-    skipDiscriminatorNodes: true, // Not required for protobuf files
     useImports: false, // Not required for protobuf files
 };

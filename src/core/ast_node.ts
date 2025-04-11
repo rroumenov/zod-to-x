@@ -27,7 +27,7 @@ import {
     ZodUnion,
 } from "zod";
 
-import { IZod2xLayerMetadata } from "@/lib/zod_ext";
+import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 import { log } from "@/utils/logger";
 
 import {
@@ -79,16 +79,6 @@ export class Zod2Ast {
     private nodes: Map<string, TranspilerableTypes>;
 
     /**
-     * Transpilerable nodes of external data models (used for layered modeling)
-     */
-    private externalNodes: Map<string, TranspilerableTypes>;
-
-    /**
-     * Additional transpilerable nodes supplied by ZodDiscriminatedUnion
-     */
-    private discriminatorNodes: Map<string, TranspilerableTypes>;
-
-    /**
      * Lazy schemas for further analysis
      */
     private lazyPointers: Array<[ASTDefintion, ZodTypeAny]>;
@@ -102,8 +92,6 @@ export class Zod2Ast {
 
     constructor(opt: IZod2AstOpt = {}) {
         this.nodes = new Map<string, TranspilerableTypes>();
-        this.externalNodes = new Map<string, TranspilerableTypes>();
-        this.discriminatorNodes = new Map<string, TranspilerableTypes>();
         this.lazyPointers = [];
         this.warnings = [];
 
@@ -123,18 +111,24 @@ export class Zod2Ast {
      */
     private _getTranspilerableFile(
         itemName: string,
-        layerMetadata?: IZod2xLayerMetadata
-    ): { parentFile?: string; parentNamespace?: string } {
-        if (this.opt.layer && layerMetadata) {
-            if (this.opt.layer.index < layerMetadata.index) {
+        metadata?: IZod2xMetadata
+    ): { parentFile?: string; parentNamespace?: string; parentTypeName?: string } {
+        const layer = metadata?.parentLayer ?? metadata?.layer;
+
+        if (this.opt.layer && layer) {
+            if (this.opt.layer.index < layer.index) {
                 throw new BadLayerDefinitionError(
                     `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
-                        `from the same or lower layer. Found layer with number ${layerMetadata.index}`
+                        `from the same or lower layer. Found layer with number ${layer.index}`
                 );
             }
 
-            if (this.opt.layer.file !== layerMetadata.file) {
-                return { parentFile: layerMetadata.file, parentNamespace: layerMetadata.namespace };
+            if (this.opt.layer.file !== layer.file) {
+                return {
+                    parentFile: layer.file,
+                    parentNamespace: layer.namespace,
+                    parentTypeName: metadata?.parentTypeName,
+                };
             }
         }
 
@@ -282,80 +276,66 @@ export class Zod2Ast {
 
         return {
             name,
-            typeName: schema._def.typeName,
-            ...this._getTranspilerableFile(name, schema._zod2x?.layer),
+            zodTypeName: schema._def.typeName,
+            ...this._getTranspilerableFile(name, schema._zod2x),
         };
-    }
-
-    private _getNode(fileName?: string): Map<string, TranspilerableTypes> {
-        return fileName ? this.externalNodes : this.nodes;
     }
 
     private _getEnumAst(
         schema: ZodEnum<any> | ZodNativeEnum,
         opt?: ISchemasMetadata
     ): ASTDefintion {
-        const { name, typeName, parentFile, parentNamespace } = this._getNames(
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
             schema,
             "ZodEnum/ZodNativeEnum type must have a typeName. Use zod2x method to provide one."
         );
 
         const item: TranspilerableTypes = {
-            type: typeName,
+            type: zodTypeName,
             name,
             values: this._getEnumValues(schema),
             description: schema._def.description,
             parentFile,
             parentNamespace,
+            parentTypeName,
+            isFromDiscriminatedUnion: opt?.isInjectedEnum,
         };
 
-        const node = this._getNode(parentFile);
-
-        if (opt?.isInjectedEnum) {
-            if (!node.has(name) && !this.discriminatorNodes.has(name)) {
-                this.discriminatorNodes.set(name, item);
-            }
-        } else {
-            if (!node.has(name)) {
-                node.set(name, item);
-            }
-
-            if (this.discriminatorNodes.has(name)) {
-                this.discriminatorNodes.delete(name);
-            }
+        if (!this.nodes.has(name)) {
+            this.nodes.set(name, item);
         }
 
-        return this._createDefinition(name, typeName, undefined, parentNamespace);
+        return this._createDefinition(name, zodTypeName, undefined, parentNamespace);
     }
 
     private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefintion {
-        const { name, typeName, parentFile, parentNamespace } = this._getNames(
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
             schema,
             "ZodObject type must have a typeName. Use zod2x method to provide one."
         );
 
         let discriminantValue: string | undefined = undefined;
         const shape = schema._def.shape();
-        const node = this._getNode(parentFile);
 
-        if (!node.has(name)) {
+        if (!this.nodes.has(name)) {
             const properties: Record<string, ASTNode> = {};
             for (const key in shape) {
                 properties[key] = this._zodToAST(shape[key]);
             }
 
-            node.set(name, {
+            this.nodes.set(name, {
                 type: ZodFirstPartyTypeKind.ZodObject,
                 name,
                 properties,
                 description: schema.description,
                 parentFile,
                 parentNamespace,
+                parentTypeName,
             });
         }
 
         if (opt?.discriminantKey) {
-            const item = node.get(name) as ASTObject;
+            const item = this.nodes.get(name) as ASTObject;
 
             if (Object.keys(item.properties).includes(opt.discriminantKey)) {
                 const key = opt.discriminantKey;
@@ -369,7 +349,12 @@ export class Zod2Ast {
             }
         }
 
-        return this._createDefinition(name, typeName, discriminantValue, parentNamespace);
+        return this._createDefinition(
+            name,
+            zodTypeName,
+            discriminantValue,
+            parentTypeName ? undefined : parentNamespace
+        );
     }
 
     private _getUnionAst(schema: ZodUnion<any> | ZodDiscriminatedUnion<string, any>): ASTDefintion {
@@ -377,16 +362,14 @@ export class Zod2Ast {
         const discriminator =
             schema instanceof ZodDiscriminatedUnion ? schema._def.discriminator : undefined;
 
-        const { name, typeName, parentFile, parentNamespace } = this._getNames(
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
             schema,
             "ZodUnion/ZodDiscriminatedUnion type must have a typeName. " +
                 "Use zod2x method to provide one."
         );
 
-        const node = this._getNode(parentFile);
-
         const item: TranspilerableTypes = {
-            type: typeName,
+            type: zodTypeName,
             name,
             options: def.options.map((i: ZodTypeAny) =>
                 this._zodToAST(i, { discriminantKey: discriminator })
@@ -395,6 +378,7 @@ export class Zod2Ast {
             discriminantKey: discriminator,
             parentFile,
             parentNamespace,
+            parentTypeName,
         };
 
         if (!def.options.every((i: ZodTypeAny) => i instanceof ZodObject)) {
@@ -419,21 +403,24 @@ export class Zod2Ast {
             };
         }
 
-        if (name && !node.has(name)) {
-            node.set(name, item);
+        if (name && !this.nodes.has(name)) {
+            this.nodes.set(name, item);
         }
 
-        return this._createDefinition(name, typeName, undefined, parentNamespace);
+        return this._createDefinition(
+            name,
+            zodTypeName,
+            undefined,
+            parentTypeName ? undefined : parentNamespace
+        );
     }
 
     private _getIntersectionAst(schema: ZodIntersection<ZodTypeAny, ZodTypeAny>): ASTDefintion {
         const def = schema._def;
-        const { name, typeName, parentFile, parentNamespace } = this._getNames(
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
             schema,
             "ZodIntersection type must have a typeName. Use zod2x method to provide one."
         );
-
-        const node = this._getNode(parentFile);
 
         const item: TranspilerableTypes = {
             type: ZodFirstPartyTypeKind.ZodIntersection,
@@ -443,6 +430,7 @@ export class Zod2Ast {
             description: schema.description,
             parentFile,
             parentNamespace,
+            parentTypeName,
         };
 
         if (def.left._def.typeName !== "ZodObject" || def.right._def.typeName !== "ZodObject") {
@@ -466,11 +454,16 @@ export class Zod2Ast {
             };
         }
 
-        if (name && !node.has(name)) {
-            node.set(name, item);
+        if (name && !this.nodes.has(name)) {
+            this.nodes.set(name, item);
         }
 
-        return this._createDefinition(name, typeName, undefined, parentNamespace);
+        return this._createDefinition(
+            name,
+            zodTypeName,
+            undefined,
+            parentTypeName ? undefined : parentNamespace
+        );
     }
 
     /**
@@ -652,8 +645,6 @@ export class Zod2Ast {
 
         return {
             nodes: this.nodes,
-            externalNodes: this.externalNodes,
-            discriminatorNodes: this.discriminatorNodes,
             warnings: this.warnings,
         };
     }
