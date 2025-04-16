@@ -373,7 +373,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         const serializeData: IStructAttributeSerialData[] = [];
 
         Object.entries(data.properties).forEach(([key, value]) => {
-            const snakeName = Case.snake(key);
+            const snakeName = this.opt.keepKeys === true ? key : Case.snake(key);
             const origType = this._transpileMember(snakeName, value);
             serializeData.push({
                 origName: key,
@@ -413,7 +413,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         const serializeData: IStructAttributeSerialData[] = [];
 
         Object.entries(data.properties).forEach(([key, value]) => {
-            const snakeName = Case.snake(key);
+            const snakeName = this.opt.keepKeys === true ? key : Case.snake(key);
             const origType = this._transpileMember(snakeName, value);
             setterGetter.push(
                 ...this._createSetterGetter(
@@ -470,7 +470,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             keyType = this._getOptional(keyType);
         }
 
-        this.push1(`${keyType} ${Case.snake(memberName)};`);
+        this.push1(`${keyType} ${memberName};`);
 
         return origType;
     }

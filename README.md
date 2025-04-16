@@ -480,6 +480,7 @@ Common options:
 ### 1) Typescript  
 - Options:
   - **outType**: Output transpilation using Typescript interfaces or Classes. Defaults to `interface`.
+  - **keepKeys**: Specifies whether property names should follow the TypeScript naming convention (false) or remain as originally defined (true). The default is `false`.
 
 ### 2) Protobuf V3
 - Options:
@@ -497,6 +498,7 @@ Common options:
   - **namespace**: Name of the namespace containing the output code.
   - **outType**: Output transpilation using C++ Structs or Classes. Defaults to `struct`.
   - **skipSerialize**: Remove Nlohmann JSON serialization/deserialization. Defaults to `false`.
+  - **keepKeys**: Specifies whether property names should follow the C++ naming convention (false) or remain as originally defined (true). The default is `false`.
 
 
 
