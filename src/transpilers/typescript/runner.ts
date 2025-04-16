@@ -124,7 +124,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *  }
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             return;
         }
 
@@ -162,7 +162,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
             }
@@ -184,7 +184,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
             }
@@ -216,7 +216,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, {
                     isUnion: data.type === ZodFirstPartyTypeKind.ZodUnion,

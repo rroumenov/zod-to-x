@@ -132,13 +132,7 @@ export type ASTDefintion = ASTCommon & {
     reference: string;
     referenceType: ZodFirstPartyTypeKind;
     discriminantValue?: string;
-
-    /**
-     * Namespace where the transpilerable model is defined. Used to use import statements in the
-     * transpiled code.
-     */
-    parentNamespace?: string;
-};
+} & Omit<ASTLayerMetadata, "parentTypeName">;
 
 /**
  * Represents a general AST node, encompassing various Zod schema types.

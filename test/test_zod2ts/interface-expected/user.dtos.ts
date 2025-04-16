@@ -20,7 +20,11 @@ export interface CreateUserUseCaseResultDto {
     updatedAt: Date;
 }
 
+export interface UpdateUserUseCaseResultDto extends USER.UserEntity {}
+
 export interface UserDtos {
     createUserUseCaseDto: CreateUserUseCaseDto;
     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
+    updateUserUseCaseDto: CreateUserUseCaseDto;
+    updateUserUseCaseResultDto: UpdateUserUseCaseResultDto;
 }

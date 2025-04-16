@@ -77,10 +77,14 @@ namespace USER_DTOS {
         void set_updated_at(const std::string& value) { this->updated_at = value; }
     };
 
+    class UpdateUserUseCaseResultDto : public USER::UserEntity {};
+
     class UserDtos {
     private:
         CreateUserUseCaseDto create_user_use_case_dto;
         CreateUserUseCaseResultDto create_user_use_case_result_dto;
+        CreateUserUseCaseDto update_user_use_case_dto;
+        UpdateUserUseCaseResultDto update_user_use_case_result_dto;
     
     public:
         UserDtos() = default;
@@ -93,6 +97,14 @@ namespace USER_DTOS {
         const CreateUserUseCaseResultDto& get_create_user_use_case_result_dto() const { return this->create_user_use_case_result_dto; }
         CreateUserUseCaseResultDto& get_mut_create_user_use_case_result_dto() { return this->create_user_use_case_result_dto; }
         void set_create_user_use_case_result_dto(const CreateUserUseCaseResultDto& value) { this->create_user_use_case_result_dto = value; }
+        
+        const CreateUserUseCaseDto& get_update_user_use_case_dto() const { return this->update_user_use_case_dto; }
+        CreateUserUseCaseDto& get_mut_update_user_use_case_dto() { return this->update_user_use_case_dto; }
+        void set_update_user_use_case_dto(const CreateUserUseCaseDto& value) { this->update_user_use_case_dto = value; }
+        
+        const UpdateUserUseCaseResultDto& get_update_user_use_case_result_dto() const { return this->update_user_use_case_result_dto; }
+        UpdateUserUseCaseResultDto& get_mut_update_user_use_case_result_dto() { return this->update_user_use_case_result_dto; }
+        void set_update_user_use_case_result_dto(const UpdateUserUseCaseResultDto& value) { this->update_user_use_case_result_dto = value; }
     };
 
 }
@@ -155,11 +167,15 @@ namespace USER_DTOS {
     inline void to_json(json& j, const UserDtos& x) {
         j["createUserUseCaseDto"] = x.get_create_user_use_case_dto();
         j["createUserUseCaseResultDto"] = x.get_create_user_use_case_result_dto();
+        j["updateUserUseCaseDto"] = x.get_update_user_use_case_dto();
+        j["updateUserUseCaseResultDto"] = x.get_update_user_use_case_result_dto();
     }
 
     inline void from_json(const json& j, UserDtos& x) {
         x.set_create_user_use_case_dto(j.at("createUserUseCaseDto").get<CreateUserUseCaseDto>());
         x.set_create_user_use_case_result_dto(j.at("createUserUseCaseResultDto").get<CreateUserUseCaseResultDto>());
+        x.set_update_user_use_case_dto(j.at("updateUserUseCaseDto").get<CreateUserUseCaseDto>());
+        x.set_update_user_use_case_result_dto(j.at("updateUserUseCaseResultDto").get<UpdateUserUseCaseResultDto>());
     }
 
 }

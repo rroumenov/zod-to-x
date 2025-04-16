@@ -36,12 +36,18 @@ export class CreateUserUseCaseResultDto {
     }
 }
 
+export class UpdateUserUseCaseResultDto extends USER.UserEntity {}
+
 export class UserDtos {
     createUserUseCaseDto: CreateUserUseCaseDto;
     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
+    updateUserUseCaseDto: CreateUserUseCaseDto;
+    updateUserUseCaseResultDto: UpdateUserUseCaseResultDto;
 
     constructor(data: UserDtos) {
         this.createUserUseCaseDto = data.createUserUseCaseDto;
         this.createUserUseCaseResultDto = data.createUserUseCaseResultDto;
+        this.updateUserUseCaseDto = data.updateUserUseCaseDto;
+        this.updateUserUseCaseResultDto = data.updateUserUseCaseResultDto;
     }
 }

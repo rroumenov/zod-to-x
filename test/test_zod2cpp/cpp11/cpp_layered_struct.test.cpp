@@ -1,4 +1,5 @@
 #include "./struct-expected/user.dtos.hpp"
+#include "./struct-expected/user.api.hpp"
 #include "./struct-expected/cpp_supported_schemas.entity.hpp"
 #include "./struct-expected/cpp_supported_schemas.app.hpp"
 #include "../cpp_test_utils.cpp"
@@ -11,6 +12,14 @@ int main() {
         typeid(USER_DTOS::UserDtos).name(),
         USER_DTOS::UserDtos(),
         jUserDtos,
+        false
+    );
+
+    testTypeSerialization(
+        testName,
+        typeid(USER_API::UserApi).name(),
+        USER_API::UserApi(),
+        jUserApi,
         false
     );
     

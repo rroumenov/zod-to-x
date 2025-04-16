@@ -113,21 +113,46 @@ export class Zod2Ast {
         itemName: string,
         metadata?: IZod2xMetadata
     ): { parentFile?: string; parentNamespace?: string; parentTypeName?: string } {
-        const layer = metadata?.parentLayer ?? metadata?.layer;
+        let layer: IZod2xLayerMetadata;
 
-        if (this.opt.layer && layer) {
-            if (this.opt.layer.index < layer.index) {
-                throw new BadLayerDefinitionError(
-                    `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
-                        `from the same or lower layer. Found layer with number ${layer.index}`
-                );
-            }
+        if (this.opt.layer !== undefined && metadata?.layer !== undefined) {
+            if (metadata.layer.file === this.opt.layer.file) {
+                // Case 1: Only layer exists and belongs to the same file
+                // Case 2: Layer (belongs to same file) and parentLayer exist
+                // Behaviour: New type is created extending the parent layer (if any)
+                layer = metadata.parentLayer ?? metadata.layer;
 
-            if (this.opt.layer.file !== layer.file) {
+                if (this.opt.layer.index < layer.index) {
+                    throw new BadLayerDefinitionError(
+                        `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
+                            `from the same or lower layer. Found layer with number ${layer.index}`
+                    );
+                }
+
+                if (this.opt.layer.file !== layer.file) {
+                    return {
+                        parentFile: layer.file,
+                        parentNamespace: layer.namespace,
+                        parentTypeName: metadata?.parentTypeName,
+                    };
+                }
+            } else {
+                // Case 3: Only layer exists and belongs to a different file
+                // Case 4: Layer (belongs to different file) and parentLayer exist
+                // Behaviour: Type is imported from Layer file
+                layer = metadata.layer;
+
+                if (this.opt.layer.index < layer.index) {
+                    throw new BadLayerDefinitionError(
+                        `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
+                            `from the same or lower layer. Found layer with number ${layer.index}`
+                    );
+                }
+
                 return {
                     parentFile: layer.file,
                     parentNamespace: layer.namespace,
-                    parentTypeName: metadata?.parentTypeName,
+                    parentTypeName: undefined,
                 };
             }
         }
@@ -137,16 +162,21 @@ export class Zod2Ast {
 
     /**
      * Transpilerable items are treated as references in the AST
-     * @param ref
-     * @param refType
-     * @param discriminantValue
+     * @param ref - Output type name
+     * @param refType - Type of the output type
+     * @param discriminantValue - Discriminant value (for ZodDiscriminatedUnion)
+     * @param parentNamespace - For Layered modeling, the namespace of the parent type if does not
+     *                          belong to the same file.
+     * @param parentFile - For Layered modeling, the file of the parent type if does not belong to
+     *                      the same file.
      * @returns
      */
     private _createDefinition(
         ref: string,
         refType: ZodFirstPartyTypeKind,
         discriminantValue?: string,
-        parentNamespace?: string
+        parentNamespace?: string,
+        parentFile?: string
     ): ASTDefintion {
         return {
             type: "definition",
@@ -154,6 +184,7 @@ export class Zod2Ast {
             referenceType: refType,
             discriminantValue,
             parentNamespace,
+            parentFile,
         };
     }
 
@@ -305,7 +336,7 @@ export class Zod2Ast {
             this.nodes.set(name, item);
         }
 
-        return this._createDefinition(name, zodTypeName, undefined, parentNamespace);
+        return this._createDefinition(name, zodTypeName, undefined, parentNamespace, parentFile);
     }
 
     private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefintion {
@@ -353,7 +384,8 @@ export class Zod2Ast {
             name,
             zodTypeName,
             discriminantValue,
-            parentTypeName ? undefined : parentNamespace
+            parentTypeName ? undefined : parentNamespace,
+            parentTypeName ? undefined : parentFile
         );
     }
 
@@ -411,7 +443,8 @@ export class Zod2Ast {
             name,
             zodTypeName,
             undefined,
-            parentTypeName ? undefined : parentNamespace
+            parentTypeName ? undefined : parentNamespace,
+            parentTypeName ? undefined : parentFile
         );
     }
 
@@ -462,7 +495,8 @@ export class Zod2Ast {
             name,
             zodTypeName,
             undefined,
-            parentTypeName ? undefined : parentNamespace
+            parentTypeName ? undefined : parentNamespace,
+            parentTypeName ? undefined : parentFile
         );
     }
 

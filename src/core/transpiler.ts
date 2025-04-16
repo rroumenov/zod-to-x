@@ -259,10 +259,16 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         if (this.isTranspilerable(token as TranspilerableTypes)) {
             varType = (token as TranspilerableTypes).name as string;
         } else if (token.type === "definition") {
-            varType =
-                this.opt.useImports === true && token.parentNamespace
-                    ? this.getTypeFromExternalNamespace(token.parentNamespace, token.reference)
-                    : token.reference;
+            if (this.opt.useImports === true && token.parentNamespace) {
+                varType = this.getTypeFromExternalNamespace(token.parentNamespace, token.reference);
+
+                this.addExternalTypeImport({
+                    parentNamespace: token.parentNamespace,
+                    parentFile: token.parentFile,
+                });
+            } else {
+                varType = token.reference;
+            }
         } else if (token.type === ZodFirstPartyTypeKind.ZodString) {
             varType = this.getStringType();
         } else if (token.type === ZodFirstPartyTypeKind.ZodBoolean) {
@@ -306,6 +312,23 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     }
 
     /**
+     * Determines whether a given type is an external type import.
+     *
+     * @param item - An object containing the `parentFile` and `parentNamespace`
+     *               properties of the type to evaluate.
+     * @returns `true` if the type is an external type import; otherwise, `false`.
+     */
+    protected isExternalTypeImport(
+        item: Pick<TranspilerableTypes, "parentFile" | "parentNamespace">
+    ): boolean {
+        return (
+            item.parentFile !== undefined &&
+            item.parentNamespace !== undefined &&
+            this.opt.useImports !== false
+        );
+    }
+
+    /**
      * Adds an external type import to the transpiler's imports if the provided transpiled item
      * is located into another file and namespace, and if the `useImports` option is not disabled.
      *
@@ -313,9 +336,11 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *                  about the type to be imported, including its parent file and namespace.
      * @returns `true` if the import was successfully added, otherwise `false`.
      */
-    protected addExternalTypeImport(item: TranspilerableTypes): boolean {
-        if (item.parentFile && item.parentNamespace && this.opt.useImports !== false) {
-            this.imports.add(this.addImportFromFile(item.parentFile, item.parentNamespace));
+    protected addExternalTypeImport(
+        item: Pick<TranspilerableTypes, "parentFile" | "parentNamespace">
+    ): boolean {
+        if (this.isExternalTypeImport(item)) {
+            this.imports.add(this.addImportFromFile(item.parentFile!, item.parentNamespace!));
             return true;
         }
 

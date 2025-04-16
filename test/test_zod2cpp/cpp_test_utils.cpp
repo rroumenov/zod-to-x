@@ -47,7 +47,14 @@ bool testTypeSerialization(
                 std::endl;
         }
     } catch (const std::exception& e) {
-        std::cerr << "C++11 - Error during test: " << e.what() << std::endl;
+        std::cerr <<
+            "Test error: " <<
+            testName << 
+            " - " <<
+            abi::__cxa_demangle(typeName, 0, 0, &status) << 
+            " - Exception: " <<
+            e.what() <<
+            std::endl;
     }
 
     return result;
@@ -92,6 +99,54 @@ json jUserDtos = {
         { "age", 30 },
         { "createdAt", "2025-03-30T14:00:00Z" },
         { "updatedAt", "2025-03-30T15:00:00Z" }
+    }},
+    { "updateUserUseCaseDto", {
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "role", "Admin" }
+    }},
+    { "updateUserUseCaseResultDto", {
+        { "id", "101" },
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "role", "Admin" }
+    }}
+};
+
+json jUserApi = {
+    { "reqUpdateUser", {
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "role", "Admin" }
+    }},
+    { "resUpdateUserMulti", {
+        { "amount", 19 },
+        { "data", {
+            {
+                { "id", "101" },
+                { "name", "Alice" },
+                { "email", "alice@example.com" },
+                { "age", 30 },
+                { "role", "Admin" }
+            },
+            {
+                { "id", "102" },
+                { "name", "Bob" },
+                { "email", "bob@example.com" },
+                { "age", 25 },
+                { "role", "User" }
+            }
+        }}
+    }},
+    { "resUpdateUser", {
+        { "id", "101" },
+        { "name", "Alice" },
+        { "email", "alice@example.com" },
+        { "age", 30 },
+        { "role", "Admin" }
     }}
 };
 
