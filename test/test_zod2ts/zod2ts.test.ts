@@ -12,7 +12,7 @@ import {
     tsSupportedSchemasApplicationModel,
     tsSupportedSchemasModel,
 } from "./ts_supported_schemas.layered";
-import { userDtos, userModels } from "../common/layered_schemas";
+import { userApi, userDtos, userModels } from "../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../common/layered_mixin_schemas";
 
 let tsSupportedSchemas: Zod2XTypes.ASTNodes;
@@ -297,6 +297,21 @@ describe("Zod2Ts", () => {
         }
     });
 
+    test("Typescript layered modeling - infrastructure", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Ts, { header });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/user.api.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.api.ts", output);
+            throw error;
+        }
+    });
+
     test("Typescript layered modeling - domain as class", () => {
         const output = userModels.transpile(Zod2XTranspilers.Zod2Ts, { header, outType: "class" });
         const expectedOutput = fs
@@ -323,6 +338,21 @@ describe("Zod2Ts", () => {
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
             fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.dtos.ts", output);
+            throw error;
+        }
+    });
+
+    test("Typescript layered modeling - infrastructure as class", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Ts, { header, outType: "class" });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/user.api.ts")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.api.ts", output);
             throw error;
         }
     });

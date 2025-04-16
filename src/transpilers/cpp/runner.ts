@@ -231,7 +231,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon) {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             return;
         }
 
@@ -268,7 +268,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileIntersection(data: ASTIntersection & ASTCommon) {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
             }
@@ -316,7 +316,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, true);
             }
@@ -345,7 +345,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
-        if (this.addExternalTypeImport(data)) {
+        if (this.isExternalTypeImport(data)) {
             if (data.parentTypeName) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
             }

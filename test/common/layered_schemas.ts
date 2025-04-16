@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Application, Domain, Zod2XModel } from "../../dist";
+import { Application, Domain, Infrastructure, Zod2XModel } from "../../dist";
 
 @Domain({ namespace: "USER", file: "user.entity" })
 class UserModels extends Zod2XModel {
@@ -24,6 +24,22 @@ class UserDtos extends Zod2XModel {
         createdAt: z.date(),
         updatedAt: z.date(),
     });
+
+    updateUserUseCaseDto = this.createUserUseCaseDto;
+    updateUserUseCaseResultDto = userModels.userEntity;
 }
 
 export const userDtos = new UserDtos();
+
+@Infrastructure({ namespace: "USER_API", file: "user.api" })
+class UserApi extends Zod2XModel {
+    reqUpdateUser = userDtos.updateUserUseCaseDto;
+    resUpdateUser = userDtos.updateUserUseCaseResultDto;
+
+    resUpdateUserMulti = z.object({
+        amount: z.number().int().nonnegative(),
+        data: z.array(userDtos.updateUserUseCaseResultDto),
+    });
+}
+
+export const userApi = new UserApi();

@@ -8,7 +8,7 @@ import { diffLinesRaw } from "jest-diff";
 import { zCppSupportedSchemas } from "../cpp_supported_schemas";
 import { header } from "../../common/header";
 import * as schemas from "../../common/zod_schemas";
-import { userDtos, userModels } from "../../common/layered_schemas";
+import { userApi, userDtos, userModels } from "../../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../../common/layered_mixin_schemas";
 import {
     cppSupportedSchemasApplicationModel,
@@ -900,6 +900,25 @@ describe("Zod2Cpp17", () => {
         }
     });
 
+    test("C++ layered modeling - infrastructure", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Cpp17, {
+            outType: "struct",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/struct-expected/user.api.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp17/struct-expected/err-user.api.hpp", output);
+            throw error;
+        }
+    });
+
     test("C++ layered modeling - domain as class", () => {
         const output = userModels.transpile(Zod2XTranspilers.Zod2Cpp17, {
             outType: "class",
@@ -937,6 +956,25 @@ describe("Zod2Cpp17", () => {
         } catch (error) {
             diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
             fs.writeFileSync("./test/test_zod2cpp/cpp17/class-expected/err-user.dtos.hpp", output);
+            throw error;
+        }
+    });
+
+    test("C++ layered modeling - infrastructure as class", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Cpp17, {
+            outType: "class",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/class-expected/user.api.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp17/class-expected/err-user.api.hpp", output);
             throw error;
         }
     });

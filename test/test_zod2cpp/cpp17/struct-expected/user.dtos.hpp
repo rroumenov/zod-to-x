@@ -29,9 +29,13 @@ namespace USER_DTOS {
         std::string updated_at;
     };
 
+    struct UpdateUserUseCaseResultDto : public USER::UserEntity {};
+
     struct UserDtos {
         CreateUserUseCaseDto create_user_use_case_dto;
         CreateUserUseCaseResultDto create_user_use_case_result_dto;
+        CreateUserUseCaseDto update_user_use_case_dto;
+        UpdateUserUseCaseResultDto update_user_use_case_result_dto;
     };
 
 }
@@ -94,11 +98,15 @@ namespace USER_DTOS {
     inline void to_json(json& j, const UserDtos& x) {
         j["createUserUseCaseDto"] = x.create_user_use_case_dto;
         j["createUserUseCaseResultDto"] = x.create_user_use_case_result_dto;
+        j["updateUserUseCaseDto"] = x.update_user_use_case_dto;
+        j["updateUserUseCaseResultDto"] = x.update_user_use_case_result_dto;
     }
 
     inline void from_json(const json& j, UserDtos& x) {
         x.create_user_use_case_dto = j.at("createUserUseCaseDto").get<CreateUserUseCaseDto>();
         x.create_user_use_case_result_dto = j.at("createUserUseCaseResultDto").get<CreateUserUseCaseResultDto>();
+        x.update_user_use_case_dto = j.at("updateUserUseCaseDto").get<CreateUserUseCaseDto>();
+        x.update_user_use_case_result_dto = j.at("updateUserUseCaseResultDto").get<UpdateUserUseCaseResultDto>();
     }
 
 }

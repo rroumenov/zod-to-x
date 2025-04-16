@@ -12,7 +12,7 @@ import {
 } from "../cpp_supported_schemas.layered";
 import { header } from "../../common/header";
 import * as schemas from "../../common/zod_schemas";
-import { userDtos, userModels } from "../../common/layered_schemas";
+import { userApi, userDtos, userModels } from "../../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../../common/layered_mixin_schemas";
 
 let cppSupportedSchemas: Zod2XTypes.ASTNodes;
@@ -888,6 +888,25 @@ describe("Zod2Cpp", () => {
         }
     });
 
+    test("C++ layered modeling - infrastructure", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Cpp, {
+            outType: "struct",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.api.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.api.hpp", output);
+            throw error;
+        }
+    });
+
     test("C++ layered modeling - domain as class", () => {
         const output = userModels.transpile(Zod2XTranspilers.Zod2Cpp, {
             outType: "class",
@@ -929,7 +948,26 @@ describe("Zod2Cpp", () => {
         }
     });
 
-    test("C++ layered modeling mixin- application", () => {
+    test("C++ layered modeling - infratructure as class", () => {
+        const output = userApi.transpile(Zod2XTranspilers.Zod2Cpp, {
+            outType: "class",
+            header,
+            includeNulls: true,
+        });
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.api.hpp")
+            .toString();
+
+        try {
+            expect(output.trim()).toBe(expectedOutput.trim());
+        } catch (error) {
+            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
+            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.api.hpp", output);
+            throw error;
+        }
+    });
+
+    test("C++ layered modeling mixin - application", () => {
         const output = userDtosMixin.transpile(Zod2XTranspilers.Zod2Cpp, {
             outType: "struct",
             header,

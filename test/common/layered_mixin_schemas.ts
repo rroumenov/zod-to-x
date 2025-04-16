@@ -14,6 +14,9 @@ class CreateUserUseCaseResultDto {
 }
 
 @Application({ namespace: "USER_DTOS", file: "user.dtos" })
-class UserDtos extends Zod2XMixin([CreateUserUseCaseDto, CreateUserUseCaseResultDto], Zod2XModel) {}
+class UserDtos extends Zod2XMixin([CreateUserUseCaseDto, CreateUserUseCaseResultDto], Zod2XModel) {
+    updateUserUseCaseDto = this.createUserUseCaseDto;
+    updateUserUseCaseResultDto = userModels.userEntity;
+}
 
 export const userDtos = new UserDtos();
