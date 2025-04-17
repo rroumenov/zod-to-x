@@ -95,11 +95,6 @@ export class Zod2XModel {
         opt?: TargetOpt<"Zod2Cpp17">,
         astOpt?: AstOpt
     ): string;
-    public transpile(
-        target: Target<"Zod2ProtoV3">,
-        opt?: TargetOpt<"Zod2ProtoV3">,
-        astOpt?: AstOpt
-    ): string;
     public transpile(target: Target<"Zod2Ts">, opt?: TargetOpt<"Zod2Ts">, astOpt?: AstOpt): string;
 
     public transpile(

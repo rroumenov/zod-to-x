@@ -27,8 +27,8 @@
 - [Intersections and Unions](#intersections-and-unions)
 - [Layered modeling](#layered-modeling) <sup>*(new)*</sup>
 - [Supported output languages](#supported-output-languages)
-- [Mapping of supported Zod Types](#mapping-of-supported-zod-types)
 - [Additional utils](#additional-utils)
+- [Mapping of supported Zod Types by Language](#mapping-of-supported-zod-types-by-langauge)
 
 
 
@@ -124,13 +124,6 @@ console.log(tsVisitorAsClass)
 //     }
 // }
 ```
-
-
-Example of supported schemas with its outputs can be found in the `test` folder:
-- [Zod Schemas](test/common)
-- [Typescript outputs](test/test_zod2ts)
-- [Protobuf V3 outputs](test/test_zod2proto3/)
-- [C++ outputs](test/test_zod2cpp/)
 
 
 
@@ -281,7 +274,7 @@ class UserModels extends Zod2XModel {
 }
 
 const userModels = new UserModels();
-console.log(userModels.transpile(Transpilers.Zod2Ts));
+console.log(userModels.transpile(Zod2XTranspilers.Zod2Ts));
 // Output:
 // export enum UserRole {
 //     Admin = "Admin",
@@ -353,6 +346,8 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 3 - Are your models too large? Simplify them!  
 If you are dealing with complex models whose definitions are too extensive, split them into multiple classes and then combine them using `Zod2XMixin` as shown below:
 ```ts
+import { Zod2XMixin } from "zod-to-x";
+
 // Sub-models do not require a layer decorator; it is applied automatically when inherited by the main model.
 
 // Sub-model 1
@@ -481,17 +476,9 @@ Common options:
 - Options:
   - **outType**: Output transpilation using Typescript interfaces or Classes. Defaults to `interface`.
   - **keepKeys**: Specifies whether property names should follow the TypeScript naming convention (false) or remain as originally defined (true). The default is `false`.
+- [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2ts)
 
-### 2) Protobuf V3
-- Options:
-  - **packageName**: Name of the protobuf file package.
-  - **useCamelCase**: Protobuf follows the snake_case convention for field names, but camelCase can also be used. Defaults to `false`.
-
-- Limitations:
-  - `ZodTuple` is supported only for items of the same type.
-
-
-### 3) C++
+### 2) C++
 `Nlohmann` dependency is used for data serialization/deserialization. For *C++11*, `Boost` dependency is used. For *C++17* or newer, standard libraries are used.
 - Options:
   - **includeNulls**: When serializing, include all values even if `null`. Defaults to `false`.
@@ -499,173 +486,70 @@ Common options:
   - **outType**: Output transpilation using C++ Structs or Classes. Defaults to `struct`.
   - **skipSerialize**: Remove Nlohmann JSON serialization/deserialization. Defaults to `false`.
   - **keepKeys**: Specifies whether property names should follow the C++ naming convention (false) or remain as originally defined (true). The default is `false`.
+- [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2cpp)
 
 
-
-## Mapping of supported Zod Types
-
-| Zod Type              | TypeScript                  | Protobuf                                      | C++                                           |
-|-----------------------|-----------------------------|-----------------------------------------------|-----------------------------------------------|
-| `z.string()`          | `string`                    | `string`                                      | `std::string`
-| `z.number()`          | `number`                    | `double`, `uint32`, `uint64`, `ìnt32`, `int64`| `double`, `uint32_t`, `uint64_t`, `ìnt32_t`, `int64_t`
-| `z.bigint()`          | `number`                    | `int64`, `uint64`                             | `int64_t`, `uint64_t`
-| `z.boolean()`         | `boolean`                   | `bool`                                        | `bool`
-| `z.date()`            | `Date`                      | `google.protobuf.Timestamp`                   | Not supported
-| `z.literal()`         | Literal value (`'value'`)   | As number or string                           | As string
-| `z.enum()`            | `enum`                      | `enum`                                        | `enum class T: int`
-| `z.nativeEnum()`      | Native `enum`               | `enum`                                        | `enum class T: int`
-| `z.array()`           | `T[]`                       | `repeated` field                              | `std::vector<T>`
-| `z.set()`             | `Set<T>`                    | `repeated` field                              | `std::set<T>`
-| `z.tuple()`           | `[T1, T2, T3]`              | `repeated` field                              | `std::tuple<T1, T2, T3>`
-| `z.object()`          | `interface` or `class`      | `message`                                     | `struct` or `class`
-| `z.record()`          | `Record<string, T>`         | `map<string, K>`                              | `std::unordered_map<T>`
-| `z.map()`             | `Map<string, T>`            | `map<string, K>`                              | `std::unordered_map<T>`
-| `z.union()` <sup>(2)</sup> | `T1 \| T2` or `type`   | `oneof`                                       | `std::variant<T, K>` (`boost::variant<T, K>` for C++11)
-| `z.discriminatedUnion()`| `T1 \| T2` or `type`      | `oneof`                                       | `std::variant<T, K>` (`boost::variant<T, K>` for C++11)
-| `z.intersection()` <sup>(1)</sup> | `T1 & T2` or `type`         | Not supported                     | `struct` or `class` with `inheritance`
-| `z.any()`             | `any`                       | `google.protobuf.Any`                         | `nlohmann::json`
-| `z.optional()`        | `T \| undefined`            | Not supported                                 | `std::optional<T>` (`boost::optional<T>` for C++11)
-| `z.nullable()`        | `T \| null`                 | Not supported                                 | `std::optional<T>` (`boost::optional<T>` for C++11)
-
-<sup>(1)</sup> Consider to use Zod's merge instead of ZodIntersection when possible.  
-<sup>(2)</sup> Consider to use ZodDiscriminatedUnion when possible. In languages like C++, deserialization is O(1) against the O(n) of the ZodUnion.
 
 ## Additional utils
-- `zod2JsonSchemaDefinitions`  
-In case of use of libraries like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema), the provided zod extension can also be used
-as a JSON Schema definitions mapper:
+Additional useful tools to convert Zod Schemas into different formats.
+
+### 1) `zod2JsonSchemaDefinitions`  
+In case of use of libraries like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema), the provided zod extension can also be used as a JSON Schema definitions mapper. Check out this [input example](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2jschema_def/user_schema.ts) and its [output](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2jschema_def/user_schema.json) (\*).
+
+<sup>*(\*) Output is generated using definitions from `zod2JsonSchemaDefinitions` and [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema) to create the schema with them.*</sup>
+
 ```ts
 import { z } from 'zod';
-import { extendZod, zod2JsonSchemaDefinitions } from 'zod-to-x';
+import { extendZod, Zod2XConverters } from 'zod-to-x';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-
 extendZod(z);
 
-const Address = z.object({
-    street: z.string(),
-    city: z.string(),
-    zipCode: z.string().nullable(),
-}).zod2x("UserAddress");
+// Example using model from `Quick-start` section
+const visitorDefinitions = Zod2XConverters.zod2JsonSchemaDefinitions(VisitorSchema);
+const visitorJsonSchema = zodToJsonSchema(
+  VisitorSchema,
+  {definitions: visitorDefinitions}
+);
+console.log(visitorJsonSchema); // JSON Schema with definitions
 
-const UserRole = z.union([
-    z.literal('admin'),
-    z.literal('editor'),
-    z.literal('viewer')
-]).zod2x("UserRole");
-
-const StatusEnum = z.enum([
-    'active',
-    'inactive',
-    'pending']
-)
-.describe("This is a UserStatus enumerate description.")
-.zod2x("UserStatus");
-
-export const UserModel = z.object({
-    address: Address,
-    roles: z.array(UserRole),
-    status: StatusEnum,
-    friends: z.lazy((): ZodType => UserModel.array().optional().nullable()),
-  // [... more attributes]
-})
-.describe("This is a UserModel interface description.")
-.zod2x("UserModel");
-
-const userDefinitions = zod2JsonSchemaDefinitions(UserModel);
-const userJsonSchema = zodToJsonSchema(UserModel, {definitions: userDefinitions});
-console.log(userJsonSchema);
-// output:
-// {
-//   "$ref": "#/definitions/UserModel",
-//   "definitions": {
-//     "UserAddress": {
-//       "type": "object",
-//       "properties": {
-//         "street": {
-//           "type": "string"
-//         },
-//         "city": {
-//           "type": "string"
-//         },
-//         "zipCode": {
-//           "type": [
-//             "string",
-//             "null"
-//           ]
-//         }
-//       },
-//       "required": [
-//         "street",
-//         "city",
-//         "zipCode"
-//       ],
-//       "additionalProperties": false
-//     },
-//     "UserRole": {
-//       "type": "string",
-//       "enum": [
-//         "admin",
-//         "editor",
-//         "viewer"
-//       ]
-//     },
-//     "UserStatus": {
-//       "type": "string",
-//       "enum": [
-//         "active",
-//         "inactive",
-//         "pending"
-//       ],
-//       "description": "This is a UserStatus enumerate description."
-//     },
-//     "UserModel": {
-//       "type": "object",
-//       "properties": {
-//         "address": {
-//           "$ref": "#/definitions/UserAddress"
-//         },
-//         "roles": {
-//           "type": "array",
-//           "items": {
-//             "$ref": "#/definitions/UserRole"
-//           }
-//         },
-//         "status": {
-//           "$ref": "#/definitions/UserStatus"
-//         },
-//         "friends": {
-//           "anyOf": [
-//             {
-//               "anyOf": [
-//                 {
-//                   "not": {}
-//                 },
-//                 {
-//                   "type": "array",
-//                   "items": {
-//                     "$ref": "#/definitions/UserModel"
-//                   },
-//                   "description": "This is a UserModel interface description."
-//                 }
-//               ],
-//               "description": "This is a UserModel interface description."
-//             },
-//             {
-//               "type": "null"
-//             }
-//           ],
-//           "description": "This is a UserModel interface description."
-//         },
-//       },
-//       "required": [
-//         "address",
-//         "roles",
-//         "status",
-//       ],
-//       "additionalProperties": false,
-//       "description": "This is a UserModel interface description."
-//     }
-//   },
-//   "$schema": "http://json-schema.org/draft-07/schema#"
-// }
+// Example using model from `Layer modeling` section
+const createUserDtoDefinitions = Zod2XConverters.zod2JsonSchemaDefinitions(userDtos.createUserUseCaseDto);
+const createUserDtoJsonSchema = zodToJsonSchema(
+  userDtos.createUserUseCaseDto,
+  {definitions: createUserDtoDefinitions}
+);
+console.log(createUserDtoJsonSchema); // JSON Schema with definitions
 ```
+
+### 2) `zod2ProtoV3`
+In case of use of Google protobuf to improve communication performance, you can automatically generate `proto` files directly from your models. Check out this [input example](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2proto3/proto3_supported_schemas.ts) and its [output](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2proto3/proto3_supported_schemas.expect.proto)
+
+- Options:
+  - **packageName**: Name of the protobuf file package.
+  - **header**: Text to add as a comment at the beginning of the output.
+  - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
+  - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to true.
+  - **keepKeys**: Specifies whether property names should follow the Google Protobuf naming convention (false) or remain as originally defined (true). The default is `false`.
+
+- Limitations:
+  - ZodTuple is supported only for items of the same type.
+
+```ts
+import { z } from 'zod';
+import { extendZod, Zod2XConverters } from 'zod-to-x';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+extendZod(z);
+
+// Example using model from `Quick-start` section
+const visitorProtobuf = Zod2XConverters.zod2ProtoV3(VisitorSchema);
+console.log(visitorProtobuf); // Proto file of Visitor's model
+
+// Example using model from `Layer modeling` section
+const createUserDtoProtobuf = Zod2XConverters.zod2ProtoV3(userDtos.createUserUseCaseDto);
+console.log(createUserDtoProtobuf); // Proto file of CreateUserUseCaseDto's model
+```
+
+
+
+## Mapping of supported Zod Types by Langauge
+For a detailed mapping of supported Zod types across supported targets, please refer to the [SUPPORTED_ZOD_TYPES.md](https://github.com/rroumenov/zod-to-x/blob/main/SUPPORTED_ZOD_TYPES.md) file.
