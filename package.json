@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [

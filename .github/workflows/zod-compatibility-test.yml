@@ -1,0 +1,32 @@
+name: Test with multiple Zod versions
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+
+jobs:
+  compatibility_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        zod-version: ['3.22.3', '3.23.0', '3.24.0', 'latest']
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Zod @ ${{ matrix.zod-version }}
+        run: npm install zod@${{ matrix.zod-version }}
+
+      - name: Install other dependencies
+        run: npm install
+
+      - name: Build the project
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
