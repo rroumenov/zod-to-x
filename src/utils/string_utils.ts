@@ -19,4 +19,16 @@ export default class StringUtils {
             " ".repeat(indentSize * 4),
         ];
     }
+
+    /**
+     * Converts the first character of a string to lowercase while leaving the rest of the string
+     * unchanged.
+     *
+     * @param str - The input string to process.
+     * @returns A new string with the first character converted to lowercase.
+     */
+    static lowerFirstChar(str: string): string {
+        if (str.length === 0) return str;
+        return str.charAt(0).toLowerCase() + str.slice(1);
+    }
 }

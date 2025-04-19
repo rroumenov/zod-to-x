@@ -24,6 +24,12 @@ export interface IZod2CppOpt extends IZodToXOpt {
      * Remove Nlohmann JSON serialization/deserialization. Default is false.
      */
     skipSerialize?: boolean;
+
+    /**
+     * By default (false), structure/class property names are converted according to the target
+     * language's naming conventions. If set to true, the original property names are preserved.
+     */
+    keepKeys?: boolean;
 }
 
 export const defaultOpts: IZod2CppOpt = {
@@ -34,4 +40,5 @@ export const defaultOpts: IZod2CppOpt = {
     namespace: "zodtocpp",
     outType: "struct",
     includeNulls: false,
+    keepKeys: false,
 };

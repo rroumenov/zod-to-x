@@ -202,6 +202,7 @@ declare module "zod" {
         ): this;
     }
 
+    // @ts-ignore: TS2345 - zod>=3.24.0 uses readonly. Previous versions use mutable.
     interface ZodDiscriminatedUnion<
         Discriminator extends string,
         Options extends readonly z.ZodDiscriminatedUnionOption<Discriminator>[],

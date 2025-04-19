@@ -8,5 +8,5 @@ export * from "./layered-modeling";
 // Transpilers
 export * as Zod2XTranspilers from "./transpilers";
 
-// Utilities
-export { zod2JsonSchemaDefinitions } from "./utils/json_schema_definitions";
+// Converters
+export * as Zod2XConverters from "./converters";

@@ -1,4 +1,5 @@
 import Case from "case";
+import { ZodObject, ZodRawShape } from "zod";
 
 import {
     ASTCommon,
@@ -8,11 +9,14 @@ import {
     ASTNativeEnum,
     ASTObject,
     ASTUnion,
+    IZod2AstOpt,
     NotTranspilerableTypeError,
     TranspilerableTypes,
+    Zod2Ast,
     Zod2X,
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
+import StringUtils from "@/utils/string_utils";
 
 import { defaultOpts, IZod2ProtoV3Opt } from "./options";
 
@@ -31,11 +35,7 @@ const allowedKeyTypes = [
     "string",
 ];
 
-/**
- * @deprecated Zod2ProtoV3 will not be considered as a transpilerable programming language, but as
- *             another utility such as `zod2JsonSchemaDefinitions`.
- */
-export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
+class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     constructor(opt: IZod2ProtoV3Opt = {}) {
         super({ ...defaultOpts, ...opt });
     }
@@ -248,10 +248,12 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         }
 
         this.push0(`message ${data.name} {`);
-        this.push1(`oneof ${this._adaptField(data.name + "Oneof")} {`);
+        this.push1(`oneof ${StringUtils.lowerFirstChar(this._adaptField(data.name + "Oneof"))} {`);
 
         attributesTypes.forEach((item, index) => {
-            this.push2(`${item} ${this._adaptField(item)} = ${index + 1};`);
+            this.push2(
+                `${item} ${StringUtils.lowerFirstChar(this._adaptField(item))} = ${index + 1};`
+            );
         });
 
         this.push1(`}`);
@@ -274,10 +276,38 @@ export class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
      * @returns
      */
     private _adaptField(fieldName: string) {
-        if (this.opt.useCamelCase) {
-            return Case.camel(fieldName);
+        if (this.opt.keepKeys === true) {
+            return fieldName;
         } else {
             return Case.snake(fieldName);
         }
     }
+}
+
+/**
+ * Converts a Zod schema into a Protocol Buffers v3 definition.
+ *
+ * @template T - The shape of the Zod schema.
+ * @param schema - The Zod object schema to be converted.
+ * @param opt - Optional configuration for the conversion process.
+ * @param opt.strict - Whether to enforce strict mode during AST generation.
+ * @param opt.packageName - The package name to use in the generated Protocol Buffers definition.
+ * @param opt.keepKeys - Whether to keep the original property names in the generated file instead
+ *                       of converting them to snake_case as per Protobuf conventions.
+ * @param opt.header - Custom header text to include in the generated file.
+ * @param opt.indent - The indentation style to use in the generated file.
+ * @param opt.includeComments - Whether to include comments in the generated Protocol Buffers
+ *                              definition.
+ * @returns The Protocol Buffers v3 definition as a string.
+ */
+export function zod2ProtoV3<T extends ZodRawShape>(
+    schema: ZodObject<T>,
+    opt: Pick<IZod2AstOpt, "strict"> &
+        Pick<
+            IZod2ProtoV3Opt,
+            "packageName" | "keepKeys" | "header" | "indent" | "includeComments"
+        > = {}
+): string {
+    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema);
+    return new Zod2ProtoV3(opt).transpile(astNode);
 }

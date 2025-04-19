@@ -248,7 +248,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         this.push0(`export interface ${data.name} {`);
 
         for (const [key, value] of Object.entries(data.properties)) {
-            this._transpileMember(Case.camel(key), value);
+            this._transpileMember(this.opt.keepKeys === true ? key : Case.camel(key), value);
         }
 
         this.push0("}\n");
@@ -270,8 +270,9 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         const constructorBody: string[] = [];
 
         for (const [key, value] of Object.entries(data.properties)) {
-            this._transpileMember(key, value);
-            constructorBody.push(`this.${key} = data.${key};`);
+            const keyName = this.opt.keepKeys === true ? key : Case.camel(key);
+            this._transpileMember(keyName, value);
+            constructorBody.push(`this.${keyName} = data.${keyName};`);
         }
 
         this.push0("");

@@ -1,0 +1,322 @@
+{
+  "$ref": "#/definitions/UserModel",
+  "definitions": {
+    "UserAddress": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "zipCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "zipCode"
+      ],
+      "additionalProperties": false
+    },
+    "UserRole": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "editor",
+        "viewer"
+      ]
+    },
+    "UserStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "pending"
+      ],
+      "description": "This is a UserStatus enumerate description."
+    },
+    "UserVisualPreferences": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string"
+        },
+        "notificationsEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "theme",
+        "notificationsEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "UserRegionalPreferences": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "timeZone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "language"
+      ],
+      "additionalProperties": false
+    },
+    "FreeSubscription": {
+      "type": "object",
+      "properties": {
+        "subscriptionType": {
+          "type": "string",
+          "const": "free"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "adsEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "subscriptionType",
+        "startDate",
+        "endDate",
+        "adsEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "PremiumSubscription": {
+      "type": "object",
+      "properties": {
+        "subscriptionType": {
+          "type": "string",
+          "const": "premium"
+        },
+        "startDate": {
+          "$ref": "#/definitions/FreeSubscription/properties/startDate"
+        },
+        "endDate": {
+          "$ref": "#/definitions/FreeSubscription/properties/endDate"
+        },
+        "maxDevices": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "hdStreaming": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "subscriptionType",
+        "startDate",
+        "endDate",
+        "maxDevices",
+        "hdStreaming"
+      ],
+      "additionalProperties": false
+    },
+    "SupportPriority": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "priority",
+        "dedicated"
+      ]
+    },
+    "EnterpriseSubscription": {
+      "type": "object",
+      "properties": {
+        "subscriptionType": {
+          "type": "string",
+          "const": "enterprise"
+        },
+        "startDate": {
+          "$ref": "#/definitions/FreeSubscription/properties/startDate"
+        },
+        "endDate": {
+          "$ref": "#/definitions/FreeSubscription/properties/endDate"
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "userLimit": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "supportPriority": {
+          "$ref": "#/definitions/SupportPriority"
+        }
+      },
+      "required": [
+        "subscriptionType",
+        "startDate",
+        "endDate",
+        "companyName",
+        "userLimit",
+        "supportPriority"
+      ],
+      "additionalProperties": false
+    },
+    "Subscription": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FreeSubscription"
+        },
+        {
+          "$ref": "#/definitions/PremiumSubscription"
+        },
+        {
+          "$ref": "#/definitions/EnterpriseSubscription"
+        }
+      ]
+    },
+    "UserModel": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "integer"
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "address": {
+          "$ref": "#/definitions/UserAddress"
+        },
+        "phoneNumbers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "favoriteColors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UserRole"
+          }
+        },
+        "status": {
+          "$ref": "#/definitions/UserStatus"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "preferences": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/UserVisualPreferences"
+            },
+            {
+              "$ref": "#/definitions/UserRegionalPreferences"
+            }
+          ]
+        },
+        "lastLogin": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "This is a Notes attribute description."
+        },
+        "friends": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/UserModel"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subscription": {
+          "$ref": "#/definitions/Subscription"
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "phoneNumbers",
+        "favoriteColors",
+        "roles",
+        "status",
+        "metadata",
+        "tags",
+        "preferences",
+        "lastLogin",
+        "subscription"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

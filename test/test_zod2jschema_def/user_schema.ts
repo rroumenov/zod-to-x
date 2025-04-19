@@ -98,5 +98,4 @@ export const UserModel = z
         friends: z.lazy((): ZodType => UserModel.array().optional().nullable()),
         subscription: Subscription,
     })
-    .describe("This is a UserModel interface description.")
     .zod2x("UserModel");
