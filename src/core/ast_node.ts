@@ -102,6 +102,20 @@ export class Zod2Ast {
     }
 
     /**
+     * Determines if the current node is an "own property" based on the provided parent file.
+     *
+     * @param parentFile - The file path of the parent to compare against, if exist.
+     * @returns `true` if the node is an "own property"; otherwise, `false`.
+     */
+    private _isOwnProperty(parentFile?: string): boolean {
+        return (
+            this.opt.layer === undefined ||
+            parentFile === undefined ||
+            this.opt.layer?.file === parentFile
+        );
+    }
+
+    /**
      * Check if the layer of the item is compatible with the layer of the schema. If does and the
      * transpilerable item is in a different file, it returns the file name.
      *
@@ -298,11 +312,32 @@ export class Zod2Ast {
         };
     }
 
-    private _getNames(schema: ZodTypeAny, errorString: string) {
+    private _getNames(schema: ZodTypeAny) {
         const name = schema._zod2x?.typeName;
 
         if (!name) {
-            throw new AstTypeNameDefinitionError(errorString);
+            let itemProperties: string[] = ["Unknown type"];
+
+            if (schema instanceof ZodObject) {
+                itemProperties = Object.keys(schema._def.shape());
+            } else if (schema instanceof ZodUnion || schema instanceof ZodDiscriminatedUnion) {
+                itemProperties = schema._def.options.map(
+                    (i: ZodTypeAny) => i._zod2x?.typeName || i._def.typeName
+                );
+            } else if (schema instanceof ZodIntersection) {
+                itemProperties = [
+                    schema._def.left._zod2x?.typeName || schema._def.left._def.typeName,
+                    schema._def.right._zod2x?.typeName || schema._def.right._def.typeName,
+                ];
+            } else if (schema instanceof ZodEnum || schema instanceof ZodNativeEnum) {
+                itemProperties = this._getEnumValues(schema).map((i) => i[0]);
+            }
+
+            throw new AstTypeNameDefinitionError(
+                `${schema._def.typeName} type must have a typeName. If Layered modeling is used, ` +
+                    `avoid nesting schemas definitions. Otherwise, use zod2x method to provide one. ` +
+                    `Affected type properties: ${itemProperties.join(", ")}`
+            );
         }
 
         return {
@@ -316,10 +351,8 @@ export class Zod2Ast {
         schema: ZodEnum<any> | ZodNativeEnum,
         opt?: ISchemasMetadata
     ): ASTDefintion {
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
-            schema,
-            "ZodEnum/ZodNativeEnum type must have a typeName. Use zod2x method to provide one."
-        );
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
+            this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: zodTypeName,
@@ -340,10 +373,8 @@ export class Zod2Ast {
     }
 
     private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefintion {
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
-            schema,
-            "ZodObject type must have a typeName. Use zod2x method to provide one."
-        );
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
+            this._getNames(schema);
 
         let discriminantValue: string | undefined = undefined;
         const shape = schema._def.shape();
@@ -394,11 +425,8 @@ export class Zod2Ast {
         const discriminator =
             schema instanceof ZodDiscriminatedUnion ? schema._def.discriminator : undefined;
 
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
-            schema,
-            "ZodUnion/ZodDiscriminatedUnion type must have a typeName. " +
-                "Use zod2x method to provide one."
-        );
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
+            this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: zodTypeName,
@@ -414,15 +442,20 @@ export class Zod2Ast {
         };
 
         if (!def.options.every((i: ZodTypeAny) => i instanceof ZodObject)) {
-            this.warnings.push(
-                "Union of non-object types is a bad data modeling practice, " +
-                    "and could lead to unexpected results."
-            );
+            if (this._isOwnProperty(parentFile)) {
+                this.warnings.push(
+                    `[affected type: ${name}] Union of non-object types is a bad data modeling ` +
+                        "practice, and could lead to unexpected results. Avoid it, or disable " +
+                        "strict mode if not possible."
+                );
+            }
         } else if (schema instanceof ZodUnion) {
-            this.warnings.push(
-                "Using ZodUnion is a bad data modeling practice. " +
-                    "Use ZodDiscriminatedUnion instead."
-            );
+            if (this._isOwnProperty(parentFile)) {
+                this.warnings.push(
+                    `[affected type: ${name}] Using ZodUnion is a bad data modeling practice. ` +
+                        "Use ZodDiscriminatedUnion instead, or disable strict mode if not possible."
+                );
+            }
 
             (item as unknown as ASTCommon & ASTUnion).newObject = {
                 name,
@@ -450,10 +483,8 @@ export class Zod2Ast {
 
     private _getIntersectionAst(schema: ZodIntersection<ZodTypeAny, ZodTypeAny>): ASTDefintion {
         const def = schema._def;
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } = this._getNames(
-            schema,
-            "ZodIntersection type must have a typeName. Use zod2x method to provide one."
-        );
+        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
+            this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: ZodFirstPartyTypeKind.ZodIntersection,
@@ -467,10 +498,13 @@ export class Zod2Ast {
         };
 
         if (def.left._def.typeName !== "ZodObject" || def.right._def.typeName !== "ZodObject") {
-            this.warnings.push(
-                "Intersection of non-object is a bad data modeling practice, " +
-                    "and could lead to unexpected results."
-            );
+            if (this._isOwnProperty(parentFile)) {
+                this.warnings.push(
+                    `[affected type: ${name}] Intersection of non-object is a bad data modeling ` +
+                        "practice, and could lead to unexpected results. Avoid it, or disable " +
+                        "strict mode if not possible."
+                );
+            }
         } else {
             item.newObject = {
                 type: ZodFirstPartyTypeKind.ZodObject,
