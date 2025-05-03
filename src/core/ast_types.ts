@@ -22,7 +22,7 @@ export type ASTLayerMetadata = {
      * For Layered Modeling.
      * Stores the used type from an external model. Used to create models inheritance.
      */
-    parentTypeName?: string;
+    aliasOf?: string;
 };
 
 /**
@@ -132,7 +132,7 @@ export type ASTDefintion = ASTCommon & {
     reference: string;
     referenceType: ZodFirstPartyTypeKind;
     discriminantValue?: string;
-} & Omit<ASTLayerMetadata, "parentTypeName">;
+} & ASTLayerMetadata;
 
 /**
  * Represents a general AST node, encompassing various Zod schema types.

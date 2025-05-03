@@ -55,7 +55,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         return "";
     }
 
-    protected addExtendedType(name: string, parentNamespace: string, parentTypeName: string): void {
+    protected addExtendedType(name: string, parentNamespace: string, aliasOf: string): void {
         // Zod2ProtoV3 does not support layered modeling.
         return;
     }

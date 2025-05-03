@@ -93,7 +93,7 @@ export interface IZod2xMetadata {
      * the import without creating a new type. If wanted. it can be forced to create a new type
      * which will be the extension of the original type if `zod2xExtendable` is used.
      */
-    parentTypeName?: string;
+    aliasOf?: string;
     parentLayer?: IZod2xLayerMetadata;
 }
 

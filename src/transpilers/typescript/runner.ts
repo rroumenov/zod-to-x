@@ -39,21 +39,21 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     protected addExtendedType(
         name: string,
         parentNamespace: string,
-        parentTypeName: string,
-        opt?: { isUnion?: boolean; isDiscriminatedUnion?: boolean }
+        aliasOf: string,
+        opt?: { type?: "union" | "d-union" | "alias" }
     ) {
-        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, parentTypeName);
+        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
-        if (this.opt.outType === "class") {
-            if (opt?.isDiscriminatedUnion) {
+        if (opt?.type === "alias") {
+            this.push0(`export type ${name} = ${extendedType};\n`);
+        } else if (this.opt.outType === "class") {
+            if (opt?.type === "d-union") {
                 this.push0(`export type ${name} = ${extendedType};\n`);
             } else {
                 this.push0(`export class ${name} extends ${extendedType} {}\n`);
             }
         } else {
-            if (opt?.isUnion) {
-                this.push0(`export type ${name} = ${extendedType};\n`);
-            } else if (opt?.isDiscriminatedUnion) {
+            if (opt?.type === "union" || opt?.type === "d-union") {
                 this.push0(`export type ${name} = ${extendedType};\n`);
             } else {
                 this.push0(`export interface ${name} extends ${extendedType} {}\n`);
@@ -125,6 +125,11 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
         if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
+                    type: "alias",
+                });
+            }
             return;
         }
 
@@ -163,8 +168,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * */
     protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
             }
             return;
         }
@@ -185,8 +190,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
     protected transpileStruct(data: ASTObject & ASTCommon): void {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
             }
             return;
         }
@@ -217,10 +222,9 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, {
-                    isUnion: data.type === ZodFirstPartyTypeKind.ZodUnion,
-                    isDiscriminatedUnion: data.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion,
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
+                    type: data.type === ZodFirstPartyTypeKind.ZodUnion ? "union" : "d-union",
                 });
             }
             return;

@@ -1,11 +1,7 @@
 import Case from "case";
 import { ZodTypeAny } from "zod";
 
-import {
-    cloneTranspiledExtendable,
-    isTranspiledExtendable,
-    isTranspilerableZodType,
-} from "@/core/zod_helpers";
+import { cloneTranspiledExtendable, isTranspilerableZodType } from "@/core/zod_helpers";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 
 enum EZod2XLayer {
@@ -99,21 +95,16 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         metadata.layer = opt;
                     }
 
-                    if (
-                        opt.externalInheritance !== false &&
-                        isTranspiledExtendable(zodItem._def.typeName)
-                    ) {
-                        if (metadata.layer.file !== opt.file) {
-                            // Type used from another layer. A new type is created inheriting the
-                            // original type.
-                            zodItem = cloneTranspiledExtendable(zodItem);
-                            zodItem._zod2x = {
-                                parentLayer: metadata.layer,
-                                parentTypeName: metadata.typeName,
-                                layer: opt,
-                                typeName: name,
-                            };
-                        }
+                    if (opt.externalInheritance !== false && metadata.layer.file !== opt.file) {
+                        // Type used from another layer. A new type is created inheriting the
+                        // original type.
+                        zodItem = cloneTranspiledExtendable(zodItem);
+                        zodItem._zod2x = {
+                            parentLayer: metadata.layer,
+                            aliasOf: metadata.typeName,
+                            layer: opt,
+                            typeName: name,
+                        };
                     }
 
                     return zodItem;

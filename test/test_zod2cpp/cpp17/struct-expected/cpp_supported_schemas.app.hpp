@@ -17,6 +17,10 @@
 using nlohmann::json;
 
 namespace CPP_SUPPORTED_SCHEMAS_APP {
+    using NewEnumItem = CPP_SUPPORTED_SCHEMAS::EnumItem;
+
+    using NewNativeEnumItem = CPP_SUPPORTED_SCHEMAS::NativeEnumItem;
+
     struct NewObjectItem : public CPP_SUPPORTED_SCHEMAS::ObjectItem {};
 
     using NewUnionItem = CPP_SUPPORTED_SCHEMAS::UnionItem;
@@ -29,8 +33,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         std::string new_string_item;
         std::string new_literal_string_item;
         std::uint32_t new_literal_number_item;
-        CPP_SUPPORTED_SCHEMAS::EnumItem new_enum_item;
-        CPP_SUPPORTED_SCHEMAS::NativeEnumItem new_native_enum_item;
+        NewEnumItem new_enum_item;
+        NewNativeEnumItem new_native_enum_item;
         double new_double_item;
         std::int64_t new_big_int_item;
         std::int64_t new_int64_item;
@@ -104,8 +108,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         x.new_string_item = j.at("newStringItem").get<std::string>();
         x.new_literal_string_item = j.at("newLiteralStringItem").get<std::string>();
         x.new_literal_number_item = j.at("newLiteralNumberItem").get<std::uint32_t>();
-        x.new_enum_item = j.at("newEnumItem").get<CPP_SUPPORTED_SCHEMAS::EnumItem>();
-        x.new_native_enum_item = j.at("newNativeEnumItem").get<CPP_SUPPORTED_SCHEMAS::NativeEnumItem>();
+        x.new_enum_item = j.at("newEnumItem").get<NewEnumItem>();
+        x.new_native_enum_item = j.at("newNativeEnumItem").get<NewNativeEnumItem>();
         x.new_double_item = j.at("newDoubleItem").get<double>();
         x.new_big_int_item = j.at("newBigIntItem").get<std::int64_t>();
         x.new_int64_item = j.at("newInt64Item").get<std::int64_t>();

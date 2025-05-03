@@ -71,12 +71,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected addExtendedType(
         name: string,
         parentNamespace: string,
-        parentTypeName: string,
-        isUnionOrDiscriminatedUnion?: boolean
+        aliasOf: string,
+        opt?: { type?: "union" | "alias" }
     ) {
-        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, parentTypeName);
+        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
-        if (isUnionOrDiscriminatedUnion) {
+        if (opt?.type === "union" || opt?.type === "alias") {
             this.push0(`using ${name} = ${extendedType};\n`);
         } else {
             if (this.opt.outType === "class") {
@@ -232,6 +232,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon) {
         if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
+                    type: "alias",
+                });
+            }
             return;
         }
 
@@ -269,8 +274,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     protected transpileIntersection(data: ASTIntersection & ASTCommon) {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
             }
             return;
         }
@@ -317,8 +322,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
     protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!, true);
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
+                    type: "union",
+                });
             }
             return;
         }
@@ -346,8 +353,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     protected transpileStruct(data: ASTObject & ASTCommon) {
         if (this.isExternalTypeImport(data)) {
-            if (data.parentTypeName) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.parentTypeName!);
+            if (data.aliasOf) {
+                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
             }
             return;
         }

@@ -126,7 +126,7 @@ export class Zod2Ast {
     private _getTranspilerableFile(
         itemName: string,
         metadata?: IZod2xMetadata
-    ): { parentFile?: string; parentNamespace?: string; parentTypeName?: string } {
+    ): { parentFile?: string; parentNamespace?: string; aliasOf?: string } {
         let layer: IZod2xLayerMetadata;
 
         if (this.opt.layer !== undefined && metadata?.layer !== undefined) {
@@ -147,7 +147,7 @@ export class Zod2Ast {
                     return {
                         parentFile: layer.file,
                         parentNamespace: layer.namespace,
-                        parentTypeName: metadata?.parentTypeName,
+                        aliasOf: metadata?.aliasOf,
                     };
                 }
             } else {
@@ -166,7 +166,7 @@ export class Zod2Ast {
                 return {
                     parentFile: layer.file,
                     parentNamespace: layer.namespace,
-                    parentTypeName: undefined,
+                    aliasOf: undefined,
                 };
             }
         }
@@ -183,6 +183,8 @@ export class Zod2Ast {
      *                          belong to the same file.
      * @param parentFile - For Layered modeling, the file of the parent type if does not belong to
      *                      the same file.
+     * @param aliasOf - For Layered modeling, the parent type that will be aliased in the current
+     *                  file.
      * @returns
      */
     private _createDefinition(
@@ -190,7 +192,8 @@ export class Zod2Ast {
         refType: ZodFirstPartyTypeKind,
         discriminantValue?: string,
         parentNamespace?: string,
-        parentFile?: string
+        parentFile?: string,
+        aliasOf?: string
     ): ASTDefintion {
         return {
             type: "definition",
@@ -199,6 +202,7 @@ export class Zod2Ast {
             discriminantValue,
             parentNamespace,
             parentFile,
+            aliasOf,
         };
     }
 
@@ -351,8 +355,7 @@ export class Zod2Ast {
         schema: ZodEnum<any> | ZodNativeEnum,
         opt?: ISchemasMetadata
     ): ASTDefintion {
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
-            this._getNames(schema);
+        const { name, zodTypeName, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: zodTypeName,
@@ -361,7 +364,7 @@ export class Zod2Ast {
             description: schema._def.description,
             parentFile,
             parentNamespace,
-            parentTypeName,
+            aliasOf,
             isFromDiscriminatedUnion: opt?.isInjectedEnum,
         };
 
@@ -369,12 +372,18 @@ export class Zod2Ast {
             this.nodes.set(name, item);
         }
 
-        return this._createDefinition(name, zodTypeName, undefined, parentNamespace, parentFile);
+        return this._createDefinition(
+            name,
+            zodTypeName,
+            undefined,
+            parentNamespace,
+            parentFile,
+            aliasOf
+        );
     }
 
     private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefintion {
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
-            this._getNames(schema);
+        const { name, zodTypeName, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         let discriminantValue: string | undefined = undefined;
         const shape = schema._def.shape();
@@ -392,7 +401,7 @@ export class Zod2Ast {
                 description: schema.description,
                 parentFile,
                 parentNamespace,
-                parentTypeName,
+                aliasOf,
             });
         }
 
@@ -415,8 +424,9 @@ export class Zod2Ast {
             name,
             zodTypeName,
             discriminantValue,
-            parentTypeName ? undefined : parentNamespace,
-            parentTypeName ? undefined : parentFile
+            parentNamespace,
+            parentFile,
+            aliasOf
         );
     }
 
@@ -425,8 +435,7 @@ export class Zod2Ast {
         const discriminator =
             schema instanceof ZodDiscriminatedUnion ? schema._def.discriminator : undefined;
 
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
-            this._getNames(schema);
+        const { name, zodTypeName, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: zodTypeName,
@@ -438,7 +447,7 @@ export class Zod2Ast {
             discriminantKey: discriminator,
             parentFile,
             parentNamespace,
-            parentTypeName,
+            aliasOf,
         };
 
         if (!def.options.every((i: ZodTypeAny) => i instanceof ZodObject)) {
@@ -476,15 +485,15 @@ export class Zod2Ast {
             name,
             zodTypeName,
             undefined,
-            parentTypeName ? undefined : parentNamespace,
-            parentTypeName ? undefined : parentFile
+            parentNamespace,
+            parentFile,
+            aliasOf
         );
     }
 
     private _getIntersectionAst(schema: ZodIntersection<ZodTypeAny, ZodTypeAny>): ASTDefintion {
         const def = schema._def;
-        const { name, zodTypeName, parentFile, parentNamespace, parentTypeName } =
-            this._getNames(schema);
+        const { name, zodTypeName, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item: TranspilerableTypes = {
             type: ZodFirstPartyTypeKind.ZodIntersection,
@@ -494,7 +503,7 @@ export class Zod2Ast {
             description: schema.description,
             parentFile,
             parentNamespace,
-            parentTypeName,
+            aliasOf,
         };
 
         if (def.left._def.typeName !== "ZodObject" || def.right._def.typeName !== "ZodObject") {
@@ -529,8 +538,9 @@ export class Zod2Ast {
             name,
             zodTypeName,
             undefined,
-            parentTypeName ? undefined : parentNamespace,
-            parentTypeName ? undefined : parentFile
+            parentNamespace,
+            parentFile,
+            aliasOf
         );
     }
 

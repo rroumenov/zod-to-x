@@ -95,12 +95,12 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * an inherited type from the imported type.
      * @param name
      * @param parentNamespace
-     * @param parentTypeName
+     * @param aliasOf
      */
     protected abstract addExtendedType(
         name: string,
         parentNamespace: string,
-        parentTypeName: string
+        aliasOf: string
     ): void;
 
     /**
@@ -260,12 +260,19 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             varType = (token as TranspilerableTypes).name as string;
         } else if (token.type === "definition") {
             if (this.opt.useImports === true && token.parentNamespace) {
-                varType = this.getTypeFromExternalNamespace(token.parentNamespace, token.reference);
-
                 this.addExternalTypeImport({
                     parentNamespace: token.parentNamespace,
                     parentFile: token.parentFile,
                 });
+
+                if (token.aliasOf) {
+                    varType = token.reference;
+                } else {
+                    varType = this.getTypeFromExternalNamespace(
+                        token.parentNamespace,
+                        token.reference
+                    );
+                }
             } else {
                 varType = token.reference;
             }

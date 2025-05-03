@@ -1,16 +1,17 @@
 {
   "name": "zod-to-x",
-  "version": "1.4.5-dev.1",
+  "version": "1.4.5-dev.2",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && tsc-alias",
-    "build:debug": "tsc --project tsconfig.dev.json && tsc-alias",
+    "clear_dist": "rm -rf ./dist",
+    "build": "npm run clear_dist && tsc && tsc-alias",
+    "build:debug": "npm run clear_dist && tsc --project tsconfig.dev.json && tsc-alias",
     "format:check": "prettier --check .",
-    "test": "jest",
+    "test": "find ./test -name \"err-*\" -delete && jest",
     "test:cpp": "bash ./test/test_zod2cpp/test_cpp.sh",
     "ts-run": "ts-node -r tsconfig-paths/register",
     "prepare": "husky"
