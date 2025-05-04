@@ -1,17 +1,4 @@
-import {
-    ZodArray,
-    ZodDiscriminatedUnion,
-    ZodIntersection,
-    ZodMap,
-    ZodNullable,
-    ZodObject,
-    ZodOptional,
-    ZodRecord,
-    ZodSet,
-    ZodTuple,
-    ZodTypeAny,
-    ZodUnion,
-} from "zod";
+import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
 
 /**
  * Recursively extracts custom type definitions from a Zod schema and collects them into a
@@ -47,29 +34,29 @@ export function zod2JsonSchemaDefinitions(
         return definitions;
     }
 
-    if (schema instanceof ZodOptional || schema instanceof ZodNullable) {
+    if (ZodHelpers.isZodOptional(schema) || ZodHelpers.isZodNullable(schema)) {
         zod2JsonSchemaDefinitions(schema.unwrap(), definitions, visited);
-    } else if (schema instanceof ZodArray) {
+    } else if (ZodHelpers.isZodArray(schema)) {
         zod2JsonSchemaDefinitions(schema.element, definitions, visited);
-    } else if (schema instanceof ZodSet) {
+    } else if (ZodHelpers.isZodSet(schema)) {
         const innerSchema = (schema as any)._def.valueType;
         zod2JsonSchemaDefinitions(innerSchema, definitions, visited);
-    } else if (schema instanceof ZodTuple) {
+    } else if (ZodHelpers.isZodTuple(schema)) {
         for (const item of schema.items) {
             zod2JsonSchemaDefinitions(item, definitions, visited);
         }
-    } else if (schema instanceof ZodRecord || schema instanceof ZodMap) {
+    } else if (ZodHelpers.isZodAnyMapType(schema)) {
         zod2JsonSchemaDefinitions(schema.keySchema, definitions, visited);
         zod2JsonSchemaDefinitions(schema.valueSchema, definitions, visited);
-    } else if (schema instanceof ZodObject) {
+    } else if (ZodHelpers.isZodObject(schema)) {
         for (const value of Object.values(schema.shape)) {
             zod2JsonSchemaDefinitions(value as ZodTypeAny, definitions, visited);
         }
-    } else if (schema instanceof ZodUnion || schema instanceof ZodDiscriminatedUnion) {
+    } else if (ZodHelpers.isZodAnyUnionType(schema)) {
         for (const option of schema.options) {
             zod2JsonSchemaDefinitions(option, definitions, visited);
         }
-    } else if (schema instanceof ZodIntersection) {
+    } else if (ZodHelpers.isZodIntersection(schema)) {
         zod2JsonSchemaDefinitions(schema._def.left, definitions, visited);
         zod2JsonSchemaDefinitions(schema._def.right, definitions, visited);
     }

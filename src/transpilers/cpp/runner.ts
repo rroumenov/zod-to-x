@@ -1,18 +1,13 @@
 import Case from "case";
-import { ZodFirstPartyTypeKind } from "zod";
 
 import {
-    ASTCommon,
     ASTDefintion,
-    ASTDiscriminatedUnion,
     ASTEnum,
     ASTIntersection,
-    ASTNativeEnum,
     ASTNode,
     ASTObject,
     ASTUnion,
     NotTranspilerableTypeError,
-    TranspilerableTypes,
     Zod2X,
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
@@ -230,7 +225,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      Item2
      *  }
      */
-    protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon) {
+    protected transpileEnum(data: ASTEnum) {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
@@ -272,7 +267,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *
      *  }
      */
-    protected transpileIntersection(data: ASTIntersection & ASTCommon) {
+    protected transpileIntersection(data: ASTIntersection) {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
@@ -285,14 +280,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this.addComment(data.description);
 
-        if (
-            !(
-                data.left.type === "definition" &&
-                data.left.referenceType === ZodFirstPartyTypeKind.ZodObject &&
-                data.right.type === "definition" &&
-                data.right.referenceType === ZodFirstPartyTypeKind.ZodObject
-            )
-        ) {
+        if (!data.areAllObjects) {
             throw new NotTranspilerableTypeError(
                 `${data.name}: only intersection of ZodObjects is supported.`
             );
@@ -320,7 +308,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
-    protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon) {
+    protected transpileUnion(data: ASTUnion) {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
@@ -335,7 +323,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         const attributesData = data.options.map((i) => {
             return {
                 type: this.getAttributeType(i),
-                discriminantValue: (i as ASTCommon & ASTDefintion).discriminantValue,
+                discriminantValue: (i as ASTDefintion).constraints?.discriminantValue,
             };
         });
 
@@ -344,14 +332,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
 
         this._createUnionSerializer(data.name, attributesTypes);
-        this._createUnionDeserializer(
-            data.name,
-            attributesData,
-            (data as ASTDiscriminatedUnion).discriminantKey
-        );
+        this._createUnionDeserializer(data.name, attributesData, data.discriminantKey);
     }
 
-    protected transpileStruct(data: ASTObject & ASTCommon) {
+    protected transpileStruct(data: ASTObject) {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
@@ -374,7 +358,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      TypeB attribute2;
      *  }
      */
-    private _transpileStructAsStruct(data: ASTObject & ASTCommon) {
+    private _transpileStructAsStruct(data: ASTObject) {
         this.push0(`struct ${data.name} {`);
 
         const serializeData: IStructAttributeSerialData[] = [];
@@ -412,7 +396,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      [...]
      *  }
      */
-    private _transpileStructAsClass(data: ASTObject & ASTCommon) {
+    private _transpileStructAsClass(data: ASTObject) {
         this.push0(`class ${data.name} {`);
         this.push0(`private:`);
 
@@ -463,11 +447,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         let keyType = this.getAttributeType(memberNode);
         const origType = keyType;
 
-        if (
-            memberNode.description &&
-            !(memberNode as ASTDefintion).reference &&
-            !this.isTranspilerable(memberNode as TranspilerableTypes)
-        ) {
+        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
             // Avoid duplicated descriptions for transpiled items.
             this.push1("");
             this.addComment(memberNode.description, `${this.indent[1]}`);

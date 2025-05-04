@@ -1,20 +1,24 @@
-import { ZodFirstPartyTypeKind } from "zod";
-
-import StringUtils, { TIndentationLevels } from "@/utils/string_utils";
-
 import {
+    ASTAny,
+    ASTBoolean,
     ASTCommon,
-    ASTDiscriminatedUnion,
+    ASTDate,
+    ASTDefintion,
     ASTEnum,
     ASTIntersection,
-    ASTNativeEnum,
+    ASTLiteral,
+    ASTMap,
     ASTNode,
     ASTNodes,
+    ASTNumber,
     ASTObject,
+    ASTSet,
+    ASTString,
+    ASTTuple,
+    ASTType,
     ASTUnion,
-    TranspilerableTypes,
-} from "./ast_types";
-import { isTranspilerableZodType } from "./zod_helpers";
+} from "@/core";
+import StringUtils, { TIndentationLevels } from "@/utils/string_utils";
 
 /**
  * Optional user settings
@@ -202,33 +206,38 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * Transpiles an enum type from the AST to the target language.
      * @param data - The AST node representing the enum.
      */
-    protected abstract transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void;
+    protected abstract transpileEnum(data: ASTEnum): void;
 
     /**
      * Transpiles a struct (object) type from the AST to the target language.
      * @param data - The AST node representing the struct.
      */
-    protected abstract transpileStruct(data: ASTObject & ASTCommon): void;
+    protected abstract transpileStruct(data: ASTObject): void;
 
     /**
      * Transpiles a union type from the AST to the target language.
      * @param data - The AST node representing the union.
      */
-    protected abstract transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void;
+    protected abstract transpileUnion(data: ASTUnion): void;
 
     /**
      * Transpiles an intersection type from the AST to the target language.
      * @param data - The AST node representing the intersection.
      */
-    protected abstract transpileIntersection(data: ASTIntersection & ASTCommon): void;
+    protected abstract transpileIntersection(data: ASTIntersection): void;
 
     /**
      * Determines if the given type token can be transpiled into the target language.
      * @param token - The type token to check.
      * @returns `true` if the type is transpilerable; otherwise, `false`.
      */
-    protected isTranspilerable(token: TranspilerableTypes) {
-        return isTranspilerableZodType(token.type);
+    protected isTranspilerable(token: ASTNode): boolean {
+        return (
+            token instanceof ASTEnum ||
+            token instanceof ASTObject ||
+            token instanceof ASTUnion ||
+            token instanceof ASTIntersection
+        );
     }
 
     // Push with indentation helpers
@@ -253,12 +262,12 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * @param token - The AST node or transpilerable type to convert.
      * @returns A string representing the type in the target language.
      */
-    protected getAttributeType(token: ASTNode | TranspilerableTypes) {
+    protected getAttributeType(token: ASTType): string {
         let varType: string = "";
 
-        if (this.isTranspilerable(token as TranspilerableTypes)) {
-            varType = (token as TranspilerableTypes).name as string;
-        } else if (token.type === "definition") {
+        if (this.isTranspilerable(token)) {
+            varType = token.name!;
+        } else if (token instanceof ASTDefintion) {
             if (this.opt.useImports === true && token.parentNamespace) {
                 this.addExternalTypeImport({
                     parentNamespace: token.parentNamespace,
@@ -266,53 +275,47 @@ export abstract class Zod2X<T extends IZodToXOpt> {
                 });
 
                 if (token.aliasOf) {
-                    varType = token.reference;
+                    varType = token.name;
                 } else {
-                    varType = this.getTypeFromExternalNamespace(
-                        token.parentNamespace,
-                        token.reference
-                    );
+                    varType = this.getTypeFromExternalNamespace(token.parentNamespace, token.name);
                 }
             } else {
-                varType = token.reference;
+                varType = token.name;
             }
-        } else if (token.type === ZodFirstPartyTypeKind.ZodString) {
+        } else if (token instanceof ASTString) {
             varType = this.getStringType();
-        } else if (token.type === ZodFirstPartyTypeKind.ZodBoolean) {
+        } else if (token instanceof ASTBoolean) {
             varType = this.getBooleanType();
-        } else if (token.type === ZodFirstPartyTypeKind.ZodAny) {
+        } else if (token instanceof ASTAny) {
             varType = this.getAnyType();
-        } else if (token.type === ZodFirstPartyTypeKind.ZodDate) {
+        } else if (token instanceof ASTDate) {
             varType = this.getDateType();
-        } else if (token.type === ZodFirstPartyTypeKind.ZodLiteral) {
+        } else if (token instanceof ASTLiteral) {
             const parentEnum =
                 token.parentEnumName && token.parentEnumKey
                     ? ([token.parentEnumName, token.parentEnumKey] as [string, string])
                     : undefined;
             varType = this.getLiteralStringType(token.value, parentEnum) as string;
-        } else if (token.type === ZodFirstPartyTypeKind.ZodSet) {
+        } else if (token instanceof ASTSet) {
             varType = this.getSetType(this.getAttributeType(token.value));
-        } else if (token.type === ZodFirstPartyTypeKind.ZodNumber) {
-            varType = this.getNumberType(token.constraints.isInt, {
-                min: token.constraints.min,
-                max: token.constraints.max,
+        } else if (token instanceof ASTNumber) {
+            varType = this.getNumberType(token.constraints?.isInt === true, {
+                min: token.constraints?.min,
+                max: token.constraints?.max,
             });
-        } else if (token.type === ZodFirstPartyTypeKind.ZodTuple) {
+        } else if (token instanceof ASTTuple) {
             const tupleAttributeTypes = token.items.map(this.getAttributeType.bind(this));
             varType = this.getTupleType(tupleAttributeTypes);
-        } else if (
-            token.type === ZodFirstPartyTypeKind.ZodMap ||
-            token.type === ZodFirstPartyTypeKind.ZodRecord
-        ) {
+        } else if (token instanceof ASTMap) {
             const [key, value] = [token.key, token.value].map(this.getAttributeType.bind(this));
 
-            if (token.type === ZodFirstPartyTypeKind.ZodMap) {
+            if (token.type === "map") {
                 varType = this.getMapType(key, value);
             } else {
                 varType = this.getRecordType(key, value);
             }
         } else {
-            console.log("  # Unknown attribute equivalent for ---> ", token.type);
+            console.log("  # Unknown attribute equivalent for ---> ", token.constructor.name);
         }
 
         return token.arrayDimension ? this.getArrayType(varType, token.arrayDimension) : varType;
@@ -325,9 +328,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *               properties of the type to evaluate.
      * @returns `true` if the type is an external type import; otherwise, `false`.
      */
-    protected isExternalTypeImport(
-        item: Pick<TranspilerableTypes, "parentFile" | "parentNamespace">
-    ): boolean {
+    protected isExternalTypeImport(item: ASTNode): boolean {
         return (
             item.parentFile !== undefined &&
             item.parentNamespace !== undefined &&
@@ -343,9 +344,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *                  about the type to be imported, including its parent file and namespace.
      * @returns `true` if the import was successfully added, otherwise `false`.
      */
-    protected addExternalTypeImport(
-        item: Pick<TranspilerableTypes, "parentFile" | "parentNamespace">
-    ): boolean {
+    protected addExternalTypeImport(item: ASTNode): boolean {
         if (this.isExternalTypeImport(item)) {
             this.imports.add(this.addImportFromFile(item.parentFile!, item.parentNamespace!));
             return true;
@@ -358,25 +357,19 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * Transpiles a single item from the transpiler queue.
      * @param item - The transpilerable type to transpile.
      */
-    private _transpileItem(item: TranspilerableTypes) {
-        if (
-            item.type === ZodFirstPartyTypeKind.ZodEnum ||
-            item.type === ZodFirstPartyTypeKind.ZodNativeEnum
-        ) {
+    private _transpileItem(item: ASTNode): void {
+        if (item instanceof ASTEnum) {
             this.transpileEnum(item);
-        } else if (item.type === ZodFirstPartyTypeKind.ZodObject) {
+        } else if (item instanceof ASTObject) {
             this.transpileStruct(item);
-        } else if (
-            item.type === ZodFirstPartyTypeKind.ZodUnion ||
-            item.type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion
-        ) {
+        } else if (item instanceof ASTUnion) {
             this.transpileUnion(item);
-        } else if (item.type === ZodFirstPartyTypeKind.ZodIntersection) {
+        } else if (item instanceof ASTIntersection) {
             this.transpileIntersection(item);
+        } else if (item instanceof ASTCommon) {
+            console.log(`Under construction: ${item.constructor.name}`);
         } else {
-            throw new Error(
-                `Unexpected type for transpilation: ${(item as TranspilerableTypes).type}`
-            );
+            throw new Error(`Unexpected item for transpilation: ${JSON.stringify(item)}`);
         }
     }
 

@@ -1,19 +1,6 @@
-import { ZodFirstPartyTypeKind } from "zod";
 import Case from "case";
 
-import {
-    ASTCommon,
-    ASTDefintion,
-    ASTDiscriminatedUnion,
-    ASTEnum,
-    ASTIntersection,
-    ASTNativeEnum,
-    ASTNode,
-    ASTObject,
-    ASTUnion,
-    TranspilerableTypes,
-    Zod2X,
-} from "@/core";
+import { ASTEnum, ASTIntersection, ASTNode, ASTObject, ASTUnion, Zod2X } from "@/core";
 
 import { defaultOpts, IZod2TsOpt } from "./options";
 
@@ -123,7 +110,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *      ItemKey2: "ItemValue2"  // case of Enum
      *  }
      */
-    protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
+    protected transpileEnum(data: ASTEnum): void {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
@@ -166,7 +153,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *     }
      * }
      * */
-    protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
+    protected transpileIntersection(data: ASTIntersection): void {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
@@ -188,7 +175,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
     }
 
-    protected transpileStruct(data: ASTObject & ASTCommon): void {
+    protected transpileStruct(data: ASTObject): void {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
@@ -220,19 +207,19 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *     }
      * }
      * */
-    protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
+    protected transpileUnion(data: ASTUnion): void {
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
-                    type: data.type === ZodFirstPartyTypeKind.ZodUnion ? "union" : "d-union",
+                    type: data.discriminantKey === undefined ? "union" : "d-union",
                 });
             }
             return;
         }
 
-        if (this.opt.outType === "class" && (data as ASTUnion & ASTCommon).newObject) {
-            this.addComment((data as ASTUnion & ASTCommon).newObject?.description);
-            this._transpileStructAsClass((data as ASTUnion & ASTCommon).newObject!);
+        if (this.opt.outType === "class" && (data as ASTUnion).newObject) {
+            this.addComment((data as ASTUnion).newObject?.description);
+            this._transpileStructAsClass((data as ASTUnion).newObject!);
         } else {
             this.addComment(data.description);
 
@@ -248,7 +235,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *      att2?: TypeB;
      *  }
      * */
-    private _transpileStructuAsInterface(data: ASTObject & ASTCommon) {
+    private _transpileStructuAsInterface(data: ASTObject) {
         this.push0(`export interface ${data.name} {`);
 
         for (const [key, value] of Object.entries(data.properties)) {
@@ -269,7 +256,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *      }
      *  }
      * */
-    private _transpileStructAsClass(data: ASTObject & ASTCommon) {
+    private _transpileStructAsClass(data: ASTObject) {
         this.push0(`export class ${data.name} {`);
         const constructorBody: string[] = [];
 
@@ -293,11 +280,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         const keyName = memberNode.isOptional ? `${memberName}?: ` : `${memberName}: `;
         const setNullable = memberNode.isNullable ? " | null" : "";
 
-        if (
-            memberNode.description &&
-            !(memberNode as ASTDefintion).reference &&
-            !this.isTranspilerable(memberNode as TranspilerableTypes)
-        ) {
+        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
             // Avoid duplicated descriptions for transpiled items.
             this.addComment(memberNode.description, `\n${this.indent[1]}`);
         }

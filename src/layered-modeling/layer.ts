@@ -1,8 +1,7 @@
 import Case from "case";
-import { ZodTypeAny } from "zod";
 
-import { cloneTranspiledExtendable, isTranspilerableZodType } from "@/core/zod_helpers";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
+import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
     DOMAIN = 0,
@@ -98,7 +97,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                     if (opt.externalInheritance !== false && metadata.layer.file !== opt.file) {
                         // Type used from another layer. A new type is created inheriting the
                         // original type.
-                        zodItem = cloneTranspiledExtendable(zodItem);
+                        zodItem = ZodHelpers.cloneZod(zodItem);
                         zodItem._zod2x = {
                             parentLayer: metadata.layer,
                             aliasOf: metadata.typeName,
@@ -111,14 +110,10 @@ export function Layer(opt: IZod2xLayerMetadata) {
                 };
 
                 Object.getOwnPropertyNames(this).forEach((prop) => {
-                    const zodType = (this as any)[prop]?._def?.typeName;
+                    const item = (this as any)[prop];
 
-                    if (isTranspilerableZodType(zodType)) {
-                        (this as any)[prop] = setMetadata(
-                            Case.pascal(prop),
-                            (this as any)[prop],
-                            opt
-                        );
+                    if (ZodHelpers.isTranspilerableZodType(item)) {
+                        (this as any)[prop] = setMetadata(Case.pascal(prop), item, opt);
                     }
                 });
             }

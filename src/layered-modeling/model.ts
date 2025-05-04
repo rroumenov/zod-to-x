@@ -1,7 +1,6 @@
-import { z, ZodType } from "zod";
-
 import { ASTNodes, BadLayerDefinitionError, IZod2AstOpt, Zod2Ast } from "@/core";
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
+import { ZodHelpers } from "@/lib/zod_helpers";
 import * as Transpilers from "@/transpilers";
 
 type TargetKeys = keyof typeof Transpilers;
@@ -64,13 +63,13 @@ export class Zod2XModel {
         const objectProps = new Map<string, any>();
 
         Object.getOwnPropertyNames(this).forEach((prop) => {
-            if ((this as any)[prop] instanceof ZodType) {
+            if (ZodHelpers.isZodType((this as any)[prop])) {
                 objectProps.set(prop, (this as any)[prop]);
             }
         });
 
         this.astNodes = new Zod2Ast({ ...opt, layer: this.getLayerMetadata() }).build(
-            z.object(Object.fromEntries(objectProps)).zod2x(this.getModelName())
+            ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName())
         );
 
         return this.astNodes;
