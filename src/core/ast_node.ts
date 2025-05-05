@@ -631,21 +631,22 @@ export class Zod2Ast {
                 description: schema.description,
             });
         } else if (ZodHelpers.isZodLiteral(schema)) {
-            let parentEnumName: string | undefined = undefined;
+            let parentEnum: ASTDefintion | undefined = undefined;
             let parentEnumKey: string | undefined = undefined;
 
             if (schema._zod2x?.parentEnum) {
-                parentEnumName = schema._zod2x?.parentEnum._zod2x?.typeName;
                 parentEnumKey = this._getEnumValues(schema._zod2x?.parentEnum).find(
                     (i) => i[1] === def.value
                 )?.[0];
-                this._zodToAST(schema._zod2x?.parentEnum, { isInjectedEnum: true });
+                parentEnum = this._zodToAST(schema._zod2x?.parentEnum, {
+                    isInjectedEnum: true,
+                }) as ASTDefintion;
             }
 
             return new ASTLiteral({
                 value: def.value,
                 description: schema.description,
-                parentEnumName,
+                parentEnum: parentEnum,
                 parentEnumKey,
             });
         } else if (ZodHelpers.isZodAnyMapType(schema)) {

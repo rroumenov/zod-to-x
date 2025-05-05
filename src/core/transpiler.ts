@@ -300,8 +300,11 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             varType = this.getDateType();
         } else if (token instanceof ASTLiteral) {
             const parentEnum =
-                token.parentEnumName && token.parentEnumKey
-                    ? ([token.parentEnumName, token.parentEnumKey] as [string, string])
+                token.parentEnumKey && token.parentEnum
+                    ? ([this.getAttributeType(token.parentEnum), token.parentEnumKey] as [
+                          string,
+                          string,
+                      ])
                     : undefined;
             varType = this.getLiteralStringType(token.value, parentEnum) as string;
         } else if (token instanceof ASTSet) {
