@@ -7,8 +7,10 @@ import { diffLinesRaw } from "jest-diff";
 import * as pb from "protobufjs";
 
 import { header } from "../common/header";
-import * as schemas from "../common/zod_schemas";
+import { getSchemas, modelBuilder } from "../common/zod_schemas";
 import { zProto3SupportedSchemas } from "./proto3_supported_schemas";
+
+const schemas = getSchemas();
 
 const testOutput = (output: string, expectedOutput: string) => {
     try {
@@ -21,7 +23,7 @@ const testOutput = (output: string, expectedOutput: string) => {
 
 describe("Zod2Proto3", () => {
     test("String Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zString), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zString), {
             indent: 2,
             strict: false,
         });
@@ -32,7 +34,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Literal String Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zLiteralString), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zLiteralString), {
             indent: 2,
             strict: false,
         });
@@ -43,7 +45,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Literal Number Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zLiteralNumber), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zLiteralNumber), {
             indent: 2,
             strict: false,
         });
@@ -54,7 +56,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Enum Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zEnum), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zEnum), {
             indent: 2,
             strict: false,
         });
@@ -73,7 +75,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Native Enum Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zNativeEnum), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zNativeEnum), {
             indent: 2,
             strict: false,
         });
@@ -92,7 +94,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Double", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zDouble), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zDouble), {
             indent: 2,
             strict: false,
         });
@@ -103,7 +105,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as BigInt", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zBigInt), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zBigInt), {
             indent: 2,
             strict: false,
         });
@@ -114,7 +116,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Int64", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zInt64), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zInt64), {
             indent: 2,
             strict: false,
         });
@@ -125,7 +127,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Number Schema as Int32", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zInt32), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zInt32), {
             indent: 2,
             strict: false,
         });
@@ -136,7 +138,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Boolean Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zBoolean), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zBoolean), {
             indent: 2,
             strict: false,
         });
@@ -147,7 +149,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Object Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zObject), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zObject), {
             indent: 2,
             strict: false,
         });
@@ -164,7 +166,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Date Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zDate), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zDate), {
             indent: 2,
             strict: false,
         });
@@ -179,7 +181,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Array Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zArray1D), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zArray1D), {
             indent: 2,
             strict: false,
         });
@@ -193,7 +195,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Record Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zRecord), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zRecord), {
             indent: 2,
             strict: false,
         });
@@ -207,7 +209,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Map Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zMap), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zMap), {
             indent: 2,
             strict: false,
         });
@@ -221,7 +223,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Set Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zSet), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zSet), {
             indent: 2,
             strict: false,
         });
@@ -235,7 +237,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Tuple Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zTuple), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zTuple), {
             indent: 2,
             strict: false,
         });
@@ -249,7 +251,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Union Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zUnion), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zUnion), {
             indent: 2,
             strict: false,
         });
@@ -275,7 +277,7 @@ describe("Zod2Proto3", () => {
     });
 
     test("Any Schema", () => {
-        const output = Zod2XConverters.zod2ProtoV3(schemas.modelBuilder(schemas.zAny), {
+        const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zAny), {
             indent: 2,
             strict: false,
         });

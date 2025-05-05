@@ -8,7 +8,7 @@ import {
     ZodTypeAny,
 } from "zod";
 
-export type { ZodTypeAny, ZodIntersection, ZodObject } from "zod";
+export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
 export type ZodAnyEnumType = ZodEnum<any> | ZodNativeEnum<any>;
 export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any, any>;
 

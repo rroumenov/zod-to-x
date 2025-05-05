@@ -1,5 +1,6 @@
 import {
     ASTAny,
+    ASTArray,
     ASTBoolean,
     ASTDate,
     ASTDefintion,
@@ -21,6 +22,7 @@ import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 import {
     ZodAnyEnumType,
     ZodAnyUnionType,
+    ZodArray,
     ZodHelpers,
     ZodIntersection,
     ZodObject,
@@ -54,6 +56,12 @@ interface ISchemasMetadata {
      * The key used in ZodDiscriminatedUnion type.
      */
     discriminantKey?: string;
+
+    /**
+     * Indicates if node creation is called from an array schema. Used to indicate the parent
+     * array schema.
+     */
+    calledFromArray?: boolean;
 }
 
 /**
@@ -544,6 +552,32 @@ export class Zod2Ast {
     }
 
     /**
+     * Generates an AST (Abstract Syntax Tree) definition for a Zod array schema.
+     *
+     * @param schema - The Zod array schema to process.
+     * @param innerSchema - The AST type representing the inner schema of the array.
+     * @returns The AST definition for the array schema.
+     */
+    private _getArrayAst(schema: ZodArray<any>, innerSchema: ASTType): ASTDefintion {
+        const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
+
+        const item = new ASTArray({
+            name,
+            item: innerSchema,
+            description: schema.description,
+            parentFile,
+            parentNamespace,
+            aliasOf,
+        });
+
+        if (!this.nodes.has(name)) {
+            this.nodes.set(name, item);
+        }
+
+        return this._createDefinition(item);
+    }
+
+    /**
      * Build the AST node of provided Zod Schema
      * @param schema
      * @returns
@@ -579,13 +613,18 @@ export class Zod2Ast {
             subSchema.description = schema.description || subSchema.description;
             return subSchema;
         } else if (ZodHelpers.isZodArray(schema)) {
-            const subSchema = this._zodToAST(def.type);
+            const isParentArray = opt?.calledFromArray !== true;
+            const subSchema = this._zodToAST(def.type, { calledFromArray: true });
             subSchema.description = schema.description || subSchema.description;
             subSchema.arrayDimension = Number.isInteger(subSchema.arrayDimension)
                 ? ++subSchema.arrayDimension!
                 : 1;
 
-            return subSchema;
+            if (isParentArray && schema._zod2x?.typeName) {
+                return this._getArrayAst(schema, subSchema);
+            } else {
+                return subSchema;
+            }
         } else if (ZodHelpers.isZodSet(schema)) {
             return new ASTSet({
                 value: this._zodToAST(def.valueType),

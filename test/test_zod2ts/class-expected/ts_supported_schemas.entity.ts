@@ -50,6 +50,8 @@ export class OtherObjectItemWithDiscriminator {
     }
 }
 
+export type ArrayItem = Array<number[]>;
+
 // Built from union of ObjectItem, OtherObjectItem
 export class UnionItem {
     key: string;
@@ -90,7 +92,7 @@ export class TsSupportedSchemas {
     objectItemWithDiscriminator: ObjectItemWithDiscriminator;
     otherObjectItemWithDiscriminator: OtherObjectItemWithDiscriminator;
     dateItem: Date;
-    arrayItem: Array<number[]>;
+    arrayItem: ArrayItem;
     recordItem: Record<string, number>;
     mapItem: Map<string, number>;
     setItem: Set<string>;

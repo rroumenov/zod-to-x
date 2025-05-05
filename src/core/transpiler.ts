@@ -1,5 +1,7 @@
 import {
+    ASTAliasedTypes,
     ASTAny,
+    ASTArray,
     ASTBoolean,
     ASTCommon,
     ASTDate,
@@ -227,6 +229,12 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected abstract transpileIntersection(data: ASTIntersection): void;
 
     /**
+     * Transpiles an aliased type (e.g., array) from the AST to the target language.
+     * @param data - The AST node representing the aliased type.
+     */
+    protected abstract transpileAliasedType(data: ASTAliasedTypes): void;
+
+    /**
      * Determines if the given type token can be transpiled into the target language.
      * @param token - The type token to check.
      * @returns `true` if the type is transpilerable; otherwise, `false`.
@@ -265,9 +273,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected getAttributeType(token: ASTType): string {
         let varType: string = "";
 
-        if (this.isTranspilerable(token)) {
-            varType = token.name!;
-        } else if (token instanceof ASTDefintion) {
+        if (token instanceof ASTDefintion) {
             if (this.opt.useImports === true && token.parentNamespace) {
                 this.addExternalTypeImport({
                     parentNamespace: token.parentNamespace,
@@ -282,6 +288,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             } else {
                 varType = token.name;
             }
+        } else if (this.isTranspilerable(token)) {
+            varType = token.name!;
         } else if (token instanceof ASTString) {
             varType = this.getStringType();
         } else if (token instanceof ASTBoolean) {
@@ -366,6 +374,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             this.transpileUnion(item);
         } else if (item instanceof ASTIntersection) {
             this.transpileIntersection(item);
+        } else if (item instanceof ASTArray) {
+            this.transpileAliasedType(item);
         } else if (item instanceof ASTCommon) {
             console.log(`Under construction: ${item.constructor.name}`);
         } else {

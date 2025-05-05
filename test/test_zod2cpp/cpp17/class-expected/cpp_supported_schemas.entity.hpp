@@ -92,6 +92,8 @@ namespace CPP_SUPPORTED_SCHEMAS {
         void set_discriminator(const EnumItem& value) { this->discriminator = value; }
     };
 
+    using ArrayItem = std::vector<std::vector<double>>;
+
     using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
 
     using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
@@ -120,7 +122,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         OtherObjectItem other_object_item;
         ObjectItemWithDiscriminator object_item_with_discriminator;
         OtherObjectItemWithDiscriminator other_object_item_with_discriminator;
-        std::vector<std::vector<double>> array_item;
+        ArrayItem array_item;
         std::unordered_map<std::string, double> record_item;
         std::unordered_map<std::string, double> map_item;
         std::set<std::string> set_item;
@@ -192,9 +194,9 @@ namespace CPP_SUPPORTED_SCHEMAS {
         OtherObjectItemWithDiscriminator& get_mut_other_object_item_with_discriminator() { return this->other_object_item_with_discriminator; }
         void set_other_object_item_with_discriminator(const OtherObjectItemWithDiscriminator& value) { this->other_object_item_with_discriminator = value; }
         
-        const std::vector<std::vector<double>>& get_array_item() const { return this->array_item; }
-        std::vector<std::vector<double>>& get_mut_array_item() { return this->array_item; }
-        void set_array_item(const std::vector<std::vector<double>>& value) { this->array_item = value; }
+        const ArrayItem& get_array_item() const { return this->array_item; }
+        ArrayItem& get_mut_array_item() { return this->array_item; }
+        void set_array_item(const ArrayItem& value) { this->array_item = value; }
         
         const std::unordered_map<std::string, double>& get_record_item() const { return this->record_item; }
         std::unordered_map<std::string, double>& get_mut_record_item() { return this->record_item; }
@@ -449,7 +451,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         x.set_other_object_item(j.at("otherObjectItem").get<OtherObjectItem>());
         x.set_object_item_with_discriminator(j.at("objectItemWithDiscriminator").get<ObjectItemWithDiscriminator>());
         x.set_other_object_item_with_discriminator(j.at("otherObjectItemWithDiscriminator").get<OtherObjectItemWithDiscriminator>());
-        x.set_array_item(j.at("arrayItem").get<std::vector<std::vector<double>>>());
+        x.set_array_item(j.at("arrayItem").get<ArrayItem>());
         x.set_record_item(j.at("recordItem").get<std::unordered_map<std::string, double>>());
         x.set_map_item(j.at("mapItem").get<std::unordered_map<std::string, double>>());
         x.set_set_item(j.at("setItem").get<std::set<std::string>>());

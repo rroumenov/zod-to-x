@@ -1,13 +1,8 @@
 import { z } from "zod";
 import { Application, Domain, Zod2XModel } from "../../dist";
-import {
-    zObjectWithDiscriminator,
-    zOtherObject,
-    zOtherObjectWithDiscriminator,
-} from "../common/zod_schemas";
-import { zTsSupportedSchemas } from "./ts_supported_schemas";
+import { getTsSupportedSchemas } from "./ts_supported_schemas";
 
-const tsSupportedSchemas = zTsSupportedSchemas._def.shape();
+const tsSupportedSchemas = getTsSupportedSchemas();
 
 @Domain({ namespace: "TS_SUPPORTED_SCHEMAS", file: "ts_supported_schemas.entity" })
 class TsSupportedSchemas extends Zod2XModel {
@@ -27,9 +22,23 @@ class TsSupportedSchemas extends Zod2XModel {
     booleanItem = tsSupportedSchemas.booleanItem;
 
     objectItem = tsSupportedSchemas.objectItem;
-    otherObjectItem = zOtherObject;
-    objectItemWithDiscriminator = zObjectWithDiscriminator;
-    otherObjectItemWithDiscriminator = zOtherObjectWithDiscriminator;
+    otherObjectItem = z
+        .object({
+            otherKey: this.stringItem,
+        })
+        .zod2x("OtherObjectItem");
+    objectItemWithDiscriminator = z
+        .object({
+            key: this.stringItem,
+            discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
+        })
+        .zod2x("ObjectItemWithDiscriminator");
+    otherObjectItemWithDiscriminator = z
+        .object({
+            otherKey: this.stringItem,
+            discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
+        })
+        .zod2x("OtherObjectItemWithDiscriminator");
 
     dateItem = tsSupportedSchemas.dateItem;
 

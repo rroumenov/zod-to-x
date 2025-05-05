@@ -12,7 +12,6 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <vector>
 
 using nlohmann::json;
 
@@ -22,6 +21,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     using NewNativeEnumItem = CPP_SUPPORTED_SCHEMAS::NativeEnumItem;
 
     class NewObjectItem : public CPP_SUPPORTED_SCHEMAS::ObjectItem {};
+
+    using NewArrayItem = CPP_SUPPORTED_SCHEMAS::ArrayItem;
 
     using NewUnionItem = CPP_SUPPORTED_SCHEMAS::UnionItem;
 
@@ -42,7 +43,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         std::int32_t new_int32_item;
         bool new_boolean_item;
         NewObjectItem new_object_item;
-        std::vector<std::vector<double>> new_array_item;
+        NewArrayItem new_array_item;
         std::unordered_map<std::string, double> new_record_item;
         std::unordered_map<std::string, double> new_map_item;
         std::set<std::string> new_set_item;
@@ -102,9 +103,9 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         NewObjectItem& get_mut_new_object_item() { return this->new_object_item; }
         void set_new_object_item(const NewObjectItem& value) { this->new_object_item = value; }
         
-        const std::vector<std::vector<double>>& get_new_array_item() const { return this->new_array_item; }
-        std::vector<std::vector<double>>& get_mut_new_array_item() { return this->new_array_item; }
-        void set_new_array_item(const std::vector<std::vector<double>>& value) { this->new_array_item = value; }
+        const NewArrayItem& get_new_array_item() const { return this->new_array_item; }
+        NewArrayItem& get_mut_new_array_item() { return this->new_array_item; }
+        void set_new_array_item(const NewArrayItem& value) { this->new_array_item = value; }
         
         const std::unordered_map<std::string, double>& get_new_record_item() const { return this->new_record_item; }
         std::unordered_map<std::string, double>& get_mut_new_record_item() { return this->new_record_item; }
@@ -207,7 +208,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         x.set_new_int32_item(j.at("newInt32Item").get<std::int32_t>());
         x.set_new_boolean_item(j.at("newBooleanItem").get<bool>());
         x.set_new_object_item(j.at("newObjectItem").get<NewObjectItem>());
-        x.set_new_array_item(j.at("newArrayItem").get<std::vector<std::vector<double>>>());
+        x.set_new_array_item(j.at("newArrayItem").get<NewArrayItem>());
         x.set_new_record_item(j.at("newRecordItem").get<std::unordered_map<std::string, double>>());
         x.set_new_map_item(j.at("newMapItem").get<std::unordered_map<std::string, double>>());
         x.set_new_set_item(j.at("newSetItem").get<std::set<std::string>>());

@@ -32,6 +32,8 @@ export interface OtherObjectItemWithDiscriminator {
     discriminator: EnumItem.Enum2;
 }
 
+export type ArrayItem = Array<number[]>;
+
 export type UnionItem = ObjectItem | OtherObjectItem;
 
 export type DiscriminatedUnionItem = ObjectItemWithDiscriminator | OtherObjectItemWithDiscriminator;
@@ -54,7 +56,7 @@ export interface TsSupportedSchemas {
     objectItemWithDiscriminator: ObjectItemWithDiscriminator;
     otherObjectItemWithDiscriminator: OtherObjectItemWithDiscriminator;
     dateItem: Date;
-    arrayItem: Array<number[]>;
+    arrayItem: ArrayItem;
     recordItem: Record<string, number>;
     mapItem: Map<string, number>;
     setItem: Set<string>;

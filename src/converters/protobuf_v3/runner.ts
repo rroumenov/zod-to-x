@@ -1,6 +1,7 @@
 import Case from "case";
 
 import {
+    ASTAliasedTypes,
     ASTEnum,
     ASTIntersection,
     ASTObject,
@@ -53,6 +54,11 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 
     protected addExtendedType(name: string, parentNamespace: string, aliasOf: string): void {
         // Zod2ProtoV3 does not support layered modeling.
+        return;
+    }
+
+    protected transpileAliasedType(data: ASTAliasedTypes): void {
+        // Zod2ProtoV3 does not need to transpile aliased types.
         return;
     }
 

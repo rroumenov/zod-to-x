@@ -48,6 +48,8 @@ namespace CPP_SUPPORTED_SCHEMAS {
         EnumItem discriminator;
     };
 
+    using ArrayItem = std::vector<std::vector<double>>;
+
     using UnionItem = boost::variant<ObjectItem, OtherObjectItem>;
 
     using DiscriminatedUnionItem = boost::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
@@ -71,7 +73,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         OtherObjectItem other_object_item;
         ObjectItemWithDiscriminator object_item_with_discriminator;
         OtherObjectItemWithDiscriminator other_object_item_with_discriminator;
-        std::vector<std::vector<double>> array_item;
+        ArrayItem array_item;
         std::unordered_map<std::string, double> record_item;
         std::unordered_map<std::string, double> map_item;
         std::set<std::string> set_item;
@@ -286,7 +288,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         x.other_object_item = j.at("otherObjectItem").get<OtherObjectItem>();
         x.object_item_with_discriminator = j.at("objectItemWithDiscriminator").get<ObjectItemWithDiscriminator>();
         x.other_object_item_with_discriminator = j.at("otherObjectItemWithDiscriminator").get<OtherObjectItemWithDiscriminator>();
-        x.array_item = j.at("arrayItem").get<std::vector<std::vector<double>>>();
+        x.array_item = j.at("arrayItem").get<ArrayItem>();
         x.record_item = j.at("recordItem").get<std::unordered_map<std::string, double>>();
         x.map_item = j.at("mapItem").get<std::unordered_map<std::string, double>>();
         x.set_item = j.at("setItem").get<std::set<std::string>>();

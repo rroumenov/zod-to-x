@@ -92,7 +92,7 @@ export class ASTIntersection extends ASTCommon {
  * Handle ZodRecord and ZodMap
  */
 export class ASTMap extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     key: ASTType;
     value: ASTType;
     type: "record" | "map";
@@ -111,7 +111,7 @@ export class ASTMap extends ASTCommon {
  * Handle ZodSet
  */
 export class ASTSet extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     value: ASTType;
 
     constructor(data: ASTSet & ASTCommon) {
@@ -126,7 +126,7 @@ export class ASTSet extends ASTCommon {
  * Handle ZodTuple
  */
 export class ASTTuple extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     items: ASTType[];
 
     constructor(data: ASTTuple & ASTCommon) {
@@ -134,5 +134,20 @@ export class ASTTuple extends ASTCommon {
 
         this.name = data.name;
         this.items = data.items;
+    }
+}
+
+/**
+ * Handle ZodArray. Only used for type aliases.
+ */
+export class ASTArray extends ASTCommon {
+    name: string;
+    item: ASTType;
+
+    constructor(data: ASTArray & ASTCommon) {
+        super(data);
+
+        this.name = data.name;
+        this.item = data.item;
     }
 }

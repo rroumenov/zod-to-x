@@ -51,11 +51,26 @@ export type ASTNode =
     | Complex.ASTEnum
     | Complex.ASTMap
     | Complex.ASTSet
-    | Complex.ASTTuple;
+    | Complex.ASTTuple
+    | Complex.ASTArray;
 
 /**
- * Represents a type definition in the AST. Used to reduce node size and identify
- * schemas that can be referenced in a transpilation process.
+ * Nodes that are always transpiled to a type alias.
+ */
+export type ASTAliasedTypes =
+    | Simple.ASTString
+    | Simple.ASTNumber
+    | Simple.ASTBoolean
+    | Simple.ASTLiteral
+    | Simple.ASTDate
+    | Simple.ASTAny
+    | Complex.ASTMap
+    | Complex.ASTSet
+    | Complex.ASTTuple
+    | Complex.ASTArray;
+
+/**
+ * Represents a usage of any existing ASTNode. Used to reduce node size.
  */
 export class ASTDefintion extends ASTCommon {
     name: string;

@@ -2,84 +2,124 @@ import { z, ZodTypeAny } from "zod";
 import { extendZod } from "../../dist";
 extendZod(z);
 
-// Strings
-export const zString = z.string();
-
-// Literals
-export const zLiteralString = z.literal("literal");
-export const zLiteralNumber = z.literal(1);
-
-// Enumerates
-export const zEnum = z.enum(["Enum1", "Enum2", "Enum3"]).zod2x("EnumItem");
-
 enum NativeEnumItem {
     NativeEnum1 = 1,
     NativeEnum2 = 2,
     NativeEnum3 = "NativeEnum3",
 }
 
-export const zNativeEnum = z.nativeEnum(NativeEnumItem).zod2x("NativeEnumItem");
+/**
+ * Schemas generator is used to avoid schema interferences between tests
+ * @returns Schemas for testing
+ */
+export const getSchemas = () => {
+    // Strings
+    const zString = z.string();
 
-// Numbers
-export const zDouble = z.number();
-export const zBigInt = z.bigint();
-export const zInt64 = z.number().int();
-export const zInt32 = z.number().int().max(2147483647).min(-2147483648);
+    // Literals
+    const zLiteralString = z.literal("literal");
+    const zLiteralNumber = z.literal(1);
 
-// Booleans
-export const zBoolean = z.boolean();
+    // Enumerates
+    const zEnum = z.enum(["Enum1", "Enum2", "Enum3"]).zod2x("EnumItem");
 
-// Objects
-export const zObject = z
-    .object({
-        key: zString,
-    })
-    .zod2x("ObjectItem");
+    const zNativeEnum = z.nativeEnum(NativeEnumItem).zod2x("NativeEnumItem");
 
-export const zOtherObject = z
-    .object({
-        otherKey: zString,
-    })
-    .zod2x("OtherObjectItem");
+    // Numbers
+    const zDouble = z.number();
+    const zBigInt = z.bigint();
+    const zInt64 = z.number().int();
+    const zInt32 = z.number().int().max(2147483647).min(-2147483648);
 
-export const zObjectWithDiscriminator = z
-    .object({
-        key: zString,
-        discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
-    })
-    .zod2x("ObjectItemWithDiscriminator");
+    // Booleans
+    const zBoolean = z.boolean();
 
-export const zOtherObjectWithDiscriminator = z
-    .object({
-        otherKey: zString,
-        discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
-    })
-    .zod2x("OtherObjectItemWithDiscriminator");
+    // Objects
+    const zObject = z
+        .object({
+            key: zString,
+        })
+        .zod2x("ObjectItem");
 
-// Dates
-export const zDate = z.date();
+    const zOtherObject = z
+        .object({
+            otherKey: zString,
+        })
+        .zod2x("OtherObjectItem");
 
-// Arrays
-export const zArray1D = z.array(zDouble);
-export const zArray2D = z.array(z.array(zDouble));
+    const zObjectWithDiscriminator = z
+        .object({
+            key: zString,
+            discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
+        })
+        .zod2x("ObjectItemWithDiscriminator");
 
-// Complex types
-export const zRecord = z.record(zDouble);
-export const zMap = z.map(zString, zDouble);
-export const zSet = z.set(zString);
-export const zTuple = z.tuple([zDouble, zDouble]);
-export const zTupleMulti = z.tuple([zDouble, zString, zBoolean]);
+    const zOtherObjectWithDiscriminator = z
+        .object({
+            otherKey: zString,
+            discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
+        })
+        .zod2x("OtherObjectItemWithDiscriminator");
 
-export const zIntersection = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
-export const zUnion = z.union([zObject, zOtherObject]).zod2x("UnionItem");
-export const zDiscriminantUnion = z
-    .discriminatedUnion("discriminator", [zObjectWithDiscriminator, zOtherObjectWithDiscriminator])
-    .zod2x("DiscriminatedUnionItem");
+    // Dates
+    const zDate = z.date();
 
-// Special types
-export const zAny = z.any();
-export const zOptional = z.optional(zString);
-export const zNullable = z.nullable(zString);
+    // Arrays
+    const zArray1D = z.array(zDouble);
+    const zArray2D = z.array(z.array(zDouble));
+
+    // Complex types
+    const zRecord = z.record(zDouble);
+    const zMap = z.map(zString, zDouble);
+    const zSet = z.set(zString);
+    const zTuple = z.tuple([zDouble, zDouble]);
+    const zTupleMulti = z.tuple([zDouble, zString, zBoolean]);
+
+    const zIntersection = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
+    const zUnion = z.union([zObject, zOtherObject]).zod2x("UnionItem");
+    const zDiscriminantUnion = z
+        .discriminatedUnion("discriminator", [
+            zObjectWithDiscriminator,
+            zOtherObjectWithDiscriminator,
+        ])
+        .zod2x("DiscriminatedUnionItem");
+
+    // Special types
+    const zAny = z.any();
+    const zOptional = z.optional(zString);
+    const zNullable = z.nullable(zString);
+
+    return {
+        zString,
+        zLiteralString,
+        zLiteralNumber,
+        zEnum,
+        zNativeEnum,
+        zDouble,
+        zBigInt,
+        zInt64,
+        zInt32,
+        zBoolean,
+        zObject,
+        zOtherObject,
+        zObjectWithDiscriminator,
+        zOtherObjectWithDiscriminator,
+        zDate,
+        zArray1D,
+        zArray2D,
+        zRecord,
+        zMap,
+        zSet,
+        zTuple,
+        zTupleMulti,
+        zIntersection,
+        zUnion,
+        zDiscriminantUnion,
+        zAny,
+        zOptional,
+        zNullable,
+    };
+};
 
 // Model builder for testing
 export const modelBuilder = (schema: ZodTypeAny) => z.object({ item: schema }).zod2x("ModelItem");

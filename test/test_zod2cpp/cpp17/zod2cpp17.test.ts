@@ -7,13 +7,15 @@ import { diffLinesRaw } from "jest-diff";
 
 import { zCppSupportedSchemas } from "../cpp_supported_schemas";
 import { header } from "../../common/header";
-import * as schemas from "../../common/zod_schemas";
+import { getSchemas, modelBuilder } from "../../common/zod_schemas";
 import { userApi, userDtos, userModels } from "../../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../../common/layered_mixin_schemas";
 import {
     cppSupportedSchemasApplicationModel,
     cppSupportedSchemasModel,
 } from "../cpp_supported_schemas.layered";
+
+const schemas = getSchemas();
 
 let cppSupportedSchemas: Zod2XTypes.ASTNodes;
 
@@ -33,7 +35,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("String Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zString));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zString));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -58,9 +60,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Literal String Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(
-            schemas.modelBuilder(schemas.zLiteralString)
-        );
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zLiteralString));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -85,9 +85,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Literal Number Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(
-            schemas.modelBuilder(schemas.zLiteralNumber)
-        );
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zLiteralNumber));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -112,7 +110,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Enum Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zEnum));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zEnum));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -156,7 +154,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Native Enum Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zNativeEnum));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zNativeEnum));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -200,7 +198,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Number Schema as Double", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zDouble));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zDouble));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -224,7 +222,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Number Schema as BigInt", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zBigInt));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zBigInt));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -249,7 +247,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Number Schema as Int64", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zInt64));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zInt64));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -274,7 +272,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Number Schema as Int32", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zInt32));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zInt32));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -299,7 +297,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Boolean Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zBoolean));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zBoolean));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -323,7 +321,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Object Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zObject));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zObject));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -357,7 +355,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Record Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zRecord));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zRecord));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -383,7 +381,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Map Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zMap));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zMap));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -409,7 +407,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Set Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zSet));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zSet));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -435,7 +433,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Tuple Multi-type Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zTupleMulti));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zTupleMulti));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -461,7 +459,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Union Schema - without Composite Types", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zUnion));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zUnion));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -541,9 +539,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Discriminant Union Schema - without Composite Types", () => {
-        const ast = new Zod2Ast({ strict: false }).build(
-            schemas.modelBuilder(schemas.zDiscriminantUnion)
-        );
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zDiscriminantUnion));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -644,9 +640,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Intersection Schema - without Composite Types", () => {
-        const ast = new Zod2Ast({ strict: false }).build(
-            schemas.modelBuilder(schemas.zIntersection)
-        );
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zIntersection));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -700,7 +694,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Any Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zAny));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zAny));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -724,7 +718,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Optional Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zOptional));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zOptional));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +
@@ -767,7 +761,7 @@ describe("Zod2Cpp17", () => {
     });
 
     test("Nullable Schema", () => {
-        const ast = new Zod2Ast({ strict: false }).build(schemas.modelBuilder(schemas.zNullable));
+        const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zNullable));
         const output = new Zod2XTranspilers.Zod2Cpp17({ indent: 2 }).transpile(ast);
         const expectedOutput =
             "#pragma once\n\n" +

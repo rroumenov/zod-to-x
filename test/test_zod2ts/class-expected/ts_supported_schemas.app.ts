@@ -10,6 +10,8 @@ export type NewNativeEnumItem = TS_SUPPORTED_SCHEMAS.NativeEnumItem;
 
 export class NewObjectItem extends TS_SUPPORTED_SCHEMAS.ObjectItem {}
 
+export type NewArrayItem = TS_SUPPORTED_SCHEMAS.ArrayItem;
+
 export class NewUnionItem extends TS_SUPPORTED_SCHEMAS.UnionItem {}
 
 export type NewDiscriminatedUnionItem = TS_SUPPORTED_SCHEMAS.DiscriminatedUnionItem;
@@ -29,7 +31,7 @@ export class TsSupportedSchemasApplication {
     newBooleanItem: boolean;
     newObjectItem: NewObjectItem;
     newDateItem: Date;
-    newArrayItem: Array<number[]>;
+    newArrayItem: NewArrayItem;
     newRecordItem: Record<string, number>;
     newMapItem: Map<string, number>;
     newSetItem: Set<string>;

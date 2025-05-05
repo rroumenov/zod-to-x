@@ -1,6 +1,8 @@
 import Case from "case";
 
 import {
+    ASTAliasedTypes,
+    ASTArray,
     ASTDefintion,
     ASTEnum,
     ASTIntersection,
@@ -217,6 +219,27 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected _getOptional(type: string) {
         this.imports.add(this.lib.optional);
         return `boost::optional<${type}>`;
+    }
+
+    protected transpileAliasedType(data: ASTAliasedTypes): void {
+        if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
+                    type: "alias",
+                });
+            }
+            return;
+        }
+
+        let extendedType: string | undefined = undefined;
+
+        if (data instanceof ASTArray) {
+            extendedType = this.getAttributeType(data.item);
+        }
+
+        if (extendedType !== undefined) {
+            this.push0(`using ${data.name} = ${extendedType};\n`);
+        }
     }
 
     /** Ex:
