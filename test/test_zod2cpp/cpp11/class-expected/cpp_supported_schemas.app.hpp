@@ -17,6 +17,10 @@
 using nlohmann::json;
 
 namespace CPP_SUPPORTED_SCHEMAS_APP {
+    using NewEnumItem = CPP_SUPPORTED_SCHEMAS::EnumItem;
+
+    using NewNativeEnumItem = CPP_SUPPORTED_SCHEMAS::NativeEnumItem;
+
     class NewObjectItem : public CPP_SUPPORTED_SCHEMAS::ObjectItem {};
 
     using NewUnionItem = CPP_SUPPORTED_SCHEMAS::UnionItem;
@@ -30,8 +34,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         std::string new_string_item;
         std::string new_literal_string_item;
         std::uint32_t new_literal_number_item;
-        CPP_SUPPORTED_SCHEMAS::EnumItem new_enum_item;
-        CPP_SUPPORTED_SCHEMAS::NativeEnumItem new_native_enum_item;
+        NewEnumItem new_enum_item;
+        NewNativeEnumItem new_native_enum_item;
         double new_double_item;
         std::int64_t new_big_int_item;
         std::int64_t new_int64_item;
@@ -66,13 +70,13 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         std::uint32_t& get_mut_new_literal_number_item() { return this->new_literal_number_item; }
         void set_new_literal_number_item(const std::uint32_t& value) { this->new_literal_number_item = value; }
         
-        const CPP_SUPPORTED_SCHEMAS::EnumItem& get_new_enum_item() const { return this->new_enum_item; }
-        CPP_SUPPORTED_SCHEMAS::EnumItem& get_mut_new_enum_item() { return this->new_enum_item; }
-        void set_new_enum_item(const CPP_SUPPORTED_SCHEMAS::EnumItem& value) { this->new_enum_item = value; }
+        const NewEnumItem& get_new_enum_item() const { return this->new_enum_item; }
+        NewEnumItem& get_mut_new_enum_item() { return this->new_enum_item; }
+        void set_new_enum_item(const NewEnumItem& value) { this->new_enum_item = value; }
         
-        const CPP_SUPPORTED_SCHEMAS::NativeEnumItem& get_new_native_enum_item() const { return this->new_native_enum_item; }
-        CPP_SUPPORTED_SCHEMAS::NativeEnumItem& get_mut_new_native_enum_item() { return this->new_native_enum_item; }
-        void set_new_native_enum_item(const CPP_SUPPORTED_SCHEMAS::NativeEnumItem& value) { this->new_native_enum_item = value; }
+        const NewNativeEnumItem& get_new_native_enum_item() const { return this->new_native_enum_item; }
+        NewNativeEnumItem& get_mut_new_native_enum_item() { return this->new_native_enum_item; }
+        void set_new_native_enum_item(const NewNativeEnumItem& value) { this->new_native_enum_item = value; }
         
         const double& get_new_double_item() const { return this->new_double_item; }
         double& get_mut_new_double_item() { return this->new_double_item; }
@@ -195,8 +199,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         x.set_new_string_item(j.at("newStringItem").get<std::string>());
         x.set_new_literal_string_item(j.at("newLiteralStringItem").get<std::string>());
         x.set_new_literal_number_item(j.at("newLiteralNumberItem").get<std::uint32_t>());
-        x.set_new_enum_item(j.at("newEnumItem").get<CPP_SUPPORTED_SCHEMAS::EnumItem>());
-        x.set_new_native_enum_item(j.at("newNativeEnumItem").get<CPP_SUPPORTED_SCHEMAS::NativeEnumItem>());
+        x.set_new_enum_item(j.at("newEnumItem").get<NewEnumItem>());
+        x.set_new_native_enum_item(j.at("newNativeEnumItem").get<NewNativeEnumItem>());
         x.set_new_double_item(j.at("newDoubleItem").get<double>());
         x.set_new_big_int_item(j.at("newBigIntItem").get<std::int64_t>());
         x.set_new_int64_item(j.at("newInt64Item").get<std::int64_t>());

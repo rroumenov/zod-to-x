@@ -4,6 +4,10 @@
 
 import * as TS_SUPPORTED_SCHEMAS from "./ts_supported_schemas.entity";
 
+export type NewEnumItem = TS_SUPPORTED_SCHEMAS.EnumItem;
+
+export type NewNativeEnumItem = TS_SUPPORTED_SCHEMAS.NativeEnumItem;
+
 export class NewObjectItem extends TS_SUPPORTED_SCHEMAS.ObjectItem {}
 
 export class NewUnionItem extends TS_SUPPORTED_SCHEMAS.UnionItem {}
@@ -16,8 +20,8 @@ export class TsSupportedSchemasApplication {
     newStringItem: string;
     newLiteralStringItem: "literal";
     newLiteralNumberItem: 1;
-    newEnumItem: TS_SUPPORTED_SCHEMAS.EnumItem;
-    newNativeEnumItem: TS_SUPPORTED_SCHEMAS.NativeEnumItem;
+    newEnumItem: NewEnumItem;
+    newNativeEnumItem: NewNativeEnumItem;
     newDoubleItem: number;
     newBigIntItem: number;
     newInt64Item: number;

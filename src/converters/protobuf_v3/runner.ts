@@ -1,20 +1,16 @@
 import Case from "case";
-import { ZodObject, ZodRawShape } from "zod";
 
 import {
-    ASTCommon,
-    ASTDiscriminatedUnion,
     ASTEnum,
     ASTIntersection,
-    ASTNativeEnum,
     ASTObject,
     ASTUnion,
     IZod2AstOpt,
     NotTranspilerableTypeError,
-    TranspilerableTypes,
     Zod2Ast,
     Zod2X,
 } from "@/core";
+import { ZodObject } from "@/lib/zod_helpers";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 import StringUtils from "@/utils/string_utils";
 
@@ -55,7 +51,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         return "";
     }
 
-    protected addExtendedType(name: string, parentNamespace: string, parentTypeName: string): void {
+    protected addExtendedType(name: string, parentNamespace: string, aliasOf: string): void {
         // Zod2ProtoV3 does not support layered modeling.
         return;
     }
@@ -168,7 +164,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         return this.getMapType(keyType, valueType);
     }
 
-    protected transpileEnum(data: (ASTEnum | ASTNativeEnum) & ASTCommon): void {
+    protected transpileEnum(data: ASTEnum): void {
         if (data.isFromDiscriminatedUnion === true) {
             // Injected enum from ZodDiscriminatedUnion are not transpiled.
             return;
@@ -191,17 +187,17 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         this.push0("}\n");
     }
 
-    protected transpileIntersection(data: ASTIntersection & ASTCommon): void {
+    protected transpileIntersection(data: ASTIntersection): void {
         throw new NotTranspilerableTypeError(`Protobuf does not support message intersections.`);
     }
 
-    protected transpileStruct(data: ASTObject & ASTCommon): void {
+    protected transpileStruct(data: ASTObject): void {
         this.addComment(data.description);
 
         this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
-            if (value.description && !this.isTranspilerable(value as TranspilerableTypes)) {
+            if (value.description && !this.isTranspilerable(value)) {
                 // Avoid duplicated descriptions for transpiled items.
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
@@ -236,7 +232,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
      *   }
      * }
      */
-    protected transpileUnion(data: (ASTUnion | ASTDiscriminatedUnion) & ASTCommon): void {
+    protected transpileUnion(data: ASTUnion): void {
         this.addComment(data.description);
 
         const attributesTypes = data.options.map(this.getAttributeType.bind(this));
@@ -287,7 +283,6 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 /**
  * Converts a Zod schema into a Protocol Buffers v3 definition.
  *
- * @template T - The shape of the Zod schema.
  * @param schema - The Zod object schema to be converted.
  * @param opt - Optional configuration for the conversion process.
  * @param opt.strict - Whether to enforce strict mode during AST generation.
@@ -300,8 +295,8 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
  *                              definition.
  * @returns The Protocol Buffers v3 definition as a string.
  */
-export function zod2ProtoV3<T extends ZodRawShape>(
-    schema: ZodObject<T>,
+export function zod2ProtoV3(
+    schema: ZodObject<any>,
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<
             IZod2ProtoV3Opt,

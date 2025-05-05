@@ -1,12 +1,7 @@
 import Case from "case";
-import { ZodTypeAny } from "zod";
 
-import {
-    cloneTranspiledExtendable,
-    isTranspiledExtendable,
-    isTranspilerableZodType,
-} from "@/core/zod_helpers";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
+import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
     DOMAIN = 0,
@@ -99,35 +94,26 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         metadata.layer = opt;
                     }
 
-                    if (
-                        opt.externalInheritance !== false &&
-                        isTranspiledExtendable(zodItem._def.typeName)
-                    ) {
-                        if (metadata.layer.file !== opt.file) {
-                            // Type used from another layer. A new type is created inheriting the
-                            // original type.
-                            zodItem = cloneTranspiledExtendable(zodItem);
-                            zodItem._zod2x = {
-                                parentLayer: metadata.layer,
-                                parentTypeName: metadata.typeName,
-                                layer: opt,
-                                typeName: name,
-                            };
-                        }
+                    if (opt.externalInheritance !== false && metadata.layer.file !== opt.file) {
+                        // Type used from another layer. A new type is created inheriting the
+                        // original type.
+                        zodItem = ZodHelpers.cloneZod(zodItem);
+                        zodItem._zod2x = {
+                            parentLayer: metadata.layer,
+                            aliasOf: metadata.typeName,
+                            layer: opt,
+                            typeName: name,
+                        };
                     }
 
                     return zodItem;
                 };
 
                 Object.getOwnPropertyNames(this).forEach((prop) => {
-                    const zodType = (this as any)[prop]?._def?.typeName;
+                    const item = (this as any)[prop];
 
-                    if (isTranspilerableZodType(zodType)) {
-                        (this as any)[prop] = setMetadata(
-                            Case.pascal(prop),
-                            (this as any)[prop],
-                            opt
-                        );
+                    if (ZodHelpers.isTranspilerableZodType(item)) {
+                        (this as any)[prop] = setMetadata(Case.pascal(prop), item, opt);
                     }
                 });
             }
