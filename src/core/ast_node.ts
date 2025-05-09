@@ -1,4 +1,5 @@
 import {
+    ASTAliasedTypes,
     ASTAny,
     ASTArray,
     ASTBoolean,
@@ -577,6 +578,28 @@ export class Zod2Ast {
         return this._createDefinition(item);
     }
 
+    private _getAliasAst(
+        schema: ZodTypeAny,
+        item: ASTAliasedTypes
+    ): ASTDefintion | ASTAliasedTypes {
+        if (schema._zod2x?.typeName === undefined) {
+            return item;
+        }
+
+        const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
+
+        item.name = name;
+        item.parentFile = parentFile;
+        item.parentNamespace = parentNamespace;
+        item.aliasOf = aliasOf;
+
+        if (!this.nodes.has(name)) {
+            this.nodes.set(name, item);
+        }
+
+        return this._createDefinition(item);
+    }
+
     /**
      * Build the AST node of provided Zod Schema
      * @param schema
@@ -586,18 +609,21 @@ export class Zod2Ast {
         const def = schema._def;
 
         if (ZodHelpers.isZodString(schema)) {
-            return new ASTString({ description: schema.description });
+            return this._getAliasAst(schema, new ASTString({ description: schema.description }));
         } else if (ZodHelpers.isZodAnyNumberType(schema)) {
-            return new ASTNumber({
-                description: schema.description,
-                constraints: ZodHelpers.getZodNumberConstraints(schema),
-            });
+            return this._getAliasAst(
+                schema,
+                new ASTNumber({
+                    description: schema.description,
+                    constraints: ZodHelpers.getZodNumberConstraints(schema),
+                })
+            );
         } else if (ZodHelpers.isZodBoolean(schema)) {
-            return new ASTBoolean({ description: schema.description });
+            return this._getAliasAst(schema, new ASTBoolean({ description: schema.description }));
         } else if (ZodHelpers.isZodDate(schema)) {
-            return new ASTDate({ description: schema.description });
+            return this._getAliasAst(schema, new ASTDate({ description: schema.description }));
         } else if (ZodHelpers.isZodAny(schema)) {
-            return new ASTAny({ description: schema.description });
+            return this._getAliasAst(schema, new ASTAny({ description: schema.description }));
         } else if (ZodHelpers.isZodNullable(schema)) {
             const subSchema = this._zodToAST(schema.unwrap());
             subSchema.isNullable = true;
@@ -626,10 +652,13 @@ export class Zod2Ast {
                 return subSchema;
             }
         } else if (ZodHelpers.isZodSet(schema)) {
-            return new ASTSet({
-                value: this._zodToAST(def.valueType),
-                description: schema.description,
-            });
+            return this._getAliasAst(
+                schema,
+                new ASTSet({
+                    value: this._zodToAST(def.valueType),
+                    description: schema.description,
+                })
+            );
         } else if (ZodHelpers.isZodLiteral(schema)) {
             let parentEnum: ASTDefintion | undefined = undefined;
             let parentEnumKey: string | undefined = undefined;
@@ -650,12 +679,15 @@ export class Zod2Ast {
                 parentEnumKey,
             });
         } else if (ZodHelpers.isZodAnyMapType(schema)) {
-            return new ASTMap({
-                type: ZodHelpers.isZodRecord(schema) ? "record" : "map",
-                key: this._zodToAST(def.keyType),
-                value: this._zodToAST(def.valueType),
-                description: schema.description,
-            });
+            return this._getAliasAst(
+                schema,
+                new ASTMap({
+                    type: ZodHelpers.isZodRecord(schema) ? "record" : "map",
+                    key: this._zodToAST(def.keyType),
+                    value: this._zodToAST(def.valueType),
+                    description: schema.description,
+                })
+            );
         } else if (ZodHelpers.isZodLazy(schema)) {
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
@@ -666,10 +698,13 @@ export class Zod2Ast {
 
             return lazyPointer;
         } else if (ZodHelpers.isZodTuple(schema)) {
-            return new ASTTuple({
-                items: def.items.map(this._zodToAST.bind(this)),
-                description: schema.description,
-            });
+            return this._getAliasAst(
+                schema,
+                new ASTTuple({
+                    items: def.items.map(this._zodToAST.bind(this)),
+                    description: schema.description,
+                })
+            );
             /**
              *
              *

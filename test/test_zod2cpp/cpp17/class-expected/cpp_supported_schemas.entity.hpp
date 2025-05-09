@@ -18,6 +18,8 @@
 using nlohmann::json;
 
 namespace CPP_SUPPORTED_SCHEMAS {
+    using StringItem = std::string;
+
     enum class EnumItem: int {
         Enum1,
         Enum2,
@@ -29,6 +31,16 @@ namespace CPP_SUPPORTED_SCHEMAS {
         NativeEnum2,
         NativeEnum3
     };
+
+    using DoubleItem = double;
+
+    using BigIntItem = std::int64_t;
+
+    using Int64Item = std::int64_t;
+
+    using Int32Item = std::int32_t;
+
+    using BooleanItem = bool;
 
     class ObjectItem {
     private:
@@ -94,6 +106,14 @@ namespace CPP_SUPPORTED_SCHEMAS {
 
     using ArrayItem = std::vector<std::vector<double>>;
 
+    using RecordItem = std::unordered_map<std::string, double>;
+
+    using MapItem = std::unordered_map<std::string, double>;
+
+    using SetItem = std::set<std::string>;
+
+    using TupleItem = std::tuple<double, std::string, bool>;
+
     using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
 
     using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
@@ -106,31 +126,33 @@ namespace CPP_SUPPORTED_SCHEMAS {
         // Intersection fields are inherited from base classes.
     };
 
+    using AnyItem = json;
+
     class CppSupportedSchemas {
     private:
-        std::string string_item;
+        StringItem string_item;
         std::string literal_string_item;
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
-        double double_item;
-        std::int64_t big_int_item;
-        std::int64_t int64_item;
-        std::int32_t int32_item;
-        bool boolean_item;
+        DoubleItem double_item;
+        BigIntItem big_int_item;
+        Int64Item int64_item;
+        Int32Item int32_item;
+        BooleanItem boolean_item;
         ObjectItem object_item;
         OtherObjectItem other_object_item;
         ObjectItemWithDiscriminator object_item_with_discriminator;
         OtherObjectItemWithDiscriminator other_object_item_with_discriminator;
         ArrayItem array_item;
-        std::unordered_map<std::string, double> record_item;
-        std::unordered_map<std::string, double> map_item;
-        std::set<std::string> set_item;
-        std::tuple<double, std::string, bool> tuple_item;
+        RecordItem record_item;
+        MapItem map_item;
+        SetItem set_item;
+        TupleItem tuple_item;
         UnionItem union_item;
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
-        json any_item;
+        AnyItem any_item;
         std::optional<std::string> optional_item;
         std::optional<std::string> nullable_item;
     
@@ -138,9 +160,9 @@ namespace CPP_SUPPORTED_SCHEMAS {
         CppSupportedSchemas() = default;
         virtual ~CppSupportedSchemas() = default;
         
-        const std::string& get_string_item() const { return this->string_item; }
-        std::string& get_mut_string_item() { return this->string_item; }
-        void set_string_item(const std::string& value) { this->string_item = value; }
+        const StringItem& get_string_item() const { return this->string_item; }
+        StringItem& get_mut_string_item() { return this->string_item; }
+        void set_string_item(const StringItem& value) { this->string_item = value; }
         
         const std::string& get_literal_string_item() const { return this->literal_string_item; }
         std::string& get_mut_literal_string_item() { return this->literal_string_item; }
@@ -158,25 +180,25 @@ namespace CPP_SUPPORTED_SCHEMAS {
         NativeEnumItem& get_mut_native_enum_item() { return this->native_enum_item; }
         void set_native_enum_item(const NativeEnumItem& value) { this->native_enum_item = value; }
         
-        const double& get_double_item() const { return this->double_item; }
-        double& get_mut_double_item() { return this->double_item; }
-        void set_double_item(const double& value) { this->double_item = value; }
+        const DoubleItem& get_double_item() const { return this->double_item; }
+        DoubleItem& get_mut_double_item() { return this->double_item; }
+        void set_double_item(const DoubleItem& value) { this->double_item = value; }
         
-        const std::int64_t& get_big_int_item() const { return this->big_int_item; }
-        std::int64_t& get_mut_big_int_item() { return this->big_int_item; }
-        void set_big_int_item(const std::int64_t& value) { this->big_int_item = value; }
+        const BigIntItem& get_big_int_item() const { return this->big_int_item; }
+        BigIntItem& get_mut_big_int_item() { return this->big_int_item; }
+        void set_big_int_item(const BigIntItem& value) { this->big_int_item = value; }
         
-        const std::int64_t& get_int64_item() const { return this->int64_item; }
-        std::int64_t& get_mut_int64_item() { return this->int64_item; }
-        void set_int64_item(const std::int64_t& value) { this->int64_item = value; }
+        const Int64Item& get_int64_item() const { return this->int64_item; }
+        Int64Item& get_mut_int64_item() { return this->int64_item; }
+        void set_int64_item(const Int64Item& value) { this->int64_item = value; }
         
-        const std::int32_t& get_int32_item() const { return this->int32_item; }
-        std::int32_t& get_mut_int32_item() { return this->int32_item; }
-        void set_int32_item(const std::int32_t& value) { this->int32_item = value; }
+        const Int32Item& get_int32_item() const { return this->int32_item; }
+        Int32Item& get_mut_int32_item() { return this->int32_item; }
+        void set_int32_item(const Int32Item& value) { this->int32_item = value; }
         
-        const bool& get_boolean_item() const { return this->boolean_item; }
-        bool& get_mut_boolean_item() { return this->boolean_item; }
-        void set_boolean_item(const bool& value) { this->boolean_item = value; }
+        const BooleanItem& get_boolean_item() const { return this->boolean_item; }
+        BooleanItem& get_mut_boolean_item() { return this->boolean_item; }
+        void set_boolean_item(const BooleanItem& value) { this->boolean_item = value; }
         
         const ObjectItem& get_object_item() const { return this->object_item; }
         ObjectItem& get_mut_object_item() { return this->object_item; }
@@ -198,21 +220,21 @@ namespace CPP_SUPPORTED_SCHEMAS {
         ArrayItem& get_mut_array_item() { return this->array_item; }
         void set_array_item(const ArrayItem& value) { this->array_item = value; }
         
-        const std::unordered_map<std::string, double>& get_record_item() const { return this->record_item; }
-        std::unordered_map<std::string, double>& get_mut_record_item() { return this->record_item; }
-        void set_record_item(const std::unordered_map<std::string, double>& value) { this->record_item = value; }
+        const RecordItem& get_record_item() const { return this->record_item; }
+        RecordItem& get_mut_record_item() { return this->record_item; }
+        void set_record_item(const RecordItem& value) { this->record_item = value; }
         
-        const std::unordered_map<std::string, double>& get_map_item() const { return this->map_item; }
-        std::unordered_map<std::string, double>& get_mut_map_item() { return this->map_item; }
-        void set_map_item(const std::unordered_map<std::string, double>& value) { this->map_item = value; }
+        const MapItem& get_map_item() const { return this->map_item; }
+        MapItem& get_mut_map_item() { return this->map_item; }
+        void set_map_item(const MapItem& value) { this->map_item = value; }
         
-        const std::set<std::string>& get_set_item() const { return this->set_item; }
-        std::set<std::string>& get_mut_set_item() { return this->set_item; }
-        void set_set_item(const std::set<std::string>& value) { this->set_item = value; }
+        const SetItem& get_set_item() const { return this->set_item; }
+        SetItem& get_mut_set_item() { return this->set_item; }
+        void set_set_item(const SetItem& value) { this->set_item = value; }
         
-        const std::tuple<double, std::string, bool>& get_tuple_item() const { return this->tuple_item; }
-        std::tuple<double, std::string, bool>& get_mut_tuple_item() { return this->tuple_item; }
-        void set_tuple_item(const std::tuple<double, std::string, bool>& value) { this->tuple_item = value; }
+        const TupleItem& get_tuple_item() const { return this->tuple_item; }
+        TupleItem& get_mut_tuple_item() { return this->tuple_item; }
+        void set_tuple_item(const TupleItem& value) { this->tuple_item = value; }
         
         const UnionItem& get_union_item() const { return this->union_item; }
         UnionItem& get_mut_union_item() { return this->union_item; }
@@ -226,9 +248,9 @@ namespace CPP_SUPPORTED_SCHEMAS {
         IntersectionItem& get_mut_intersection_item() { return this->intersection_item; }
         void set_intersection_item(const IntersectionItem& value) { this->intersection_item = value; }
         
-        const json& get_any_item() const { return this->any_item; }
-        json& get_mut_any_item() { return this->any_item; }
-        void set_any_item(const json& value) { this->any_item = value; }
+        const AnyItem& get_any_item() const { return this->any_item; }
+        AnyItem& get_mut_any_item() { return this->any_item; }
+        void set_any_item(const AnyItem& value) { this->any_item = value; }
         
         std::optional<std::string> get_optional_item() const { return this->optional_item; }
         void set_optional_item(std::optional<std::string> value) { this->optional_item = value; }
@@ -437,29 +459,29 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
 
     inline void from_json(const json& j, CppSupportedSchemas& x) {
-        x.set_string_item(j.at("stringItem").get<std::string>());
+        x.set_string_item(j.at("stringItem").get<StringItem>());
         x.set_literal_string_item(j.at("literalStringItem").get<std::string>());
         x.set_literal_number_item(j.at("literalNumberItem").get<std::uint32_t>());
         x.set_enum_item(j.at("enumItem").get<EnumItem>());
         x.set_native_enum_item(j.at("nativeEnumItem").get<NativeEnumItem>());
-        x.set_double_item(j.at("doubleItem").get<double>());
-        x.set_big_int_item(j.at("bigIntItem").get<std::int64_t>());
-        x.set_int64_item(j.at("int64Item").get<std::int64_t>());
-        x.set_int32_item(j.at("int32Item").get<std::int32_t>());
-        x.set_boolean_item(j.at("booleanItem").get<bool>());
+        x.set_double_item(j.at("doubleItem").get<DoubleItem>());
+        x.set_big_int_item(j.at("bigIntItem").get<BigIntItem>());
+        x.set_int64_item(j.at("int64Item").get<Int64Item>());
+        x.set_int32_item(j.at("int32Item").get<Int32Item>());
+        x.set_boolean_item(j.at("booleanItem").get<BooleanItem>());
         x.set_object_item(j.at("objectItem").get<ObjectItem>());
         x.set_other_object_item(j.at("otherObjectItem").get<OtherObjectItem>());
         x.set_object_item_with_discriminator(j.at("objectItemWithDiscriminator").get<ObjectItemWithDiscriminator>());
         x.set_other_object_item_with_discriminator(j.at("otherObjectItemWithDiscriminator").get<OtherObjectItemWithDiscriminator>());
         x.set_array_item(j.at("arrayItem").get<ArrayItem>());
-        x.set_record_item(j.at("recordItem").get<std::unordered_map<std::string, double>>());
-        x.set_map_item(j.at("mapItem").get<std::unordered_map<std::string, double>>());
-        x.set_set_item(j.at("setItem").get<std::set<std::string>>());
-        x.set_tuple_item(j.at("tupleItem").get<std::tuple<double, std::string, bool>>());
+        x.set_record_item(j.at("recordItem").get<RecordItem>());
+        x.set_map_item(j.at("mapItem").get<MapItem>());
+        x.set_set_item(j.at("setItem").get<SetItem>());
+        x.set_tuple_item(j.at("tupleItem").get<TupleItem>());
         x.set_union_item(j.at("unionItem").get<UnionItem>());
         x.set_discriminated_union_item(j.at("discriminatedUnionItem").get<DiscriminatedUnionItem>());
         x.set_intersection_item(j.at("intersectionItem").get<IntersectionItem>());
-        x.set_any_item(j.at("anyItem").get<json>());
+        x.set_any_item(j.at("anyItem").get<AnyItem>());
         x.set_optional_item(get_opt<std::string>(j, "optionalItem"));
         x.set_nullable_item(get_opt<std::string>(j, "nullableItem"));
     }

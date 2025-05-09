@@ -248,6 +248,26 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         );
     }
 
+    /**
+     * Determines if the given AST node represents an aliased type.     *
+     * @param token - The AST node to evaluate.
+     * @returns `true` if the token is an instance of an aliased type, otherwise `false`.
+     */
+    protected isAliasedType(token: ASTNode): boolean {
+        return (
+            token instanceof ASTString ||
+            token instanceof ASTNumber ||
+            token instanceof ASTBoolean ||
+            token instanceof ASTLiteral ||
+            token instanceof ASTDate ||
+            token instanceof ASTAny ||
+            token instanceof ASTMap ||
+            token instanceof ASTSet ||
+            token instanceof ASTTuple ||
+            token instanceof ASTArray
+        );
+    }
+
     // Push with indentation helpers
     protected push0 = (data: string) => this.output.push(`${this.indent[0]}${data}`);
     protected push1 = (data: string) => this.output.push(`${this.indent[1]}${data}`);
@@ -377,7 +397,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             this.transpileUnion(item);
         } else if (item instanceof ASTIntersection) {
             this.transpileIntersection(item);
-        } else if (item instanceof ASTArray) {
+        } else if (this.isAliasedType(item)) {
             this.transpileAliasedType(item);
         } else if (item instanceof ASTCommon) {
             console.log(`Under construction: ${item.constructor.name}`);

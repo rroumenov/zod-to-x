@@ -37,26 +37,26 @@ export const getSchemas = () => {
     // Objects
     const zObject = z
         .object({
-            key: zString,
+            key: z.string(),
         })
         .zod2x("ObjectItem");
 
     const zOtherObject = z
         .object({
-            otherKey: zString,
+            otherKey: z.string(),
         })
         .zod2x("OtherObjectItem");
 
     const zObjectWithDiscriminator = z
         .object({
-            key: zString,
+            key: z.string(),
             discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
         })
         .zod2x("ObjectItemWithDiscriminator");
 
     const zOtherObjectWithDiscriminator = z
         .object({
-            otherKey: zString,
+            otherKey: z.string(),
             discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
         })
         .zod2x("OtherObjectItemWithDiscriminator");
@@ -65,15 +65,15 @@ export const getSchemas = () => {
     const zDate = z.date();
 
     // Arrays
-    const zArray1D = z.array(zDouble);
-    const zArray2D = z.array(z.array(zDouble));
+    const zArray1D = z.array(z.number());
+    const zArray2D = z.array(z.array(z.number()));
 
     // Complex types
-    const zRecord = z.record(zDouble);
-    const zMap = z.map(zString, zDouble);
-    const zSet = z.set(zString);
-    const zTuple = z.tuple([zDouble, zDouble]);
-    const zTupleMulti = z.tuple([zDouble, zString, zBoolean]);
+    const zRecord = z.record(z.number());
+    const zMap = z.map(z.string(), z.number());
+    const zSet = z.set(z.string());
+    const zTuple = z.tuple([z.number(), z.number()]);
+    const zTupleMulti = z.tuple([z.number(), z.string(), z.boolean()]);
 
     const zIntersection = z.intersection(zObject, zOtherObject).zod2x("IntersectionItem");
     const zUnion = z.union([zObject, zOtherObject]).zod2x("UnionItem");
@@ -86,8 +86,8 @@ export const getSchemas = () => {
 
     // Special types
     const zAny = z.any();
-    const zOptional = z.optional(zString);
-    const zNullable = z.nullable(zString);
+    const zOptional = z.optional(z.string());
+    const zNullable = z.nullable(z.string());
 
     return {
         zString,

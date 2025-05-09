@@ -25,10 +25,19 @@
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Intersections and Unions](#intersections-and-unions)
+  - [Expected outputs](#expected-outputs)
+  - [Tips for discriminated unions](#tips-for-discriminated-unions)
 - [Layered modeling](#layered-modeling) <sup>*(new)*</sup>
-- [Supported output languages](#supported-output-languages)
+  - [Usage example](#usage-example)
+  - [Custom layers](#custom-layers)
+- [Currently supported output languages](#currently-supported-output-languages)
+  - [Typescript](#1-typescript)
+  - [C++](#2-c)
 - [Additional utils](#additional-utils)
+  - [JSON Schema definitions](#1-zod2jsonschemadefinitions)
+  - [Protobuf V3 generation](#2-zod2protov3)
 - [Mapping of supported Zod Types by Language](#mapping-of-supported-zod-types-by-langauge)
+- [Considerations](#considerations)
 
 
 
@@ -251,9 +260,11 @@ To improve Separation of Concerns (SoC), the Dependency Rule, and Maintainabilit
 To achieve this, new components are included:
 - **Zod2XModel**: With layered modeling, data is defined using classes. Inheriting this abstract class provides metadata management to handle relationships and also simplifies transpilation by including a `transpile()` method that receives the target language class.
 - **Layer**: A class decorator that defines class metadata, including a reference to the output file of the modeled data, a namespace under which its types are grouped, and an integer index representing the layer number. It can also be used as a decorator factory to define custom layers. Out of the box, four layers are provided: *Domain*, *Application*, *Infrastructure*, and *Presentation*. Parameters:  
+  - **index**: Defines the layer boundary. In layer terms, a greater number represents a more external layer. Outer layers can use models from equal or lower layers, but not from higher layers. Otherwise, an error will be raised.
   - **namespace**: Defines the namespace under which the types are grouped.
   - **file**: Specifies the expected output file where the transpiled types will be saved.
   - **externalInheritance**: When a type from one layer is imported into another layer without modifications, it is transpiled as a new type inheriting from the imported type. This ensures type consistency across layers while maintaining reusability. See example (4) below. The default value is `true`.
+  - **basicTypes**: Since `v1.4.6`, primitive data types and arrays are also transpiled when using Layered modeling **if they are declared as property inside the layer class**. They are output as aliases of the types they represent. Setting it to `false` will disable this behavior (except for arrays, which are always transpiled). Default is `true`.
 - **Zod2XMixin**: A function that enables the creation of layers by extending multiple data models, thereby simplifying their definition and organization.
 
 ### Usage example
@@ -264,10 +275,12 @@ class UserModels extends Zod2XModel {
 
     userRole = z.enum(["Admin", "User"]).zod2x("UserRole"); // (*)
 
+    userEmail = z.string().email(); // This will be transpiled as an alias.
+
     userEntity = z.object({
         id: z.string().uuid(),
         name: z.string().min(1),
-        email: z.string().email(),
+        email: this.userEmail,
         age: z.number().int().nonnegative().optional(),
         role: this.userRole,
     }); // (*)
@@ -281,10 +294,12 @@ console.log(userModels.transpile(Zod2XTranspilers.Zod2Ts));
 //     User = "User",
 // }
 
+// export type UserEmail = string;
+
 // export interface UserEntity {
 //     id: string;
 //     name: string;
-//     email: string;
+//     email: UserEmail;
 //     age?: number;
 //     role: UserRole;
 // }
@@ -321,7 +336,7 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 
 // export interface CreateUserUseCaseDto {
 //     name: string;
-//     email: string;
+//     email: USER.UserEmail;
 //     age?: number;
 //     role: USER.UserRole;
 // }
@@ -329,7 +344,7 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 // export interface CreateUserUseCaseResultDto {
 //     id: string;
 //     name: string;
-//     email: string;
+//     email: USER.UserEmail;
 //     age?: number;
 //     createdAt: Date;
 //     updatedAt: Date;
@@ -461,8 +476,33 @@ class UserDtos extends Zod2XModel {
 // In this case, the type of `createUserUseCaseResultDto` is inferred from the parent model (`UserDtos`), but there is no explicit definition of the type itself.
 ```
 
+### Custom Layers
+If the provided layer decorators do not meet your requirements, you can easily define custom ones:
+```ts
+import { Layer, IZod2xLayerMetadata, Zod2XModel } from "zod-to-x";
 
-## Supported output languages
+// Create an enumerate with layer indexes
+enum MyLayers {
+    MyDomainLayer = 0,
+    MyApplicationLayer = 1,
+    MyInfrastructureLayer = 2,
+    // ...
+}
+
+// Create custom layer decorators
+function MyDomainLayer(opt: Omit<IZod2xLayerMetadata, "index">) {
+  return Layer({ ...opt, index: MyLayers.MyDomainLayer });
+}
+// ...
+
+// Use the custom decorators
+@MyDomainLayer({file: "...", namespace: "..."})
+class MyEntityModels extends Zod2XModel {
+  // ...
+}
+```
+
+## Currently supported output languages
 Common options:
 - **header**: Text to add as a comment at the beginning of the output.
 - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
@@ -553,3 +593,59 @@ console.log(createUserDtoProtobuf); // Proto file of CreateUserUseCaseDto's mode
 
 ## Mapping of supported Zod Types by Langauge
 For a detailed mapping of supported Zod types across supported targets, please refer to the [SUPPORTED_ZOD_TYPES.md](https://github.com/rroumenov/zod-to-x/blob/main/SUPPORTED_ZOD_TYPES.md) file.
+
+
+
+## Considerations
+- Choose the approach that best suits your needs, either Layered or non-Layered modeling, and avoid mixing them whenever possible, especially when working with enumerations, objects, unions, or intersections (except for `ZodLiteral.zod2x()`, which simply links a literal value to the enumeration it belongs to, if applicable). Their metadata handling differs slightly, which may result in some types not being transpiled as expected.
+
+- In Layered modeling, the transpilation of primitive types can be completely disabled or combined by defining them outside the layer class:
+```ts
+// External primitive
+const stringUUID = z.string().uuid();
+
+@Domain({ namespace: "USER", file: "user.entity" })
+class UserModels extends Zod2XModel {
+
+    // Internal primitive
+    userEmail = z.string().email(); // This will be transpiled as an alias. It is a layer property.
+
+    userEntity = z.object({
+        id: stringUUID, // "stringUUID" will not be transpiled as an alias. It is not a layer property.
+        email: this.userEmail,
+    });
+}
+
+export const userModels = new UserModels();
+```
+
+- Avoid internal alias redeclarations. If really needed, `ZodLazy` shall be used:
+```ts
+// Consider the previous UserModels
+
+import { z } from "zod";
+
+@Application({ namespace: "USER_DTOS", file: "user.dtos",  externalInheritance: false})
+class UserDtos extends Zod2XModel {
+
+    // OK - Type declaration. It creates a new type based on userEntity but without ID.
+    createUserUseCaseDto = userModels.userEntity.omit({ id: true });
+
+    // OK - Redeclaration of external type. Could be useful for typing coherence.
+    // "createUserUseCaseResultDto" becomes an alias of "userModels.userEntity".
+    createUserUseCaseResultDto = userModels.userEntity;
+
+    // OK - Redeclaration of an internal type. Could be useful for typing coherence.
+    // "createUserUseCaseDtoV2" becomes an alias of "createUserUseCaseDto".
+    createUserUseCaseDtoV2 = this.createUserUseCaseDto;
+
+    // NOK - Redeclaration of an alias. It will be an alias of "userModels.userEntity"
+    // because "createUserUseCaseResultDto" is aliased during runtime.
+    createUserUseCaseResultDtoV2 = this.createUserUseCaseResultDto;
+
+    // OK, but avoid it - Redeclaration of an alias. It will wait until
+    // "createUserUseCaseResultDto" is aliased and then will becosa an alias
+    // of "createUserUseCaseResultDto"
+    createUserUseCaseResultDtoV3 = z.lazy(() => this.createUserUseCaseResultDto),
+}
+```

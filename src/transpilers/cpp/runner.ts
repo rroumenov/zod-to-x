@@ -235,6 +235,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         if (data instanceof ASTArray) {
             extendedType = this.getAttributeType(data.item);
+        } else {
+            extendedType = this.getAttributeType(data);
         }
 
         if (extendedType !== undefined) {

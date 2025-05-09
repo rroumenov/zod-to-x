@@ -24,18 +24,18 @@ class TsSupportedSchemas extends Zod2XModel {
     objectItem = tsSupportedSchemas.objectItem;
     otherObjectItem = z
         .object({
-            otherKey: this.stringItem,
+            otherKey: z.string(),
         })
         .zod2x("OtherObjectItem");
     objectItemWithDiscriminator = z
         .object({
-            key: this.stringItem,
+            key: z.string(),
             discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
         })
         .zod2x("ObjectItemWithDiscriminator");
     otherObjectItemWithDiscriminator = z
         .object({
-            otherKey: this.stringItem,
+            otherKey: z.string(),
             discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
         })
         .zod2x("OtherObjectItemWithDiscriminator");

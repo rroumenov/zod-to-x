@@ -127,6 +127,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
         if (data instanceof ASTArray) {
             extendedType = this.getAttributeType(data.item);
+        } else {
+            extendedType = this.getAttributeType(data);
         }
 
         if (extendedType !== undefined) {
