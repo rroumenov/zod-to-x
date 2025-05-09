@@ -1,8 +1,10 @@
 import { z } from "zod";
-import * as zs from "../common/zod_schemas";
+import { getSchemas } from "../common/zod_schemas";
 
-export const zCppSupportedSchemas = z
-    .object({
+export const getCppSupportedSchemas = () => {
+    const zs = getSchemas();
+
+    return {
         stringItem: zs.zString,
 
         literalStringItem: zs.zLiteralString,
@@ -35,6 +37,7 @@ export const zCppSupportedSchemas = z
         anyItem: zs.zAny,
         optionalItem: zs.zOptional,
         nullableItem: zs.zNullable,
-    })
-    .zod2x("CppSupportedSchemas");
-// TODO: this zod2x is not checked and could be undefined
+    };
+};
+
+export const zCppSupportedSchemas = z.object(getCppSupportedSchemas()).zod2x("CppSupportedSchemas");

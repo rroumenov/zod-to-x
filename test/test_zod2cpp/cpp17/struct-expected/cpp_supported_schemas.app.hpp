@@ -8,20 +8,38 @@
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <optional>
-#include <set>
 #include <string>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
 
 using nlohmann::json;
 
 namespace CPP_SUPPORTED_SCHEMAS_APP {
+    using NewStringItem = CPP_SUPPORTED_SCHEMAS::StringItem;
+
     using NewEnumItem = CPP_SUPPORTED_SCHEMAS::EnumItem;
 
     using NewNativeEnumItem = CPP_SUPPORTED_SCHEMAS::NativeEnumItem;
 
+    using NewDoubleItem = CPP_SUPPORTED_SCHEMAS::DoubleItem;
+
+    using NewBigIntItem = CPP_SUPPORTED_SCHEMAS::BigIntItem;
+
+    using NewInt64Item = CPP_SUPPORTED_SCHEMAS::Int64Item;
+
+    using NewInt32Item = CPP_SUPPORTED_SCHEMAS::Int32Item;
+
+    using NewBooleanItem = CPP_SUPPORTED_SCHEMAS::BooleanItem;
+
     struct NewObjectItem : public CPP_SUPPORTED_SCHEMAS::ObjectItem {};
+
+    using NewArrayItem = CPP_SUPPORTED_SCHEMAS::ArrayItem;
+
+    using NewRecordItem = CPP_SUPPORTED_SCHEMAS::RecordItem;
+
+    using NewMapItem = CPP_SUPPORTED_SCHEMAS::MapItem;
+
+    using NewSetItem = CPP_SUPPORTED_SCHEMAS::SetItem;
+
+    using NewTupleItem = CPP_SUPPORTED_SCHEMAS::TupleItem;
 
     using NewUnionItem = CPP_SUPPORTED_SCHEMAS::UnionItem;
 
@@ -29,27 +47,29 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
 
     struct NewIntersectionItem : public CPP_SUPPORTED_SCHEMAS::IntersectionItem {};
 
+    using NewAnyItem = CPP_SUPPORTED_SCHEMAS::AnyItem;
+
     struct CppSupportedSchemasApplication {
-        std::string new_string_item;
+        NewStringItem new_string_item;
         std::string new_literal_string_item;
         std::uint32_t new_literal_number_item;
         NewEnumItem new_enum_item;
         NewNativeEnumItem new_native_enum_item;
-        double new_double_item;
-        std::int64_t new_big_int_item;
-        std::int64_t new_int64_item;
-        std::int32_t new_int32_item;
-        bool new_boolean_item;
+        NewDoubleItem new_double_item;
+        NewBigIntItem new_big_int_item;
+        NewInt64Item new_int64_item;
+        NewInt32Item new_int32_item;
+        NewBooleanItem new_boolean_item;
         NewObjectItem new_object_item;
-        std::vector<std::vector<double>> new_array_item;
-        std::unordered_map<std::string, double> new_record_item;
-        std::unordered_map<std::string, double> new_map_item;
-        std::set<std::string> new_set_item;
-        std::tuple<double, std::string, bool> new_tuple_item;
+        NewArrayItem new_array_item;
+        NewRecordItem new_record_item;
+        NewMapItem new_map_item;
+        NewSetItem new_set_item;
+        NewTupleItem new_tuple_item;
         NewUnionItem new_union_item;
         NewDiscriminatedUnionItem new_discriminated_union_item;
         NewIntersectionItem new_intersection_item;
-        json new_any_item;
+        NewAnyItem new_any_item;
         std::optional<std::string> new_optional_item;
         std::optional<std::string> new_nullable_item;
     };
@@ -105,26 +125,26 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
 
     inline void from_json(const json& j, CppSupportedSchemasApplication& x) {
-        x.new_string_item = j.at("newStringItem").get<std::string>();
+        x.new_string_item = j.at("newStringItem").get<NewStringItem>();
         x.new_literal_string_item = j.at("newLiteralStringItem").get<std::string>();
         x.new_literal_number_item = j.at("newLiteralNumberItem").get<std::uint32_t>();
         x.new_enum_item = j.at("newEnumItem").get<NewEnumItem>();
         x.new_native_enum_item = j.at("newNativeEnumItem").get<NewNativeEnumItem>();
-        x.new_double_item = j.at("newDoubleItem").get<double>();
-        x.new_big_int_item = j.at("newBigIntItem").get<std::int64_t>();
-        x.new_int64_item = j.at("newInt64Item").get<std::int64_t>();
-        x.new_int32_item = j.at("newInt32Item").get<std::int32_t>();
-        x.new_boolean_item = j.at("newBooleanItem").get<bool>();
+        x.new_double_item = j.at("newDoubleItem").get<NewDoubleItem>();
+        x.new_big_int_item = j.at("newBigIntItem").get<NewBigIntItem>();
+        x.new_int64_item = j.at("newInt64Item").get<NewInt64Item>();
+        x.new_int32_item = j.at("newInt32Item").get<NewInt32Item>();
+        x.new_boolean_item = j.at("newBooleanItem").get<NewBooleanItem>();
         x.new_object_item = j.at("newObjectItem").get<NewObjectItem>();
-        x.new_array_item = j.at("newArrayItem").get<std::vector<std::vector<double>>>();
-        x.new_record_item = j.at("newRecordItem").get<std::unordered_map<std::string, double>>();
-        x.new_map_item = j.at("newMapItem").get<std::unordered_map<std::string, double>>();
-        x.new_set_item = j.at("newSetItem").get<std::set<std::string>>();
-        x.new_tuple_item = j.at("newTupleItem").get<std::tuple<double, std::string, bool>>();
+        x.new_array_item = j.at("newArrayItem").get<NewArrayItem>();
+        x.new_record_item = j.at("newRecordItem").get<NewRecordItem>();
+        x.new_map_item = j.at("newMapItem").get<NewMapItem>();
+        x.new_set_item = j.at("newSetItem").get<NewSetItem>();
+        x.new_tuple_item = j.at("newTupleItem").get<NewTupleItem>();
         x.new_union_item = j.at("newUnionItem").get<NewUnionItem>();
         x.new_discriminated_union_item = j.at("newDiscriminatedUnionItem").get<NewDiscriminatedUnionItem>();
         x.new_intersection_item = j.at("newIntersectionItem").get<NewIntersectionItem>();
-        x.new_any_item = j.at("newAnyItem").get<json>();
+        x.new_any_item = j.at("newAnyItem").get<NewAnyItem>();
         x.new_optional_item = get_opt<std::string>(j, "newOptionalItem");
         x.new_nullable_item = get_opt<std::string>(j, "newNullableItem");
     }

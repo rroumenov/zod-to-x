@@ -1,8 +1,10 @@
 import { z } from "zod";
-import * as zs from "../common/zod_schemas";
+import { getSchemas } from "../common/zod_schemas";
 
-export const zTsSupportedSchemas = z
-    .object({
+export const getTsSupportedSchemas = () => {
+    const zs = getSchemas();
+
+    return {
         stringItem: zs.zString,
 
         literalStringItem: zs.zLiteralString,
@@ -37,5 +39,7 @@ export const zTsSupportedSchemas = z
         anyItem: zs.zAny,
         optionalItem: zs.zOptional,
         nullableItem: zs.zNullable,
-    })
-    .zod2x("TsSupportedSchemas");
+    };
+};
+
+export const zTsSupportedSchemas = z.object(getTsSupportedSchemas()).zod2x("TsSupportedSchemas");

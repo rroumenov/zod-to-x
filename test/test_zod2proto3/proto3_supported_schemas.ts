@@ -1,8 +1,10 @@
 import { z } from "zod";
-import * as zs from "../common/zod_schemas";
+import { getSchemas } from "../common/zod_schemas";
 
-export const zProto3SupportedSchemas = z
-    .object({
+export const getProto3SupportedSchemas = () => {
+    const zs = getSchemas();
+
+    return {
         stringItem: zs.zString,
 
         literalStringItem: zs.zLiteralString,
@@ -33,5 +35,9 @@ export const zProto3SupportedSchemas = z
         discriminatedUnionItem: zs.zDiscriminantUnion,
 
         anyItem: zs.zAny,
-    })
+    };
+};
+
+export const zProto3SupportedSchemas = z
+    .object(getProto3SupportedSchemas())
     .zod2x("Proto3SupportedSchemas");

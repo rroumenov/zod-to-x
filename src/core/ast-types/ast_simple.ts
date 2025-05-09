@@ -1,10 +1,10 @@
-import { ASTCommon } from "./ast_common";
+import { ASTCommon, ASTDefintion } from "./ast_common";
 
 /**
  * Handle ZodString
  */
 export class ASTString extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     constraints?: {
         min?: number;
         max?: number;
@@ -23,7 +23,7 @@ export class ASTString extends ASTCommon {
  * Handle ZodNumber and ZodBigInt
  */
 export class ASTNumber extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     constraints?: {
         min?: number;
         max?: number;
@@ -42,9 +42,9 @@ export class ASTNumber extends ASTCommon {
  * Handle ZodLiteral
  */
 export class ASTLiteral extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
     value: any;
-    parentEnumName?: string;
+    parentEnum?: ASTDefintion;
     parentEnumKey?: string;
 
     constructor(data: ASTLiteral & ASTCommon) {
@@ -52,7 +52,7 @@ export class ASTLiteral extends ASTCommon {
 
         this.name = data.name;
         this.value = data.value;
-        this.parentEnumName = data.parentEnumName;
+        this.parentEnum = data.parentEnum;
         this.parentEnumKey = data.parentEnumKey;
     }
 }
@@ -61,7 +61,7 @@ export class ASTLiteral extends ASTCommon {
  * Handle ZodBoolean
  */
 export class ASTBoolean extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
 
     constructor(data: ASTBoolean & ASTCommon) {
         super(data);
@@ -74,7 +74,7 @@ export class ASTBoolean extends ASTCommon {
  * Handle ZodDate
  */
 export class ASTDate extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
 
     constructor(data: ASTDate & ASTCommon) {
         super(data);
@@ -87,7 +87,7 @@ export class ASTDate extends ASTCommon {
  * Handle ZodAny
  */
 export class ASTAny extends ASTCommon {
-    name?: string;
+    name?: string; // Only exists for type aliases.
 
     constructor(data: ASTAny & ASTCommon) {
         super(data);

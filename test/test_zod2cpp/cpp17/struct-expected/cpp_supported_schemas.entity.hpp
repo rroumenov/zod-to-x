@@ -18,6 +18,8 @@
 using nlohmann::json;
 
 namespace CPP_SUPPORTED_SCHEMAS {
+    using StringItem = std::string;
+
     enum class EnumItem: int {
         Enum1,
         Enum2,
@@ -29,6 +31,16 @@ namespace CPP_SUPPORTED_SCHEMAS {
         NativeEnum2,
         NativeEnum3
     };
+
+    using DoubleItem = double;
+
+    using BigIntItem = std::int64_t;
+
+    using Int64Item = std::int64_t;
+
+    using Int32Item = std::int32_t;
+
+    using BooleanItem = bool;
 
     struct ObjectItem {
         std::string key;
@@ -48,6 +60,16 @@ namespace CPP_SUPPORTED_SCHEMAS {
         EnumItem discriminator;
     };
 
+    using ArrayItem = std::vector<std::vector<double>>;
+
+    using RecordItem = std::unordered_map<std::string, double>;
+
+    using MapItem = std::unordered_map<std::string, double>;
+
+    using SetItem = std::set<std::string>;
+
+    using TupleItem = std::tuple<double, std::string, bool>;
+
     using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
 
     using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
@@ -56,30 +78,32 @@ namespace CPP_SUPPORTED_SCHEMAS {
         // Intersection fields are inherited from base structs.
     };
 
+    using AnyItem = json;
+
     struct CppSupportedSchemas {
-        std::string string_item;
+        StringItem string_item;
         std::string literal_string_item;
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
-        double double_item;
-        std::int64_t big_int_item;
-        std::int64_t int64_item;
-        std::int32_t int32_item;
-        bool boolean_item;
+        DoubleItem double_item;
+        BigIntItem big_int_item;
+        Int64Item int64_item;
+        Int32Item int32_item;
+        BooleanItem boolean_item;
         ObjectItem object_item;
         OtherObjectItem other_object_item;
         ObjectItemWithDiscriminator object_item_with_discriminator;
         OtherObjectItemWithDiscriminator other_object_item_with_discriminator;
-        std::vector<std::vector<double>> array_item;
-        std::unordered_map<std::string, double> record_item;
-        std::unordered_map<std::string, double> map_item;
-        std::set<std::string> set_item;
-        std::tuple<double, std::string, bool> tuple_item;
+        ArrayItem array_item;
+        RecordItem record_item;
+        MapItem map_item;
+        SetItem set_item;
+        TupleItem tuple_item;
         UnionItem union_item;
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
-        json any_item;
+        AnyItem any_item;
         std::optional<std::string> optional_item;
         std::optional<std::string> nullable_item;
     };
@@ -284,29 +308,29 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
 
     inline void from_json(const json& j, CppSupportedSchemas& x) {
-        x.string_item = j.at("stringItem").get<std::string>();
+        x.string_item = j.at("stringItem").get<StringItem>();
         x.literal_string_item = j.at("literalStringItem").get<std::string>();
         x.literal_number_item = j.at("literalNumberItem").get<std::uint32_t>();
         x.enum_item = j.at("enumItem").get<EnumItem>();
         x.native_enum_item = j.at("nativeEnumItem").get<NativeEnumItem>();
-        x.double_item = j.at("doubleItem").get<double>();
-        x.big_int_item = j.at("bigIntItem").get<std::int64_t>();
-        x.int64_item = j.at("int64Item").get<std::int64_t>();
-        x.int32_item = j.at("int32Item").get<std::int32_t>();
-        x.boolean_item = j.at("booleanItem").get<bool>();
+        x.double_item = j.at("doubleItem").get<DoubleItem>();
+        x.big_int_item = j.at("bigIntItem").get<BigIntItem>();
+        x.int64_item = j.at("int64Item").get<Int64Item>();
+        x.int32_item = j.at("int32Item").get<Int32Item>();
+        x.boolean_item = j.at("booleanItem").get<BooleanItem>();
         x.object_item = j.at("objectItem").get<ObjectItem>();
         x.other_object_item = j.at("otherObjectItem").get<OtherObjectItem>();
         x.object_item_with_discriminator = j.at("objectItemWithDiscriminator").get<ObjectItemWithDiscriminator>();
         x.other_object_item_with_discriminator = j.at("otherObjectItemWithDiscriminator").get<OtherObjectItemWithDiscriminator>();
-        x.array_item = j.at("arrayItem").get<std::vector<std::vector<double>>>();
-        x.record_item = j.at("recordItem").get<std::unordered_map<std::string, double>>();
-        x.map_item = j.at("mapItem").get<std::unordered_map<std::string, double>>();
-        x.set_item = j.at("setItem").get<std::set<std::string>>();
-        x.tuple_item = j.at("tupleItem").get<std::tuple<double, std::string, bool>>();
+        x.array_item = j.at("arrayItem").get<ArrayItem>();
+        x.record_item = j.at("recordItem").get<RecordItem>();
+        x.map_item = j.at("mapItem").get<MapItem>();
+        x.set_item = j.at("setItem").get<SetItem>();
+        x.tuple_item = j.at("tupleItem").get<TupleItem>();
         x.union_item = j.at("unionItem").get<UnionItem>();
         x.discriminated_union_item = j.at("discriminatedUnionItem").get<DiscriminatedUnionItem>();
         x.intersection_item = j.at("intersectionItem").get<IntersectionItem>();
-        x.any_item = j.at("anyItem").get<json>();
+        x.any_item = j.at("anyItem").get<AnyItem>();
         x.optional_item = get_opt<std::string>(j, "optionalItem");
         x.nullable_item = get_opt<std::string>(j, "nullableItem");
     }

@@ -8,7 +8,7 @@ import {
     ZodTypeAny,
 } from "zod";
 
-export type { ZodTypeAny, ZodIntersection, ZodObject } from "zod";
+export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
 export type ZodAnyEnumType = ZodEnum<any> | ZodNativeEnum<any>;
 export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any, any>;
 
@@ -127,6 +127,12 @@ export class ZodHelpers {
         return this.isZodMap(i) || this.isZodRecord(i);
     }
 
+    /**
+     * Complex types that shall always be transpiled, which output would be a type, or alias if
+     * redefined using layered modeling.
+     * @param zodType
+     * @returns
+     */
     static isTranspilerableZodType(zodType: string | ZodTypeAny): boolean {
         const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
 
@@ -137,6 +143,38 @@ export class ZodHelpers {
             type === ZodFirstPartyTypeKind.ZodUnion ||
             type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
             type === ZodFirstPartyTypeKind.ZodIntersection
+        );
+    }
+
+    /**
+     * Primitive types that can only be transpiled if defined using layered modeling, which output
+     * would be a type alias.
+     * @param zodType
+     * @param onlyArray Array types are always transpiled as alias in layered modeling.
+     * @returns
+     */
+    static isTranspilerableAliasedZodType(
+        zodType: string | ZodTypeAny,
+        onlyArray = false
+    ): boolean {
+        const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
+
+        if (onlyArray === true) {
+            return type === ZodFirstPartyTypeKind.ZodArray;
+        }
+
+        return (
+            type === ZodFirstPartyTypeKind.ZodString ||
+            type === ZodFirstPartyTypeKind.ZodNumber ||
+            type === ZodFirstPartyTypeKind.ZodBigInt ||
+            type === ZodFirstPartyTypeKind.ZodBoolean ||
+            type === ZodFirstPartyTypeKind.ZodDate ||
+            type === ZodFirstPartyTypeKind.ZodAny ||
+            type === ZodFirstPartyTypeKind.ZodMap ||
+            type === ZodFirstPartyTypeKind.ZodSet ||
+            type === ZodFirstPartyTypeKind.ZodRecord ||
+            type === ZodFirstPartyTypeKind.ZodTuple ||
+            type === ZodFirstPartyTypeKind.ZodArray
         );
     }
 

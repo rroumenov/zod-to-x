@@ -1,13 +1,8 @@
 import { z } from "zod";
 import { Application, Domain, Zod2XModel } from "../../dist";
-import {
-    zObjectWithDiscriminator,
-    zOtherObject,
-    zOtherObjectWithDiscriminator,
-} from "../common/zod_schemas";
-import { zCppSupportedSchemas } from "./cpp_supported_schemas";
+import { getCppSupportedSchemas } from "./cpp_supported_schemas";
 
-const cppSupportedSchemas = zCppSupportedSchemas._def.shape();
+const cppSupportedSchemas = getCppSupportedSchemas();
 
 @Domain({ namespace: "CPP_SUPPORTED_SCHEMAS", file: "cpp_supported_schemas.entity" })
 class CppSupportedSchemas extends Zod2XModel {
@@ -27,9 +22,23 @@ class CppSupportedSchemas extends Zod2XModel {
     booleanItem = cppSupportedSchemas.booleanItem;
 
     objectItem = cppSupportedSchemas.objectItem;
-    otherObjectItem = zOtherObject;
-    objectItemWithDiscriminator = zObjectWithDiscriminator;
-    otherObjectItemWithDiscriminator = zOtherObjectWithDiscriminator;
+    otherObjectItem = z
+        .object({
+            otherKey: z.string(),
+        })
+        .zod2x("OtherObjectItem");
+    objectItemWithDiscriminator = z
+        .object({
+            key: z.string(),
+            discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
+        })
+        .zod2x("ObjectItemWithDiscriminator");
+    otherObjectItemWithDiscriminator = z
+        .object({
+            otherKey: z.string(),
+            discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
+        })
+        .zod2x("OtherObjectItemWithDiscriminator");
 
     arrayItem = cppSupportedSchemas.arrayItem;
 

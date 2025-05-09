@@ -67,6 +67,13 @@ export interface IZod2xLayerMetadata {
      *   }
      */
     externalInheritance?: boolean;
+
+    /**
+     * Indicates if basic types (string, boolean, number, ...) shall be transpiled as aliases.
+     * If set to false, only complex types are transpiled (enum, object, array, union,
+     * intersection). Default is true.
+     */
+    basicTypes?: boolean;
 }
 
 export interface IZod2xMetadata {

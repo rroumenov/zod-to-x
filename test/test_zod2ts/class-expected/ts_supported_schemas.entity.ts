@@ -2,6 +2,8 @@
 // a multiline
 // header.
 
+export type StringItem = string;
+
 export enum EnumItem {
     Enum1 = "Enum1",
     Enum2 = "Enum2",
@@ -13,6 +15,16 @@ export enum NativeEnumItem {
     NativeEnum2 = 2,
     NativeEnum3 = "NativeEnum3",
 }
+
+export type DoubleItem = number;
+
+export type BigIntItem = number;
+
+export type Int64Item = number;
+
+export type Int32Item = number;
+
+export type BooleanItem = boolean;
 
 export class ObjectItem {
     key: string;
@@ -50,6 +62,18 @@ export class OtherObjectItemWithDiscriminator {
     }
 }
 
+export type DateItem = Date;
+
+export type ArrayItem = Array<number[]>;
+
+export type RecordItem = Record<string, number>;
+
+export type MapItem = Map<string, number>;
+
+export type SetItem = Set<string>;
+
+export type TupleItem = [number, string, boolean];
+
 // Built from union of ObjectItem, OtherObjectItem
 export class UnionItem {
     key: string;
@@ -74,31 +98,33 @@ export class IntersectionItem {
     }
 }
 
+export type AnyItem = any;
+
 export class TsSupportedSchemas {
-    stringItem: string;
+    stringItem: StringItem;
     literalStringItem: "literal";
     literalNumberItem: 1;
     enumItem: EnumItem;
     nativeEnumItem: NativeEnumItem;
-    doubleItem: number;
-    bigIntItem: number;
-    int64Item: number;
-    int32Item: number;
-    booleanItem: boolean;
+    doubleItem: DoubleItem;
+    bigIntItem: BigIntItem;
+    int64Item: Int64Item;
+    int32Item: Int32Item;
+    booleanItem: BooleanItem;
     objectItem: ObjectItem;
     otherObjectItem: OtherObjectItem;
     objectItemWithDiscriminator: ObjectItemWithDiscriminator;
     otherObjectItemWithDiscriminator: OtherObjectItemWithDiscriminator;
-    dateItem: Date;
-    arrayItem: Array<number[]>;
-    recordItem: Record<string, number>;
-    mapItem: Map<string, number>;
-    setItem: Set<string>;
-    tupleItem: [number, string, boolean];
+    dateItem: DateItem;
+    arrayItem: ArrayItem;
+    recordItem: RecordItem;
+    mapItem: MapItem;
+    setItem: SetItem;
+    tupleItem: TupleItem;
     unionItem: UnionItem;
     discriminatedUnionItem: DiscriminatedUnionItem;
     intersectionItem: IntersectionItem;
-    anyItem: any;
+    anyItem: AnyItem;
     optionalItem?: string;
     nullableItem: string | null;
 

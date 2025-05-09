@@ -112,7 +112,10 @@ export function Layer(opt: IZod2xLayerMetadata) {
                 Object.getOwnPropertyNames(this).forEach((prop) => {
                     const item = (this as any)[prop];
 
-                    if (ZodHelpers.isTranspilerableZodType(item)) {
+                    if (
+                        ZodHelpers.isTranspilerableZodType(item) ||
+                        ZodHelpers.isTranspilerableAliasedZodType(item, opt.basicTypes === false)
+                    ) {
                         (this as any)[prop] = setMetadata(Case.pascal(prop), item, opt);
                     }
                 });

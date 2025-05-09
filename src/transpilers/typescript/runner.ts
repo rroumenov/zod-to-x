@@ -1,6 +1,15 @@
 import Case from "case";
 
-import { ASTEnum, ASTIntersection, ASTNode, ASTObject, ASTUnion, Zod2X } from "@/core";
+import {
+    ASTAliasedTypes,
+    ASTArray,
+    ASTEnum,
+    ASTIntersection,
+    ASTNode,
+    ASTObject,
+    ASTUnion,
+    Zod2X,
+} from "@/core";
 
 import { defaultOpts, IZod2TsOpt } from "./options";
 
@@ -102,6 +111,29 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     /** Ex: Record<TypeA, TypeB> */
     protected getRecordType(keyType: string, valueType: string): string {
         return `Record<${keyType}, ${valueType}>`;
+    }
+
+    protected transpileAliasedType(data: ASTAliasedTypes): void {
+        if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
+                    type: "alias",
+                });
+            }
+            return;
+        }
+
+        let extendedType: string | undefined = undefined;
+
+        if (data instanceof ASTArray) {
+            extendedType = this.getAttributeType(data.item);
+        } else {
+            extendedType = this.getAttributeType(data);
+        }
+
+        if (extendedType !== undefined) {
+            this.push0(`export type ${data.name} = ${extendedType};\n`);
+        }
     }
 
     /** Ex:
