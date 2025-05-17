@@ -411,4 +411,21 @@ export function extendZod(zod: any /*typeof z ---> any type until solve type inc
             return newItem;
         };
     }
+
+    Extended.setZ(zod);
+}
+
+/**
+ * Enforcing the same instance of Zod used by user. This resolves Bun incompatibilities.
+ */
+export class Extended {
+    private static zExt: any = z;
+
+    static getZ() {
+        return this.zExt;
+    }
+
+    static setZ(zod: any) {
+        this.zExt = zod;
+    }
 }

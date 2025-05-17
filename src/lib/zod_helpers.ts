@@ -8,6 +8,8 @@ import {
     ZodTypeAny,
 } from "zod";
 
+import { Extended } from "./zod_ext";
+
 export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
 export type ZodAnyEnumType = ZodEnum<any> | ZodNativeEnum<any>;
 export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any, any>;
@@ -20,95 +22,95 @@ type ZodNumberConstraints = {
 
 export class ZodHelpers {
     static isZodType(i: ZodTypeAny): boolean {
-        return i instanceof z.ZodType;
+        return i instanceof Extended.getZ().ZodType;
     }
 
     static isZodAny(i: ZodTypeAny): i is z.ZodAny {
-        return i instanceof z.ZodAny;
+        return i instanceof Extended.getZ().ZodAny;
     }
 
     static isZodString(i: ZodTypeAny): i is z.ZodString {
-        return i instanceof z.ZodString;
+        return i instanceof Extended.getZ().ZodString;
     }
 
     static isZodNumber(i: ZodTypeAny): i is z.ZodNumber {
-        return i instanceof z.ZodNumber;
+        return i instanceof Extended.getZ().ZodNumber;
     }
 
     static isZodBigInt(i: ZodTypeAny): i is z.ZodBigInt {
-        return i instanceof z.ZodBigInt;
+        return i instanceof Extended.getZ().ZodBigInt;
     }
 
     static isZodLiteral(i: ZodTypeAny): i is z.ZodLiteral<any> {
-        return i instanceof z.ZodLiteral;
+        return i instanceof Extended.getZ().ZodLiteral;
     }
 
     static isZodBoolean(i: ZodTypeAny): i is z.ZodBoolean {
-        return i instanceof z.ZodBoolean;
+        return i instanceof Extended.getZ().ZodBoolean;
     }
 
     static isZodDate(i: ZodTypeAny): i is z.ZodDate {
-        return i instanceof z.ZodDate;
+        return i instanceof Extended.getZ().ZodDate;
     }
 
     static isZodEnum(i: ZodTypeAny): i is ZodEnum<any> {
-        return i instanceof z.ZodEnum;
+        return i instanceof Extended.getZ().ZodEnum;
     }
 
     static isZodUnion(i: ZodTypeAny): i is z.ZodUnion<any> {
-        return i instanceof z.ZodUnion;
+        return i instanceof Extended.getZ().ZodUnion;
     }
 
     static isZodDiscriminatedUnion(i: ZodTypeAny): i is z.ZodDiscriminatedUnion<any, any> {
-        return i instanceof z.ZodDiscriminatedUnion;
+        return i instanceof Extended.getZ().ZodDiscriminatedUnion;
     }
 
     static isZodNativeEnum(i: ZodTypeAny): i is ZodNativeEnum<any> {
-        return i instanceof z.ZodNativeEnum;
+        return i instanceof Extended.getZ().ZodNativeEnum;
     }
 
     static isZodIntersection(i: ZodTypeAny): i is z.ZodIntersection<any, any> {
-        return i instanceof z.ZodIntersection;
+        return i instanceof Extended.getZ().ZodIntersection;
     }
 
     static isZodObject(i: ZodTypeAny): i is z.ZodObject<any> {
-        return i instanceof z.ZodObject;
+        return i instanceof Extended.getZ().ZodObject;
     }
 
     static isZodLazy(i: ZodTypeAny): i is z.ZodLazy<any> {
-        return i instanceof z.ZodLazy;
+        return i instanceof Extended.getZ().ZodLazy;
     }
 
     static isZodRecord(i: ZodTypeAny): i is z.ZodRecord<any, any> {
-        return i instanceof z.ZodRecord;
+        return i instanceof Extended.getZ().ZodRecord;
     }
 
     static isZodMap(i: ZodTypeAny): i is z.ZodMap<any, any> {
-        return i instanceof z.ZodMap;
+        return i instanceof Extended.getZ().ZodMap;
     }
 
     static isZodArray(i: ZodTypeAny): i is z.ZodArray<any> {
-        return i instanceof z.ZodArray;
+        return i instanceof Extended.getZ().ZodArray;
     }
 
     static isZodSet(i: ZodTypeAny): i is z.ZodSet<any> {
-        return i instanceof z.ZodSet;
+        return i instanceof Extended.getZ().ZodSet;
     }
 
     static isZodTuple(i: ZodTypeAny): i is z.ZodTuple<any> {
-        return i instanceof z.ZodTuple;
+        return i instanceof Extended.getZ().ZodTuple;
     }
 
     static isZodOptional(i: ZodTypeAny): i is z.ZodOptional<any> {
-        return i instanceof z.ZodOptional;
+        return i instanceof Extended.getZ().ZodOptional;
     }
 
     static isZodNullable(i: ZodTypeAny): i is z.ZodNullable<any> {
-        return i instanceof z.ZodNullable;
+        return i instanceof Extended.getZ().ZodNullable;
     }
 
     static isZodDefault(i: ZodTypeAny): i is z.ZodDefault<any> {
-        return i instanceof z.ZodDefault;
+        return i instanceof Extended.getZ().ZodDefault;
     }
 
     static isZodAnyUnionType(i: ZodTypeAny) {
@@ -180,11 +182,11 @@ export class ZodHelpers {
 
     static cloneZod(i: ZodTypeAny) {
         const zodType: ZodFirstPartyTypeKind = i._def.typeName;
-        return new (z[zodType] as any)({ ...i._def });
+        return new (Extended.getZ()[zodType] as any)({ ...i._def });
     }
 
     static createZodObject(properties: Map<string, ZodTypeAny>): ZodObject<any> {
-        return z.object(Object.fromEntries(properties));
+        return Extended.getZ().object(Object.fromEntries(properties));
     }
 
     static getZodNumberConstraints(i: ZodNumber | z.ZodBigInt): ZodNumberConstraints {
