@@ -1,4 +1,6 @@
 import { z, ZodType } from "zod";
+import { extendZod } from "../../dist";
+extendZod(z);
 
 const Name = z.string();
 const Age = z.number().int();

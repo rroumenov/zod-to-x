@@ -2,10 +2,11 @@ import { z } from "zod";
 import { extendZod, Zod2XConverters } from "../../dist";
 extendZod(z);
 
+import { describe, test } from "vitest";
 import * as fs from "fs";
-import { diffLinesRaw } from "jest-diff";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
+import { testOutput } from "../common/utils";
 import { UserModel } from "./user_schema";
 
 describe("zod2JsonSchemaDefinitions", () => {
@@ -19,11 +20,6 @@ describe("zod2JsonSchemaDefinitions", () => {
             )
         );
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            throw error;
-        }
+        testOutput(output, expectedOutput);
     });
 });

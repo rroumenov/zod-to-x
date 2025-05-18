@@ -2,8 +2,8 @@ import { z } from "zod";
 import { extendZod, Zod2XTypes, Zod2Ast, Zod2XTranspilers } from "../../../dist";
 extendZod(z);
 
+import { describe, test, beforeAll, vi } from "vitest";
 import * as fs from "fs";
-import { diffLinesRaw } from "jest-diff";
 
 import { zCppSupportedSchemas } from "../cpp_supported_schemas";
 import {
@@ -11,26 +11,18 @@ import {
     cppSupportedSchemasModel,
 } from "../cpp_supported_schemas.layered";
 import { header } from "../../common/header";
-import { getSchemas, modelBuilder } from "../../common/zod_schemas";
-import { userApi, userDtos, userModels } from "../../common/layered_schemas";
 import { userDtos as userDtosMixin } from "../../common/layered_mixin_schemas";
+import { userApi, userDtos, userModels } from "../../common/layered_schemas";
+import { testOutput } from "../../common/utils";
+import { getSchemas, modelBuilder } from "../../common/zod_schemas";
 
 const schemas = getSchemas();
 
 let cppSupportedSchemas: Zod2XTypes.ASTNodes;
 
-const testOutput = (output: string, expectedOutput: string) => {
-    try {
-        expect(output.trim()).toBe(expectedOutput.trim());
-    } catch (error) {
-        diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-        throw error;
-    }
-};
-
 describe("Zod2Cpp", () => {
     beforeAll(() => {
-        jest.spyOn(console, "warn").mockImplementation(jest.fn());
+        vi.spyOn(console, "warn").mockImplementation(vi.fn());
         cppSupportedSchemas = new Zod2Ast({ strict: false }).build(zCppSupportedSchemas);
     });
 
@@ -804,16 +796,11 @@ describe("Zod2Cpp", () => {
             )
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.expect.class.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.expect.class.hpp"
+        );
     });
 
     test("C++ supported schemas - as struct", () => {
@@ -829,16 +816,11 @@ describe("Zod2Cpp", () => {
             )
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.expect.struct.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.expect.struct.hpp"
+        );
     });
 
     test("C++ layered modeling - domain", () => {
@@ -851,16 +833,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.entity.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/struct-expected/err-user.entity.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-user.entity.hpp"
+        );
     });
 
     test("C++ layered modeling - application", () => {
@@ -873,13 +850,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.dtos.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp"
+        );
     });
 
     test("C++ layered modeling - infrastructure", () => {
@@ -892,13 +867,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.api.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.api.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-user.api.hpp"
+        );
     });
 
     test("C++ layered modeling - domain as class", () => {
@@ -911,16 +884,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.entity.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/class-expected/err-user.entity.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-user.entity.hpp"
+        );
     });
 
     test("C++ layered modeling - application as class", () => {
@@ -933,13 +901,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.dtos.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp"
+        );
     });
 
     test("C++ layered modeling - infratructure as class", () => {
@@ -952,13 +918,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.api.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.api.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-user.api.hpp"
+        );
     });
 
     test("C++ layered modeling mixin - application", () => {
@@ -971,13 +935,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/user.dtos.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-user.dtos.hpp"
+        );
     });
 
     test("C++ layered modeling mixin - application as class", () => {
@@ -990,13 +952,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/class-expected/user.dtos.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-user.dtos.hpp"
+        );
     });
 
     test("C++ supported schemas layered modeling - entity", () => {
@@ -1017,16 +977,11 @@ describe("Zod2Cpp", () => {
             )
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.entity.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.entity.hpp"
+        );
     });
 
     test("C++ supported schemas layered modeling - application", () => {
@@ -1045,16 +1000,11 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/struct-expected/cpp_supported_schemas.app.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.app.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/struct-expected/err-cpp_supported_schemas.app.hpp"
+        );
     });
 
     test("C++ supported schemas layered modeling - entity as class", () => {
@@ -1075,16 +1025,11 @@ describe("Zod2Cpp", () => {
             )
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.entity.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.entity.hpp"
+        );
     });
 
     test("C++ supported schemas layered modeling - application as class", () => {
@@ -1103,15 +1048,10 @@ describe("Zod2Cpp", () => {
             .readFileSync("./test/test_zod2cpp/cpp11/class-expected/cpp_supported_schemas.app.hpp")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.app.hpp",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp11/class-expected/err-cpp_supported_schemas.app.hpp"
+        );
     });
 });

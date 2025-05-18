@@ -1,8 +1,9 @@
 import { Zod2XTranspilers } from "../../../../dist";
 
+import { describe, test } from "vitest";
 import * as fs from "fs";
-import { diffLinesRaw } from "jest-diff";
 import { userDtos } from "./case_1";
+import { testOutput } from "../../../common/utils";
 
 export const runCase1Suite = () => {
     describe("Case 1", () => {
@@ -14,16 +15,11 @@ export const runCase1Suite = () => {
                 )
                 .toString();
 
-            try {
-                expect(output.trim()).toBe(expectedOutput.trim());
-            } catch (error) {
-                diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-                fs.writeFileSync(
-                    "./test/test_issues/no_id/1/struct-expected/err-case_1.expected_typescript.ts",
-                    output
-                );
-                throw error;
-            }
+            testOutput(
+                output,
+                expectedOutput,
+                "./test/test_issues/no_id/1/struct-expected/err-case_1.expected_typescript.ts"
+            );
         });
 
         test("Output as Typescript Class", () => {
@@ -34,16 +30,11 @@ export const runCase1Suite = () => {
                 )
                 .toString();
 
-            try {
-                expect(output.trim()).toBe(expectedOutput.trim());
-            } catch (error) {
-                diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-                fs.writeFileSync(
-                    "./test/test_issues/no_id/1/class-expected/err-case_1.expected_typescript.ts",
-                    output
-                );
-                throw error;
-            }
+            testOutput(
+                output,
+                expectedOutput,
+                "./test/test_issues/no_id/1/class-expected/err-case_1.expected_typescript.ts"
+            );
         });
     });
 };
