@@ -66,6 +66,12 @@ export interface IZod2xLayerMetadata {
      * intersection). Default is true.
      */
     basicTypes?: boolean;
+
+    /**
+     * Indicates if the layer class should be included as another node for transpilation.
+     * Default is true.
+     */
+    skipLayerInterface?: boolean;
 }
 
 export interface IZod2xMetadata {

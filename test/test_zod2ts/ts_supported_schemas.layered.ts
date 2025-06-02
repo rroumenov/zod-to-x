@@ -4,7 +4,11 @@ import { getTsSupportedSchemas } from "./ts_supported_schemas";
 
 const tsSupportedSchemas = getTsSupportedSchemas();
 
-@Domain({ namespace: "TS_SUPPORTED_SCHEMAS", file: "ts_supported_schemas.entity" })
+@Domain({
+    namespace: "TS_SUPPORTED_SCHEMAS",
+    file: "ts_supported_schemas.entity",
+    skipLayerInterface: false,
+})
 class TsSupportedSchemas extends Zod2XModel {
     stringItem = tsSupportedSchemas.stringItem;
 
@@ -63,7 +67,11 @@ class TsSupportedSchemas extends Zod2XModel {
 
 export const tsSupportedSchemasModel = new TsSupportedSchemas();
 
-@Application({ namespace: "TS_SUPPORTED_SCHEMAS_APP", file: "ts_supported_schemas.app" })
+@Application({
+    namespace: "TS_SUPPORTED_SCHEMAS_APP",
+    file: "ts_supported_schemas.app",
+    skipLayerInterface: false,
+})
 class TsSupportedSchemasApplication extends Zod2XModel {
     newStringItem = tsSupportedSchemasModel.stringItem;
 

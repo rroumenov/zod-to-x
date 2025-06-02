@@ -63,6 +63,12 @@ interface ISchemasMetadata {
      * array schema.
      */
     calledFromArray?: boolean;
+
+    /**
+     * Indicates if the schema that represents the layer class properties shall be transpiled.
+     * If true, the layer class properties will not be transpiled to AST nodes. Default is false.
+     */
+    skipLayerClass?: boolean;
 }
 
 /**
@@ -393,6 +399,10 @@ export class Zod2Ast {
             const properties: Record<string, ASTType> = {};
             for (const key in shape) {
                 properties[key] = this._zodToAST(shape[key]);
+            }
+
+            if (opt?.skipLayerClass) {
+                return {} as ASTDefintion; // Layer classes are not transpilerable
             }
 
             this.nodes.set(
@@ -738,7 +748,10 @@ export class Zod2Ast {
      * @returns Transpilerable nodes.
      */
     build(schema: ZodObject<any>): ASTNodes {
-        this._zodToAST(schema);
+        this._zodToAST(schema, {
+            skipLayerClass:
+                this.opt?.layer !== undefined && this.opt?.layer?.skipLayerInterface !== false,
+        });
 
         while (this.lazyPointers.length > 0) {
             const [pointer, schema] = this.lazyPointers.shift()!;
