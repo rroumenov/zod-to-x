@@ -1,15 +1,11 @@
-name: Publish to npm
+name: Publish canary V1 to npm
 
-on:
-  release:
-    types: [created]
-    branches:
-      - main
-      - main_v1
+on:  
   workflow_dispatch:
+    
 
 jobs:
-  build_and_publish:
+  build_and_publish_canary:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +16,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm publish
+      - run: npm publish --tag canaryV1
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
+    

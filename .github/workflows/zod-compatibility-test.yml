@@ -4,14 +4,41 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - dev_v1
       - dev
 
 jobs:
-  compatibility_test:
+  compatibility_test_v1:
+    if: github.ref == 'refs/heads/dev_v1'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         zod-version: ['3.22.3', '3.23.0', '3.24.0', 'latest']
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Zod @ ${{ matrix.zod-version }}
+        run: npm install zod@${{ matrix.zod-version }}
+
+      - name: Install other dependencies
+        run: npm install
+
+      - name: Build the project
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  compatibility_test_dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        zod-version: ['3.25.0', 'latest']
 
     steps:
       - uses: actions/checkout@v4
