@@ -13,7 +13,7 @@ class CreateUserUseCaseResultDto {
     });
 }
 
-@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+@Application({ namespace: "USER_DTOS", file: "user.dtos", skipLayerInterface: false })
 class UserDtos extends Zod2XMixin([CreateUserUseCaseDto, CreateUserUseCaseResultDto], Zod2XModel) {
     updateUserUseCaseDto = this.createUserUseCaseDto;
     updateUserUseCaseResultDto = userModels.userEntity;
