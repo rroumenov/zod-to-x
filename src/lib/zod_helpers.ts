@@ -1,18 +1,9 @@
-import {
-    z,
-    ZodEnum,
-    ZodFirstPartyTypeKind,
-    ZodNativeEnum,
-    ZodNumber,
-    ZodObject,
-    ZodTypeAny,
-} from "zod";
+import { z, ZodEnum, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
 import { Extended } from "./zod_ext";
 
-export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
-export type ZodAnyEnumType = ZodEnum<any> | ZodNativeEnum<any>;
-export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any, any>;
+export type { ZodArray, ZodType, ZodIntersection, ZodObject, ZodEnum } from "zod/v4";
+export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any>;
 
 type ZodNumberConstraints = {
     min?: number;
@@ -20,120 +11,136 @@ type ZodNumberConstraints = {
     isInt: boolean;
 };
 
+export enum ZodFirstPartyTypeKind {
+    ZodAny = "any",
+    ZodString = "string",
+    ZodNumber = "number",
+    ZodBigInt = "bigint",
+    ZodLiteral = "literal",
+    ZodBoolean = "boolean",
+    ZodDate = "date",
+    ZodEnum = "enum",
+    ZodUnion = "union",
+    ZodIntersection = "intersection",
+    ZodObject = "object",
+    ZodLazy = "lazy",
+    ZodRecord = "record",
+    ZodMap = "map",
+    ZodSet = "set",
+    ZodArray = "array",
+    ZodTuple = "tuple",
+    ZodOptional = "optional",
+    ZodNullable = "nullable",
+    ZodDefault = "default",
+}
+
 /**
- * Zod's typeName is checked insted of instanceof to resolve Bun incomatibilities.
+ * Zod's type is checked insted of instanceof to resolve Bun incomatibilities.
  */
 export class ZodHelpers {
-    static isZodType(i: ZodTypeAny): boolean {
-        return ZodFirstPartyTypeKind[i?._def?.typeName as ZodFirstPartyTypeKind] !== undefined;
+    static isZodType(i: ZodType): boolean {
+        return Object.values(ZodFirstPartyTypeKind).includes(i?.def?.type as ZodFirstPartyTypeKind);
     }
 
-    static isZodAny(i: ZodTypeAny): i is z.ZodAny {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodAny;
+    static isZodAny(i: ZodType): i is z.ZodAny {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodAny;
     }
 
-    static isZodString(i: ZodTypeAny): i is z.ZodString {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodString;
+    static isZodString(i: ZodType): i is z.ZodString {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodString;
     }
 
-    static isZodNumber(i: ZodTypeAny): i is z.ZodNumber {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodNumber;
+    static isZodNumber(i: ZodType): i is z.ZodNumber {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNumber;
     }
 
-    static isZodBigInt(i: ZodTypeAny): i is z.ZodBigInt {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodBigInt;
+    static isZodBigInt(i: ZodType): i is z.ZodBigInt {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodBigInt;
     }
 
-    static isZodLiteral(i: ZodTypeAny): i is z.ZodLiteral<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodLiteral;
+    static isZodLiteral(i: ZodType): i is z.ZodLiteral<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodLiteral;
     }
 
-    static isZodBoolean(i: ZodTypeAny): i is z.ZodBoolean {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodBoolean;
+    static isZodBoolean(i: ZodType): i is z.ZodBoolean {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodBoolean;
     }
 
-    static isZodDate(i: ZodTypeAny): i is z.ZodDate {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodDate;
+    static isZodDate(i: ZodType): i is z.ZodDate {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodDate;
     }
 
-    static isZodEnum(i: ZodTypeAny): i is ZodEnum<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodEnum;
+    static isZodEnum(i: ZodType): i is ZodEnum<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodEnum;
     }
 
-    static isZodUnion(i: ZodTypeAny): i is z.ZodUnion<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodUnion;
-    }
-
-    static isZodDiscriminatedUnion(i: ZodTypeAny): i is z.ZodDiscriminatedUnion<any, any> {
+    static isZodUnion(i: ZodType): i is z.ZodUnion<any> {
         return (
-            (i?._def?.typeName as ZodFirstPartyTypeKind) ===
-            ZodFirstPartyTypeKind.ZodDiscriminatedUnion
+            i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
+            (i as z.ZodDiscriminatedUnion).def.discriminator === undefined
         );
     }
 
-    static isZodNativeEnum(i: ZodTypeAny): i is ZodNativeEnum<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodNativeEnum;
-    }
-
-    static isZodIntersection(i: ZodTypeAny): i is z.ZodIntersection<any, any> {
+    static isZodDiscriminatedUnion(i: ZodType): i is z.ZodDiscriminatedUnion {
         return (
-            (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodIntersection
+            i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
+            (i as z.ZodDiscriminatedUnion).def.discriminator !== undefined
         );
     }
 
-    static isZodObject(i: ZodTypeAny): i is z.ZodObject<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodObject;
+    static isZodIntersection(i: ZodType): i is z.ZodIntersection<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodIntersection;
     }
 
-    static isZodLazy(i: ZodTypeAny): i is z.ZodLazy<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodLazy;
+    static isZodObject(i: ZodType): i is z.ZodObject<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodObject;
     }
 
-    static isZodRecord(i: ZodTypeAny): i is z.ZodRecord<any, any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodRecord;
+    static isZodLazy(i: ZodType): i is z.ZodLazy<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodLazy;
     }
 
-    static isZodMap(i: ZodTypeAny): i is z.ZodMap<any, any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodMap;
+    static isZodRecord(i: ZodType): i is z.ZodRecord<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodRecord;
     }
 
-    static isZodArray(i: ZodTypeAny): i is z.ZodArray<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodArray;
+    static isZodMap(i: ZodType): i is z.ZodMap<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodMap;
     }
 
-    static isZodSet(i: ZodTypeAny): i is z.ZodSet<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodSet;
+    static isZodArray(i: ZodType): i is z.ZodArray<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodArray;
     }
 
-    static isZodTuple(i: ZodTypeAny): i is z.ZodTuple<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodTuple;
+    static isZodSet(i: ZodType): i is z.ZodSet<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodSet;
     }
 
-    static isZodOptional(i: ZodTypeAny): i is z.ZodOptional<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodOptional;
+    static isZodTuple(i: ZodType): i is z.ZodTuple<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodTuple;
     }
 
-    static isZodNullable(i: ZodTypeAny): i is z.ZodNullable<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodNullable;
+    static isZodOptional(i: ZodType): i is z.ZodOptional<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodOptional;
     }
 
-    static isZodDefault(i: ZodTypeAny): i is z.ZodDefault<any> {
-        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodDefault;
+    static isZodNullable(i: ZodType): i is z.ZodNullable<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNullable;
     }
 
-    static isZodAnyUnionType(i: ZodTypeAny) {
+    static isZodDefault(i: ZodType): i is z.ZodDefault<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodDefault;
+    }
+
+    static isZodAnyUnionType(i: ZodType) {
         return this.isZodUnion(i) || this.isZodDiscriminatedUnion(i);
     }
 
-    static isZodAnyEnumType(i: ZodTypeAny) {
-        return this.isZodEnum(i) || this.isZodNativeEnum(i);
-    }
-
-    static isZodAnyNumberType(i: ZodTypeAny) {
+    static isZodAnyNumberType(i: ZodType) {
         return this.isZodNumber(i) || this.isZodBigInt(i);
     }
 
-    static isZodAnyMapType(i: ZodTypeAny) {
+    static isZodAnyMapType(i: ZodType) {
         return this.isZodMap(i) || this.isZodRecord(i);
     }
 
@@ -143,15 +150,13 @@ export class ZodHelpers {
      * @param zodType
      * @returns
      */
-    static isTranspilerableZodType(zodType: string | ZodTypeAny): boolean {
-        const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
+    static isTranspilerableZodType(zodType: string | ZodType): boolean {
+        const type = typeof zodType === "string" ? zodType : zodType?.def?.type;
 
         return (
             type === ZodFirstPartyTypeKind.ZodEnum ||
-            type === ZodFirstPartyTypeKind.ZodNativeEnum ||
             type === ZodFirstPartyTypeKind.ZodObject ||
             type === ZodFirstPartyTypeKind.ZodUnion ||
-            type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
             type === ZodFirstPartyTypeKind.ZodIntersection
         );
     }
@@ -163,11 +168,8 @@ export class ZodHelpers {
      * @param onlyArray Array types are always transpiled as alias in layered modeling.
      * @returns
      */
-    static isTranspilerableAliasedZodType(
-        zodType: string | ZodTypeAny,
-        onlyArray = false
-    ): boolean {
-        const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
+    static isTranspilerableAliasedZodType(zodType: string | ZodType, onlyArray = false): boolean {
+        const type = typeof zodType === "string" ? zodType : zodType?.def?.type;
 
         if (onlyArray === true) {
             return type === ZodFirstPartyTypeKind.ZodArray;
@@ -188,29 +190,30 @@ export class ZodHelpers {
         );
     }
 
-    static cloneZod(i: ZodTypeAny) {
-        const zodType: ZodFirstPartyTypeKind = i._def.typeName;
-        return new (Extended.getZ()[zodType] as any)({ ...i._def });
+    static cloneZod(i: ZodType) {
+        return i.meta({ ...(i.meta() || {}) });
     }
 
-    static createZodObject(properties: Map<string, ZodTypeAny>): ZodObject<any> {
+    static createZodObject(properties: Map<string, ZodType>): ZodObject<any> {
         return Extended.getZ().object(Object.fromEntries(properties));
     }
 
     static getZodNumberConstraints(i: ZodNumber | z.ZodBigInt): ZodNumberConstraints {
-        const constraints: ZodNumberConstraints = { isInt: this.isZodBigInt(i) };
-
-        if (i._def.checks) {
-            for (const check of i._def.checks) {
-                if (check.kind === "min") {
-                    constraints.min = check.value as number;
-                } else if (check.kind === "max") {
-                    constraints.max = check.value as number;
-                } else if (check.kind === "int") {
-                    constraints.isInt = true;
-                }
-            }
-        }
+        const constraints: ZodNumberConstraints = {
+            isInt: this.isZodBigInt(i) || i.format === "safeint",
+            min:
+                typeof i.minValue === "number" &&
+                isFinite(i.minValue) &&
+                Math.abs(i.minValue) !== Number.MAX_SAFE_INTEGER
+                    ? (i.minValue as number)
+                    : undefined,
+            max:
+                typeof i.maxValue === "number" &&
+                isFinite(i.maxValue) &&
+                Math.abs(i.maxValue) !== Number.MAX_SAFE_INTEGER
+                    ? (i.maxValue as number)
+                    : undefined,
+        };
 
         return constraints;
     }

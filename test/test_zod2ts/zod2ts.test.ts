@@ -1,8 +1,9 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Zod2XTypes, extendZod, Zod2Ast, Zod2XTranspilers } from "../../dist";
 extendZod(z);
 
 import * as fs from "fs";
+import { beforeAll, describe, test } from "vitest";
 
 import { header } from "../common/header";
 import { testOutput } from "../common/utils";

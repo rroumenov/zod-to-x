@@ -1,4 +1,4 @@
-import { z, ZodTypeAny } from "zod";
+import { z, ZodType } from "zod/v4";
 import { extendZod } from "../../dist";
 extendZod(z);
 
@@ -23,7 +23,7 @@ export const getSchemas = () => {
     // Enumerates
     const zEnum = z.enum(["Enum1", "Enum2", "Enum3"]).zod2x("EnumItem");
 
-    const zNativeEnum = z.nativeEnum(NativeEnumItem).zod2x("NativeEnumItem");
+    const zNativeEnum = z.enum(NativeEnumItem).zod2x("NativeEnumItem");
 
     // Numbers
     const zDouble = z.number();
@@ -50,14 +50,14 @@ export const getSchemas = () => {
     const zObjectWithDiscriminator = z
         .object({
             key: z.string(),
-            discriminator: z.literal(zEnum.Values.Enum1).zod2x(zEnum),
+            discriminator: z.literal(zEnum.enum.Enum1).zod2x(zEnum),
         })
         .zod2x("ObjectItemWithDiscriminator");
 
     const zOtherObjectWithDiscriminator = z
         .object({
             otherKey: z.string(),
-            discriminator: z.literal(zEnum.Values.Enum2).zod2x(zEnum),
+            discriminator: z.literal(zEnum.enum.Enum2).zod2x(zEnum),
         })
         .zod2x("OtherObjectItemWithDiscriminator");
 
@@ -69,7 +69,7 @@ export const getSchemas = () => {
     const zArray2D = z.array(z.array(z.number()));
 
     // Complex types
-    const zRecord = z.record(z.number());
+    const zRecord = z.record(z.string(), z.number());
     const zMap = z.map(z.string(), z.number());
     const zSet = z.set(z.string());
     const zTuple = z.tuple([z.number(), z.number()]);
@@ -122,4 +122,4 @@ export const getSchemas = () => {
 };
 
 // Model builder for testing
-export const modelBuilder = (schema: ZodTypeAny) => z.object({ item: schema }).zod2x("ModelItem");
+export const modelBuilder = (schema: ZodType) => z.object({ item: schema }).zod2x("ModelItem");

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { extendZod, Zod2XTypes, Zod2Ast, Zod2XTranspilers } from "../../../dist";
 extendZod(z);
 

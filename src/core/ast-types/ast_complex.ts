@@ -1,7 +1,7 @@
 import { ASTCommon, ASTType } from "./ast_common";
 
 /**
- * Handle ZodEnum and ZodNativeEnum
+ * Handle ZodEnum
  */
 export class ASTEnum extends ASTCommon {
     name: string;

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Domain, Infrastructure, Zod2XModel } from "../../dist";
 
 @Domain({ namespace: "USER", file: "user.entity" })
@@ -6,9 +6,9 @@ class UserModels extends Zod2XModel {
     userRole = z.enum(["Admin", "User"]);
 
     userEntity = z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string().min(1),
-        email: z.string().email(),
+        email: z.email(),
         age: z.number().int().nonnegative().optional(),
         role: this.userRole,
     });

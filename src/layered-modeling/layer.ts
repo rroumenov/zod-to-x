@@ -1,7 +1,7 @@
 import Case from "case";
 
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
-import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
+import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
     DOMAIN = 0,
@@ -70,11 +70,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                  * @param zodItem
                  * @param opt
                  */
-                const setMetadata = (
-                    name: string,
-                    zodItem: ZodTypeAny,
-                    opt: IZod2xLayerMetadata
-                ) => {
+                const setMetadata = (name: string, zodItem: ZodType, opt: IZod2xLayerMetadata) => {
                     metadata = zodItem["_zod2x"];
 
                     if (metadata === undefined) {

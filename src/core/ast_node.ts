@@ -21,13 +21,13 @@ import {
 } from "@/core";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 import {
-    ZodAnyEnumType,
-    ZodAnyUnionType,
     ZodArray,
+    ZodEnum,
+    ZodAnyUnionType,
     ZodHelpers,
     ZodIntersection,
     ZodObject,
-    ZodTypeAny,
+    ZodType,
 } from "@/lib/zod_helpers";
 import { log } from "@/utils/logger";
 
@@ -79,7 +79,7 @@ export class Zod2Ast {
     /**
      * Lazy schemas for further analysis
      */
-    private lazyPointers: Array<[ASTDefintion, ZodTypeAny]>;
+    private lazyPointers: Array<[ASTDefintion, ZodType]>;
 
     /**
      * Warnings generated during the AST creation to aware user about bad practices
@@ -198,22 +198,14 @@ export class Zod2Ast {
      * @returns A list of key-value pairs where the key is a formatted string and the value
      *          is either a string or a number.
      */
-    private _getEnumValues(schema: ZodAnyEnumType): [string, string | number][] {
-        if (ZodHelpers.isZodEnum(schema)) {
-            return Object.entries(schema.Enum).map(([key, value]) => {
+    private _getEnumValues(schema: ZodEnum<any>): [string, string | number][] {
+        return Object.entries(schema.enum)
+            .filter(([key, _value]) => isNaN(Number(key)))
+            .map(([key, value]) => {
                 // Creates a string key if it starts with number.
                 key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
                 return [key, value] as [string, string | number];
             });
-        } else {
-            return Object.entries(schema.enum)
-                .filter(([key, _value]) => isNaN(Number(key)))
-                .map(([key, value]) => {
-                    // Creates a string key if it starts with number.
-                    key = isNaN(Number(key.at(0))) ? key : `"${key}"`;
-                    return [key, value] as [string, string | number];
-                });
-        }
     }
 
     /**
@@ -316,29 +308,31 @@ export class Zod2Ast {
      * method is not used to provide a `typeName`. The error message includes details about the
      * affected type properties.
      */
-    private _getNames(schema: ZodTypeAny) {
+    private _getNames(schema: ZodType) {
         const name = schema._zod2x?.typeName;
 
         if (!name) {
             let itemProperties: string[] = ["Unknown type"];
 
             if (ZodHelpers.isZodObject(schema)) {
-                itemProperties = Object.keys(schema._def.shape());
+                itemProperties = Object.keys(schema.def.shape);
             } else if (ZodHelpers.isZodAnyUnionType(schema)) {
-                itemProperties = schema._def.options.map(
-                    (i: ZodTypeAny) => i._zod2x?.typeName || i._def.typeName
-                );
+                itemProperties = schema.def.options.map((i) => {
+                    return (i as ZodType)._zod2x?.typeName || (i as ZodType).def.type;
+                });
             } else if (ZodHelpers.isZodIntersection(schema)) {
+                const left = schema.def.left as ZodType;
+                const right = schema.def.right as ZodType;
                 itemProperties = [
-                    schema._def.left._zod2x?.typeName || schema._def.left._def.typeName,
-                    schema._def.right._zod2x?.typeName || schema._def.right._def.typeName,
+                    left._zod2x?.typeName || left.def.type,
+                    right._zod2x?.typeName || right.def.type,
                 ];
-            } else if (ZodHelpers.isZodAnyEnumType(schema)) {
+            } else if (ZodHelpers.isZodEnum(schema)) {
                 itemProperties = this._getEnumValues(schema).map((i) => i[0]);
             }
 
             throw new AstTypeNameDefinitionError(
-                `${schema._def.typeName} type must have a typeName. If Layered modeling is used, ` +
+                `${schema.def.type} type must have a typeName. If Layered modeling is used, ` +
                     `avoid nesting schemas definitions. Otherwise, use zod2x method to provide one. ` +
                     `Affected type properties: ${itemProperties.join(", ")}`
             );
@@ -359,13 +353,13 @@ export class Zod2Ast {
      *
      * @returns The AST definition for the provided enum schema.
      */
-    private _getEnumAst(schema: ZodAnyEnumType, opt?: ISchemasMetadata): ASTDefintion {
+    private _getEnumAst(schema: ZodEnum, opt?: ISchemasMetadata): ASTDefintion {
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item = new ASTEnum({
             name,
             values: this._getEnumValues(schema),
-            description: schema._def.description,
+            description: schema.meta()?.description,
             parentFile,
             parentNamespace,
             aliasOf,
@@ -393,7 +387,7 @@ export class Zod2Ast {
 
         let discriminantValue: string | undefined = undefined;
 
-        const shape = schema._def.shape();
+        const shape = schema.def.shape;
 
         if (!this.nodes.has(name)) {
             const properties: Record<string, ASTType> = {};
@@ -406,7 +400,7 @@ export class Zod2Ast {
                 new ASTObject({
                     name,
                     properties,
-                    description: schema.description,
+                    description: schema.meta()?.description,
                     parentFile,
                     parentNamespace,
                     aliasOf,
@@ -447,20 +441,20 @@ export class Zod2Ast {
      * @returns The AST definition for the given Zod union schema.
      */
     private _getUnionAst(schema: ZodAnyUnionType): ASTDefintion {
-        const def = schema._def;
+        const def = schema.def;
         const discriminator = ZodHelpers.isZodDiscriminatedUnion(schema)
-            ? schema._def.discriminator
+            ? schema.def.discriminator
             : undefined;
 
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item = new ASTUnion({
             name,
-            options: def.options.map((i: ZodTypeAny) =>
+            options: def.options.map((i: ZodType) =>
                 this._zodToAST(i, { discriminantKey: discriminator })
             ),
-            areAllObjects: def.options.every((i: ZodTypeAny) => ZodHelpers.isZodObject(i)),
-            description: schema.description,
+            areAllObjects: def.options.every((i: ZodType) => ZodHelpers.isZodObject(i)),
+            description: schema.meta()?.description,
             discriminantKey: discriminator,
             parentFile,
             parentNamespace,
@@ -487,7 +481,7 @@ export class Zod2Ast {
                 name,
                 properties: this._unionAstNodes(item.options as ASTDefintion[]).properties,
                 description:
-                    (schema.description ? `${schema.description} - ` : "") +
+                    (schema.meta()?.description ? `${schema.meta()?.description} - ` : "") +
                     `Built from union of ` +
                     `${item.options.map((i) => (i as ASTDefintion).name).join(", ")}`,
             });
@@ -507,16 +501,18 @@ export class Zod2Ast {
      *
      * @returns An ASTDefinition representing the intersection of the two Zod types.
      */
-    private _getIntersectionAst(schema: ZodIntersection<ZodTypeAny, ZodTypeAny>): ASTDefintion {
-        const def = schema._def;
+    private _getIntersectionAst(schema: ZodIntersection<ZodType, ZodType>): ASTDefintion {
+        const def = schema.def;
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item = new ASTIntersection({
             name,
-            left: this._zodToAST(def.left),
-            right: this._zodToAST(def.right),
-            areAllObjects: ZodHelpers.isZodObject(def.left) && ZodHelpers.isZodObject(def.right),
-            description: schema.description,
+            left: this._zodToAST(def.left as ZodType),
+            right: this._zodToAST(def.right as ZodType),
+            areAllObjects:
+                ZodHelpers.isZodObject(def.left as ZodType) &&
+                ZodHelpers.isZodObject(def.right as ZodType),
+            description: schema.meta()?.description,
             parentFile,
             parentNamespace,
             aliasOf,
@@ -538,7 +534,7 @@ export class Zod2Ast {
                     item.right as ASTDefintion
                 ).properties,
                 description:
-                    (schema.description ? `${schema.description} - ` : "") +
+                    (schema.meta()?.description ? `${schema.meta()?.description} - ` : "") +
                     `Built from intersection of ` +
                     `${(item.left as ASTDefintion).name} and ` +
                     `${(item.right as ASTDefintion).name}`,
@@ -565,7 +561,7 @@ export class Zod2Ast {
         const item = new ASTArray({
             name,
             item: innerSchema,
-            description: schema.description,
+            description: schema.meta()?.description,
             parentFile,
             parentNamespace,
             aliasOf,
@@ -578,10 +574,7 @@ export class Zod2Ast {
         return this._createDefinition(item);
     }
 
-    private _getAliasAst(
-        schema: ZodTypeAny,
-        item: ASTAliasedTypes
-    ): ASTDefintion | ASTAliasedTypes {
+    private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefintion | ASTAliasedTypes {
         if (schema._zod2x?.typeName === undefined) {
             return item;
         }
@@ -605,43 +598,53 @@ export class Zod2Ast {
      * @param schema
      * @returns
      */
-    private _zodToAST(schema: ZodTypeAny, opt?: ISchemasMetadata): ASTType {
-        const def = schema._def;
-
+    private _zodToAST(schema: ZodType, opt?: ISchemasMetadata): ASTType {
         if (ZodHelpers.isZodString(schema)) {
-            return this._getAliasAst(schema, new ASTString({ description: schema.description }));
+            return this._getAliasAst(
+                schema,
+                new ASTString({ description: schema.meta()?.description })
+            );
         } else if (ZodHelpers.isZodAnyNumberType(schema)) {
             return this._getAliasAst(
                 schema,
                 new ASTNumber({
-                    description: schema.description,
+                    description: schema.meta()?.description,
                     constraints: ZodHelpers.getZodNumberConstraints(schema),
                 })
             );
         } else if (ZodHelpers.isZodBoolean(schema)) {
-            return this._getAliasAst(schema, new ASTBoolean({ description: schema.description }));
+            return this._getAliasAst(
+                schema,
+                new ASTBoolean({ description: schema.meta()?.description })
+            );
         } else if (ZodHelpers.isZodDate(schema)) {
-            return this._getAliasAst(schema, new ASTDate({ description: schema.description }));
+            return this._getAliasAst(
+                schema,
+                new ASTDate({ description: schema.meta()?.description })
+            );
         } else if (ZodHelpers.isZodAny(schema)) {
-            return this._getAliasAst(schema, new ASTAny({ description: schema.description }));
+            return this._getAliasAst(
+                schema,
+                new ASTAny({ description: schema.meta()?.description })
+            );
         } else if (ZodHelpers.isZodNullable(schema)) {
             const subSchema = this._zodToAST(schema.unwrap());
             subSchema.isNullable = true;
-            subSchema.description = schema.description || subSchema.description;
+            subSchema.description = schema.meta()?.description || subSchema.description;
             return subSchema;
         } else if (ZodHelpers.isZodOptional(schema)) {
             const subSchema = this._zodToAST(schema.unwrap());
             subSchema.isOptional = true;
-            subSchema.description = schema.description || subSchema.description;
+            subSchema.description = schema.meta()?.description || subSchema.description;
             return subSchema;
         } else if (ZodHelpers.isZodDefault(schema)) {
-            const subSchema = this._zodToAST(def.innerType);
-            subSchema.description = schema.description || subSchema.description;
+            const subSchema = this._zodToAST(schema.def.defaultValue());
+            subSchema.description = schema.meta()?.description || subSchema.description;
             return subSchema;
         } else if (ZodHelpers.isZodArray(schema)) {
             const isParentArray = opt?.calledFromArray !== true;
-            const subSchema = this._zodToAST(def.type, { calledFromArray: true });
-            subSchema.description = schema.description || subSchema.description;
+            const subSchema = this._zodToAST(schema.element, { calledFromArray: true });
+            subSchema.description = schema.meta()?.description || subSchema.description;
             subSchema.arrayDimension = Number.isInteger(subSchema.arrayDimension)
                 ? ++subSchema.arrayDimension!
                 : 1;
@@ -655,26 +658,27 @@ export class Zod2Ast {
             return this._getAliasAst(
                 schema,
                 new ASTSet({
-                    value: this._zodToAST(def.valueType),
-                    description: schema.description,
+                    value: this._zodToAST(schema.def.valueType as ZodType),
+                    description: schema.meta()?.description,
                 })
             );
         } else if (ZodHelpers.isZodLiteral(schema)) {
             let parentEnum: ASTDefintion | undefined = undefined;
             let parentEnumKey: string | undefined = undefined;
 
+            // TODO: Support multiple values
             if (schema._zod2x?.parentEnum) {
-                parentEnumKey = this._getEnumValues(schema._zod2x?.parentEnum).find(
-                    (i) => i[1] === def.value
+                parentEnumKey = this._getEnumValues(schema._zod2x?.parentEnum as ZodEnum).find(
+                    (i) => i[1] === schema.def.values.at(0)
                 )?.[0];
-                parentEnum = this._zodToAST(schema._zod2x?.parentEnum, {
+                parentEnum = this._zodToAST(schema._zod2x?.parentEnum as ZodEnum, {
                     isInjectedEnum: true,
                 }) as ASTDefintion;
             }
 
             return new ASTLiteral({
-                value: def.value,
-                description: schema.description,
+                value: schema.def.values.at(0), // TODO: Support multiple values
+                description: schema.meta()?.description,
                 parentEnum: parentEnum,
                 parentEnumKey,
             });
@@ -683,26 +687,26 @@ export class Zod2Ast {
                 schema,
                 new ASTMap({
                     type: ZodHelpers.isZodRecord(schema) ? "record" : "map",
-                    key: this._zodToAST(def.keyType),
-                    value: this._zodToAST(def.valueType),
-                    description: schema.description,
+                    key: this._zodToAST(schema.keyType),
+                    value: this._zodToAST(schema.valueType),
+                    description: schema.meta()?.description,
                 })
             );
         } else if (ZodHelpers.isZodLazy(schema)) {
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
-            const lazySchema = def.getter();
+            const lazySchema = schema.def.getter();
             const lazyPointer: ASTDefintion = this._createDefinition({ name: "pending" });
 
-            this.lazyPointers.push([lazyPointer, lazySchema]);
+            this.lazyPointers.push([lazyPointer, lazySchema as ZodType]);
 
             return lazyPointer;
         } else if (ZodHelpers.isZodTuple(schema)) {
             return this._getAliasAst(
                 schema,
                 new ASTTuple({
-                    items: def.items.map(this._zodToAST.bind(this)),
-                    description: schema.description,
+                    items: schema.def.items.map(this._zodToAST.bind(this)),
+                    description: schema.meta()?.description,
                 })
             );
             /**
@@ -712,7 +716,7 @@ export class Zod2Ast {
              *
              *
              * */
-        } else if (ZodHelpers.isZodAnyEnumType(schema)) {
+        } else if (ZodHelpers.isZodEnum(schema)) {
             return this._getEnumAst(schema, opt);
         } else if (ZodHelpers.isZodObject(schema)) {
             return this._getObjectAst(schema, opt);
@@ -723,7 +727,7 @@ export class Zod2Ast {
         } else {
             log.warn(`Unsupported Zod type: ${JSON.stringify(schema)}`);
             return new ASTAny({
-                description: `Unsupported Zod type: ${schema._def.typeName}`,
+                description: `Unsupported Zod type: ${schema.def.type}`,
             });
         }
     }

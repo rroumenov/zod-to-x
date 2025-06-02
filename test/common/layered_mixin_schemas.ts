@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Zod2XMixin, Zod2XModel } from "../../dist";
 import { userModels } from "./layered_schemas";
 

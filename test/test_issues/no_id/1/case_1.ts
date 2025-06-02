@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Domain, extendZod, Zod2XModel } from "../../../../dist";
 extendZod(z);
 
