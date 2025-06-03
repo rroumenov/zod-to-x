@@ -1,10 +1,14 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Domain, Zod2XModel } from "../../dist";
 import { getTsSupportedSchemas } from "./ts_supported_schemas";
 
 const tsSupportedSchemas = getTsSupportedSchemas();
 
-@Domain({ namespace: "TS_SUPPORTED_SCHEMAS", file: "ts_supported_schemas.entity" })
+@Domain({
+    namespace: "TS_SUPPORTED_SCHEMAS",
+    file: "ts_supported_schemas.entity",
+    skipLayerInterface: false,
+})
 class TsSupportedSchemas extends Zod2XModel {
     stringItem = tsSupportedSchemas.stringItem;
 
@@ -30,13 +34,13 @@ class TsSupportedSchemas extends Zod2XModel {
     objectItemWithDiscriminator = z
         .object({
             key: z.string(),
-            discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
+            discriminator: z.literal(this.enumItem.enum.Enum1).zod2x(this.enumItem),
         })
         .zod2x("ObjectItemWithDiscriminator");
     otherObjectItemWithDiscriminator = z
         .object({
             otherKey: z.string(),
-            discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
+            discriminator: z.literal(this.enumItem.enum.Enum2).zod2x(this.enumItem),
         })
         .zod2x("OtherObjectItemWithDiscriminator");
 
@@ -63,7 +67,11 @@ class TsSupportedSchemas extends Zod2XModel {
 
 export const tsSupportedSchemasModel = new TsSupportedSchemas();
 
-@Application({ namespace: "TS_SUPPORTED_SCHEMAS_APP", file: "ts_supported_schemas.app" })
+@Application({
+    namespace: "TS_SUPPORTED_SCHEMAS_APP",
+    file: "ts_supported_schemas.app",
+    skipLayerInterface: false,
+})
 class TsSupportedSchemasApplication extends Zod2XModel {
     newStringItem = tsSupportedSchemasModel.stringItem;
 

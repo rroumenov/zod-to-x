@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Zod2XMixin, Zod2XModel } from "../../dist";
 import { userModels } from "./layered_schemas";
 
@@ -13,7 +13,7 @@ class CreateUserUseCaseResultDto {
     });
 }
 
-@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+@Application({ namespace: "USER_DTOS", file: "user.dtos", skipLayerInterface: false })
 class UserDtos extends Zod2XMixin([CreateUserUseCaseDto, CreateUserUseCaseResultDto], Zod2XModel) {
     updateUserUseCaseDto = this.createUserUseCaseDto;
     updateUserUseCaseResultDto = userModels.userEntity;

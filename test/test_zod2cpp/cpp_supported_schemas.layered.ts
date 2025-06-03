@@ -1,10 +1,14 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { Application, Domain, Zod2XModel } from "../../dist";
 import { getCppSupportedSchemas } from "./cpp_supported_schemas";
 
 const cppSupportedSchemas = getCppSupportedSchemas();
 
-@Domain({ namespace: "CPP_SUPPORTED_SCHEMAS", file: "cpp_supported_schemas.entity" })
+@Domain({
+    namespace: "CPP_SUPPORTED_SCHEMAS",
+    file: "cpp_supported_schemas.entity",
+    skipLayerInterface: false,
+})
 class CppSupportedSchemas extends Zod2XModel {
     stringItem = cppSupportedSchemas.stringItem;
 
@@ -30,13 +34,13 @@ class CppSupportedSchemas extends Zod2XModel {
     objectItemWithDiscriminator = z
         .object({
             key: z.string(),
-            discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
+            discriminator: z.literal(this.enumItem.enum.Enum1).zod2x(this.enumItem),
         })
         .zod2x("ObjectItemWithDiscriminator");
     otherObjectItemWithDiscriminator = z
         .object({
             otherKey: z.string(),
-            discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
+            discriminator: z.literal(this.enumItem.enum.Enum2).zod2x(this.enumItem),
         })
         .zod2x("OtherObjectItemWithDiscriminator");
 
@@ -61,7 +65,11 @@ class CppSupportedSchemas extends Zod2XModel {
 
 export const cppSupportedSchemasModel = new CppSupportedSchemas();
 
-@Application({ namespace: "CPP_SUPPORTED_SCHEMAS_APP", file: "cpp_supported_schemas.app" })
+@Application({
+    namespace: "CPP_SUPPORTED_SCHEMAS_APP",
+    file: "cpp_supported_schemas.app",
+    skipLayerInterface: false,
+})
 class CppSupportedSchemasApplication extends Zod2XModel {
     newStringItem = cppSupportedSchemasModel.stringItem;
 

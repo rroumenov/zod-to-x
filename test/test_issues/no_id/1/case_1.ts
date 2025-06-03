@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { Application, Domain, Zod2XModel } from "../../../../dist";
+import { z } from "zod/v4";
+import { Application, Domain, extendZod, Zod2XModel } from "../../../../dist";
+extendZod(z);
 
 /**
  * - Use case:

@@ -1,16 +1,9 @@
-import {
-    z,
-    ZodEnum,
-    ZodFirstPartyTypeKind,
-    ZodNativeEnum,
-    ZodNumber,
-    ZodObject,
-    ZodTypeAny,
-} from "zod";
+import { z, ZodEnum, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
-export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
-export type ZodAnyEnumType = ZodEnum<any> | ZodNativeEnum<any>;
-export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any, any>;
+import { Extended } from "./zod_ext";
+
+export type { ZodArray, ZodType, ZodIntersection, ZodObject, ZodEnum } from "zod/v4";
+export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any>;
 
 type ZodNumberConstraints = {
     min?: number;
@@ -18,112 +11,136 @@ type ZodNumberConstraints = {
     isInt: boolean;
 };
 
+export enum ZodFirstPartyTypeKind {
+    ZodAny = "any",
+    ZodString = "string",
+    ZodNumber = "number",
+    ZodBigInt = "bigint",
+    ZodLiteral = "literal",
+    ZodBoolean = "boolean",
+    ZodDate = "date",
+    ZodEnum = "enum",
+    ZodUnion = "union",
+    ZodIntersection = "intersection",
+    ZodObject = "object",
+    ZodLazy = "lazy",
+    ZodRecord = "record",
+    ZodMap = "map",
+    ZodSet = "set",
+    ZodArray = "array",
+    ZodTuple = "tuple",
+    ZodOptional = "optional",
+    ZodNullable = "nullable",
+    ZodDefault = "default",
+}
+
+/**
+ * Zod's type is checked insted of instanceof to resolve Bun incomatibilities.
+ */
 export class ZodHelpers {
-    static isZodType(i: ZodTypeAny): boolean {
-        return i instanceof z.ZodType;
+    static isZodType(i: ZodType): boolean {
+        return Object.values(ZodFirstPartyTypeKind).includes(i?.def?.type as ZodFirstPartyTypeKind);
     }
 
-    static isZodAny(i: ZodTypeAny): i is z.ZodAny {
-        return i instanceof z.ZodAny;
+    static isZodAny(i: ZodType): i is z.ZodAny {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodAny;
     }
 
-    static isZodString(i: ZodTypeAny): i is z.ZodString {
-        return i instanceof z.ZodString;
+    static isZodString(i: ZodType): i is z.ZodString {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodString;
     }
 
-    static isZodNumber(i: ZodTypeAny): i is z.ZodNumber {
-        return i instanceof z.ZodNumber;
+    static isZodNumber(i: ZodType): i is z.ZodNumber {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNumber;
     }
 
-    static isZodBigInt(i: ZodTypeAny): i is z.ZodBigInt {
-        return i instanceof z.ZodBigInt;
+    static isZodBigInt(i: ZodType): i is z.ZodBigInt {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodBigInt;
     }
 
-    static isZodLiteral(i: ZodTypeAny): i is z.ZodLiteral<any> {
-        return i instanceof z.ZodLiteral;
+    static isZodLiteral(i: ZodType): i is z.ZodLiteral<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodLiteral;
     }
 
-    static isZodBoolean(i: ZodTypeAny): i is z.ZodBoolean {
-        return i instanceof z.ZodBoolean;
+    static isZodBoolean(i: ZodType): i is z.ZodBoolean {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodBoolean;
     }
 
-    static isZodDate(i: ZodTypeAny): i is z.ZodDate {
-        return i instanceof z.ZodDate;
+    static isZodDate(i: ZodType): i is z.ZodDate {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodDate;
     }
 
-    static isZodEnum(i: ZodTypeAny): i is ZodEnum<any> {
-        return i instanceof z.ZodEnum;
+    static isZodEnum(i: ZodType): i is ZodEnum<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodEnum;
     }
 
-    static isZodUnion(i: ZodTypeAny): i is z.ZodUnion<any> {
-        return i instanceof z.ZodUnion;
+    static isZodUnion(i: ZodType): i is z.ZodUnion<any> {
+        return (
+            i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
+            (i as z.ZodDiscriminatedUnion).def.discriminator === undefined
+        );
     }
 
-    static isZodDiscriminatedUnion(i: ZodTypeAny): i is z.ZodDiscriminatedUnion<any, any> {
-        return i instanceof z.ZodDiscriminatedUnion;
+    static isZodDiscriminatedUnion(i: ZodType): i is z.ZodDiscriminatedUnion {
+        return (
+            i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
+            (i as z.ZodDiscriminatedUnion).def.discriminator !== undefined
+        );
     }
 
-    static isZodNativeEnum(i: ZodTypeAny): i is ZodNativeEnum<any> {
-        return i instanceof z.ZodNativeEnum;
+    static isZodIntersection(i: ZodType): i is z.ZodIntersection<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodIntersection;
     }
 
-    static isZodIntersection(i: ZodTypeAny): i is z.ZodIntersection<any, any> {
-        return i instanceof z.ZodIntersection;
+    static isZodObject(i: ZodType): i is z.ZodObject<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodObject;
     }
 
-    static isZodObject(i: ZodTypeAny): i is z.ZodObject<any> {
-        return i instanceof z.ZodObject;
+    static isZodLazy(i: ZodType): i is z.ZodLazy<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodLazy;
     }
 
-    static isZodLazy(i: ZodTypeAny): i is z.ZodLazy<any> {
-        return i instanceof z.ZodLazy;
+    static isZodRecord(i: ZodType): i is z.ZodRecord<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodRecord;
     }
 
-    static isZodRecord(i: ZodTypeAny): i is z.ZodRecord<any, any> {
-        return i instanceof z.ZodRecord;
+    static isZodMap(i: ZodType): i is z.ZodMap<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodMap;
     }
 
-    static isZodMap(i: ZodTypeAny): i is z.ZodMap<any, any> {
-        return i instanceof z.ZodMap;
+    static isZodArray(i: ZodType): i is z.ZodArray<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodArray;
     }
 
-    static isZodArray(i: ZodTypeAny): i is z.ZodArray<any> {
-        return i instanceof z.ZodArray;
+    static isZodSet(i: ZodType): i is z.ZodSet<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodSet;
     }
 
-    static isZodSet(i: ZodTypeAny): i is z.ZodSet<any> {
-        return i instanceof z.ZodSet;
+    static isZodTuple(i: ZodType): i is z.ZodTuple<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodTuple;
     }
 
-    static isZodTuple(i: ZodTypeAny): i is z.ZodTuple<any> {
-        return i instanceof z.ZodTuple;
+    static isZodOptional(i: ZodType): i is z.ZodOptional<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodOptional;
     }
 
-    static isZodOptional(i: ZodTypeAny): i is z.ZodOptional<any> {
-        return i instanceof z.ZodOptional;
+    static isZodNullable(i: ZodType): i is z.ZodNullable<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNullable;
     }
 
-    static isZodNullable(i: ZodTypeAny): i is z.ZodNullable<any> {
-        return i instanceof z.ZodNullable;
+    static isZodDefault(i: ZodType): i is z.ZodDefault<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodDefault;
     }
 
-    static isZodDefault(i: ZodTypeAny): i is z.ZodDefault<any> {
-        return i instanceof z.ZodDefault;
-    }
-
-    static isZodAnyUnionType(i: ZodTypeAny) {
+    static isZodAnyUnionType(i: ZodType) {
         return this.isZodUnion(i) || this.isZodDiscriminatedUnion(i);
     }
 
-    static isZodAnyEnumType(i: ZodTypeAny) {
-        return this.isZodEnum(i) || this.isZodNativeEnum(i);
-    }
-
-    static isZodAnyNumberType(i: ZodTypeAny) {
+    static isZodAnyNumberType(i: ZodType) {
         return this.isZodNumber(i) || this.isZodBigInt(i);
     }
 
-    static isZodAnyMapType(i: ZodTypeAny) {
+    static isZodAnyMapType(i: ZodType) {
         return this.isZodMap(i) || this.isZodRecord(i);
     }
 
@@ -133,15 +150,13 @@ export class ZodHelpers {
      * @param zodType
      * @returns
      */
-    static isTranspilerableZodType(zodType: string | ZodTypeAny): boolean {
-        const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
+    static isTranspilerableZodType(zodType: string | ZodType): boolean {
+        const type = typeof zodType === "string" ? zodType : zodType?.def?.type;
 
         return (
             type === ZodFirstPartyTypeKind.ZodEnum ||
-            type === ZodFirstPartyTypeKind.ZodNativeEnum ||
             type === ZodFirstPartyTypeKind.ZodObject ||
             type === ZodFirstPartyTypeKind.ZodUnion ||
-            type === ZodFirstPartyTypeKind.ZodDiscriminatedUnion ||
             type === ZodFirstPartyTypeKind.ZodIntersection
         );
     }
@@ -153,11 +168,8 @@ export class ZodHelpers {
      * @param onlyArray Array types are always transpiled as alias in layered modeling.
      * @returns
      */
-    static isTranspilerableAliasedZodType(
-        zodType: string | ZodTypeAny,
-        onlyArray = false
-    ): boolean {
-        const type = typeof zodType === "string" ? zodType : zodType?._def?.typeName;
+    static isTranspilerableAliasedZodType(zodType: string | ZodType, onlyArray = false): boolean {
+        const type = typeof zodType === "string" ? zodType : zodType?.def?.type;
 
         if (onlyArray === true) {
             return type === ZodFirstPartyTypeKind.ZodArray;
@@ -178,29 +190,30 @@ export class ZodHelpers {
         );
     }
 
-    static cloneZod(i: ZodTypeAny) {
-        const zodType: ZodFirstPartyTypeKind = i._def.typeName;
-        return new (z[zodType] as any)({ ...i._def });
+    static cloneZod(i: ZodType) {
+        return i.meta({ ...(i.meta() || {}) });
     }
 
-    static createZodObject(properties: Map<string, ZodTypeAny>): ZodObject<any> {
-        return z.object(Object.fromEntries(properties));
+    static createZodObject(properties: Map<string, ZodType>): ZodObject<any> {
+        return Extended.getZ().object(Object.fromEntries(properties));
     }
 
     static getZodNumberConstraints(i: ZodNumber | z.ZodBigInt): ZodNumberConstraints {
-        const constraints: ZodNumberConstraints = { isInt: this.isZodBigInt(i) };
-
-        if (i._def.checks) {
-            for (const check of i._def.checks) {
-                if (check.kind === "min") {
-                    constraints.min = check.value as number;
-                } else if (check.kind === "max") {
-                    constraints.max = check.value as number;
-                } else if (check.kind === "int") {
-                    constraints.isInt = true;
-                }
-            }
-        }
+        const constraints: ZodNumberConstraints = {
+            isInt: this.isZodBigInt(i) || i.format === "safeint",
+            min:
+                typeof i.minValue === "number" &&
+                isFinite(i.minValue) &&
+                Math.abs(i.minValue) !== Number.MAX_SAFE_INTEGER
+                    ? (i.minValue as number)
+                    : undefined,
+            max:
+                typeof i.maxValue === "number" &&
+                isFinite(i.maxValue) &&
+                Math.abs(i.maxValue) !== Number.MAX_SAFE_INTEGER
+                    ? (i.maxValue as number)
+                    : undefined,
+        };
 
         return constraints;
     }

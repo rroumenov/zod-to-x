@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { getSchemas } from "../common/zod_schemas";
 
 export const getCppSupportedSchemas = () => {

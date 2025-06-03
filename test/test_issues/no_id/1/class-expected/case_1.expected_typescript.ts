@@ -21,15 +21,3 @@ export class UserConfigUser {
 }
 
 export type UserConfig = UserConfigAdmin | UserConfigUser;
-
-export class UserDtos {
-    userConfigAdmin: UserConfigAdmin;
-    userConfigUser: UserConfigUser;
-    userConfig: UserConfig;
-
-    constructor(data: UserDtos) {
-        this.userConfigAdmin = data.userConfigAdmin;
-        this.userConfigUser = data.userConfigUser;
-        this.userConfig = data.userConfig;
-    }
-}
