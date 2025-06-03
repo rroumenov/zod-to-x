@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        zod-version: ['3.25.0', 'latest']
+        zod-version: ['3.25.28', 'latest']
 
     steps:
       - uses: actions/checkout@v4
