@@ -60,7 +60,7 @@ Automate the transpilation of data models to save time, reduce errors, and let y
 ```bash
 npm install zod-to-x zod
 ```
-(*) [`zod@3.25.0`](https://www.npmjs.com/package/zod/v/3.25.0) version or greather is required.
+(*) [`zod@3.25.28`](https://www.npmjs.com/package/zod/v/3.25.0) version or greather is required.
 
 ### 2) Extend Zod using the `extendZod` method after the first [`@zod`](https://github.com/colinhacks/zod) import:
 ```ts
