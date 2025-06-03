@@ -16,7 +16,9 @@
 
 
 
-[`@zod-to-x`](https://github.com/rroumenov/zod-to-x) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
+[`@zod-to-x`](https://github.com/rroumenov/zod-to-x`) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
+
+<span style="color: red;">**Important Announcement:**</span> `zod-to-x@2.0.0` has been released, introducing migration to Zod V4. At this stage, only the existent behavior has been migrated, while new features like Literal Templates are still under analysis. Additionally, `zod-to-x@1.X.Y` will continue to be maintained for Zod V3, and any new transpilation languages will also be supported in version 1.
 
 
 
@@ -34,7 +36,6 @@
   - [Typescript](#1-typescript)
   - [C++](#2-c)
 - [Additional utils](#additional-utils)
-  - [JSON Schema definitions](#1-zod2jsonschemadefinitions)
   - [Protobuf V3 generation](#2-zod2protov3)
 - [Mapping of supported Zod Types by Language](#mapping-of-supported-zod-types-by-langauge)
 - [Considerations](#considerations)
@@ -45,7 +46,7 @@
 Managing data consistency across multiple layers and languages is a common challenge in modern software development. [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) solves this by allowing you to define your data models once and effortlessly transpile them into multiple programming languages. Here’s why it stands out:
 
 1. **Centralized Data Definition**  
-Define your data structures in one place using the powerful [`@zod`](https://github.com/colinhacks/zod) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`](https://github.com/colinhacks/zod) ecosystem like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema)
+Define your data structures in one place using the powerful [`@zod`](https://github.com/colinhacks/zod) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`](https://github.com/colinhacks/zod) ecosystem.
 
 2. **Multi-Language Compatibility**  
 Generate data models for TypeScript, Protobuf V3 and C++ (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
@@ -59,18 +60,17 @@ Automate the transpilation of data models to save time, reduce errors, and let y
 ```bash
 npm install zod-to-x zod
 ```
-(*) [`zod@3.22.3`](https://www.npmjs.com/package/zod/v/3.22.0) version or greather is required.
+(*) [`zod@3.25.0`](https://www.npmjs.com/package/zod/v/3.25.0) version or greather is required.
 
 ### 2) Extend Zod using the `extendZod` method after the first [`@zod`](https://github.com/colinhacks/zod) import:
 ```ts
-import { z } from "zod";
+import { z } from "zod/v4";
 import { extendZod } from "zod-to-x";
 extendZod(z);
 ```
 
 This extension appends a `zod2x` method to:
 - ZodEnum
-- ZodNativeEnum
 - ZodObject
 - ZodUnion
 - ZodDiscriminatedUnion
@@ -79,7 +79,7 @@ This extension appends a `zod2x` method to:
 
 ## Quick start
 ```ts
-import { z } from "zod";
+import { z } from "zod/v4";
 import { extendZod, Zod2Ast, Zod2XTranspilers } from "zod-to-x";
 extendZod(z); // The extend step can be skipped if it has already been done.
 
@@ -87,9 +87,9 @@ extendZod(z); // The extend step can be skipped if it has already been done.
  * 1) Define a data model using Zod schemas
  */
 const VisitorSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   visitDate: z.date(),
   comments: z.string().optional(),
 }).zod2x("Visitor"); // Add your expected output type name using the 'zod2x' method.
@@ -185,7 +185,7 @@ const Intersection = z.intersection(DataA, DataB).zod2x("Intersection");
 
 ### Tips for discriminated unions
 To enhance data modeling and the serialization/deserialization of a discriminated union type, two key steps should be considered:
-- Using `ZodEnum` or `ZodNativeEnum` the define the discriminator key options.
+- Using `ZodEnum` the define the discriminator key options.
 - Using `ZodLiteral` to define the specific value of the discriminator key.
 
 Example of discriminant definition:
@@ -265,6 +265,7 @@ To achieve this, new components are included:
   - **file**: Specifies the expected output file where the transpiled types will be saved.
   - **externalInheritance**: When a type from one layer is imported into another layer without modifications, it is transpiled as a new type inheriting from the imported type. This ensures type consistency across layers while maintaining reusability. See example (4) below. The default value is `true`.
   - **basicTypes**: Since `v1.4.6`, primitive data types and arrays are also transpiled when using Layered modeling **if they are declared as property inside the layer class**. They are output as aliases of the types they represent. Setting it to `false` will disable this behavior (except for arrays, which are always transpiled). Default is `true`.
+  - **skipLayerInterface**: Before `v2.0.0`, a global interface was transpiled with all layer properties. With `externalInheritance` and `basicType`, this behavior has started to become obsolete, so it is not included by default. If needed, set to `false`.
 - **Zod2XMixin**: A function that enables the creation of layers by extending multiple data models, thereby simplifying their definition and organization.
 
 ### Usage example
@@ -275,13 +276,13 @@ class UserModels extends Zod2XModel {
 
     userRole = z.enum(["Admin", "User"]).zod2x("UserRole"); // (*)
 
-    userEmail = z.string().email(); // This will be transpiled as an alias.
+    userEmail = z.email(); // This will be transpiled as an alias.
 
     userEntity = z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string().min(1),
         email: this.userEmail,
-        age: z.number().int().nonnegative().optional(),
+        age: z.int().nonnegative().optional(),
         role: this.userRole,
     }); // (*)
 }
@@ -302,11 +303,6 @@ console.log(userModels.transpile(Zod2XTranspilers.Zod2Ts));
 //     email: UserEmail;
 //     age?: number;
 //     role: UserRole;
-// }
-
-// export interface UserModels {
-//     userRole: UserRole;
-//     userEntity: UserEntity;
 // }
 
 ```
@@ -348,11 +344,6 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 //     age?: number;
 //     createdAt: Date;
 //     updatedAt: Date;
-// }
-
-// export interface UserDtos {
-//     createUserUseCaseDto: CreateUserUseCaseDto;
-//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
 // }
 
 ```
@@ -407,11 +398,6 @@ console.log(userDtos.transpile(Zod2XTranspilers.Zod2Ts))
 //     createdAt: Date;
 //     updatedAt: Date;
 // }
-
-// export interface UserDtos {
-//     createUserUseCaseDto: CreateUserUseCaseDto;
-//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
-// }
 ```
 
 4 - Difference of using **externalInheritance** (defaults) or not.  
@@ -437,11 +423,6 @@ class UserDtos extends Zod2XModel {
 
 // export interface CreateUserUseCaseResultDto extends USER.UserEntity {}
 
-// export interface UserDtos {
-//     createUserUseCaseDto: CreateUserUseCaseDto;
-//     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
-// }
-
 // ---------------
 // If `USER.UserEntity` were a Union or a Discriminated Union, the output would be a Type equivalent to `USER.UserEntity` rather than an Interface that extends it.  
 
@@ -449,7 +430,7 @@ class UserDtos extends Zod2XModel {
 
 ```ts
 // Output without externalInheritance
-@Application({ namespace: "USER_DTOS", file: "user.dtos",  externalInheritance: false})
+@Application({ namespace: "USER_DTOS", file: "user.dtos",  externalInheritance: false, skipLayerInterface: false})
 class UserDtos extends Zod2XModel {
 
     createUserUseCaseDto = userModels.userEntity.omit({ id: true });
@@ -473,7 +454,7 @@ class UserDtos extends Zod2XModel {
 // }
 
 // ---------------
-// In this case, the type of `createUserUseCaseResultDto` is inferred from the parent model (`UserDtos`), but there is no explicit definition of the type itself.
+// In this case, the type of `createUserUseCaseResultDto` is inferred from the parent model (`UserDtos`, only if skipLayerInterface = false), but there is no explicit definition of the type itself.
 ```
 
 ### Custom Layers
@@ -533,35 +514,7 @@ Common options:
 ## Additional utils
 Additional useful tools to convert Zod Schemas into different formats.
 
-### 1) `zod2JsonSchemaDefinitions`  
-In case of use of libraries like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema), the provided zod extension can also be used as a JSON Schema definitions mapper. Check out this [input example](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2jschema_def/user_schema.ts) and its [output](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2jschema_def/user_schema.json) (\*).
-
-<sup>*(\*) Output is generated using definitions from `zod2JsonSchemaDefinitions` and [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema) to create the schema with them.*</sup>
-
-```ts
-import { z } from 'zod';
-import { extendZod, Zod2XConverters } from 'zod-to-x';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-extendZod(z);
-
-// Example using model from `Quick-start` section
-const visitorDefinitions = Zod2XConverters.zod2JsonSchemaDefinitions(VisitorSchema);
-const visitorJsonSchema = zodToJsonSchema(
-  VisitorSchema,
-  {definitions: visitorDefinitions}
-);
-console.log(visitorJsonSchema); // JSON Schema with definitions
-
-// Example using model from `Layer modeling` section
-const createUserDtoDefinitions = Zod2XConverters.zod2JsonSchemaDefinitions(userDtos.createUserUseCaseDto);
-const createUserDtoJsonSchema = zodToJsonSchema(
-  userDtos.createUserUseCaseDto,
-  {definitions: createUserDtoDefinitions}
-);
-console.log(createUserDtoJsonSchema); // JSON Schema with definitions
-```
-
-### 2) `zod2ProtoV3`
+### 1) `zod2ProtoV3`
 In case of use of Google protobuf to improve communication performance, you can automatically generate `proto` files directly from your models. Check out this [input example](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2proto3/proto3_supported_schemas.ts) and its [output](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2proto3/proto3_supported_schemas.expect.proto)
 
 - Options:
@@ -575,9 +528,8 @@ In case of use of Google protobuf to improve communication performance, you can 
   - ZodTuple is supported only for items of the same type.
 
 ```ts
-import { z } from 'zod';
+import { z } from "zod/v4";
 import { extendZod, Zod2XConverters } from 'zod-to-x';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 extendZod(z);
 
 // Example using model from `Quick-start` section
@@ -602,13 +554,13 @@ For a detailed mapping of supported Zod types across supported targets, please r
 - In Layered modeling, the transpilation of primitive types can be completely disabled or combined by defining them outside the layer class:
 ```ts
 // External primitive
-const stringUUID = z.string().uuid();
+const stringUUID = z.uuid();
 
 @Domain({ namespace: "USER", file: "user.entity" })
 class UserModels extends Zod2XModel {
 
     // Internal primitive
-    userEmail = z.string().email(); // This will be transpiled as an alias. It is a layer property.
+    userEmail = z.email(); // This will be transpiled as an alias. It is a layer property.
 
     userEntity = z.object({
         id: stringUUID, // "stringUUID" will not be transpiled as an alias. It is not a layer property.
@@ -623,7 +575,7 @@ export const userModels = new UserModels();
 ```ts
 // Consider the previous UserModels
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 @Application({ namespace: "USER_DTOS", file: "user.dtos",  externalInheritance: false})
 class UserDtos extends Zod2XModel {
