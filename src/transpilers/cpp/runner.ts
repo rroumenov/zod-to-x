@@ -168,7 +168,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     /** Ex: boost::variant<TypeA, TypeB> */
     protected getUnionType = (itemsType: string[]) => {
         this.imports.add(this.lib.variant);
-        return `boost::variant<${itemsType.join(", ")}>`;
+        const unionLines = itemsType.map((type) => `${this.indent[2]}${type}`).join(",\n");
+        return `boost::variant<\n${unionLines}\n${this.indent[1]}>`;
     };
 
     /** Ex: depends on number range (if any). One of:
@@ -944,7 +945,8 @@ export class Zod2Cpp17 extends Zod2Cpp {
     /** Ex: std::variant<TypeA, TypeB> */
     protected override getUnionType = (itemsType: string[]) => {
         this.imports.add(this.lib.variant);
-        return `std::variant<${itemsType.join(", ")}>`;
+        const unionLines = itemsType.map((type) => `${this.indent[2]}${type}`).join(",\n");
+        return `std::variant<\n${unionLines}\n${this.indent[1]}>`;
     };
 
     protected override _getOptional(type: string) {

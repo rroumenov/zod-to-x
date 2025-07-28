@@ -114,9 +114,15 @@ namespace CPP_SUPPORTED_SCHEMAS {
 
     using TupleItem = std::tuple<double, std::string, bool>;
 
-    using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
+    using UnionItem = std::variant<
+        ObjectItem,
+        OtherObjectItem
+    >;
 
-    using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
+    using DiscriminatedUnionItem = std::variant<
+        ObjectItemWithDiscriminator,
+        OtherObjectItemWithDiscriminator
+    >;
 
     class IntersectionItem : public ObjectItem, public OtherObjectItem {
     public:

@@ -91,7 +91,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     protected getTupleType = (itemsType: string[]): string => `[${itemsType.join(", ")}]`;
 
     /** Ex: TypeA | TypeB */
-    protected getUnionType = (itemsType: string[]): string => itemsType.join(" | ");
+    protected getUnionType = (itemsType: string[]): string =>
+        itemsType.map((type) => `${this.indent[1]}| ${type}`).join("\n");
 
     /** Ex: TypeA & TypeB */
     protected getIntersectionType = (itemsType: string[]): string => itemsType.join(" & ");
@@ -261,7 +262,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
             const attributesTypes = data.options.map(this.getAttributeType.bind(this));
 
-            this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+            this.push0(`export type ${data.name} =\n${this.getUnionType(attributesTypes)};\n`);
         }
     }
 

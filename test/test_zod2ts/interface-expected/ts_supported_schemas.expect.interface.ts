@@ -22,7 +22,9 @@ export interface OtherObjectItem {
     otherKey: string;
 }
 
-export type UnionItem = ObjectItem | OtherObjectItem;
+export type UnionItem =
+    | ObjectItem
+    | OtherObjectItem;
 
 export interface ObjectItemWithDiscriminator {
     key: string;
@@ -34,7 +36,9 @@ export interface OtherObjectItemWithDiscriminator {
     discriminator: EnumItem.Enum2;
 }
 
-export type DiscriminatedUnionItem = ObjectItemWithDiscriminator | OtherObjectItemWithDiscriminator;
+export type DiscriminatedUnionItem =
+    | ObjectItemWithDiscriminator
+    | OtherObjectItemWithDiscriminator;
 
 export type IntersectionItem = ObjectItem & OtherObjectItem;
 

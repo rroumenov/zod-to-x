@@ -70,9 +70,15 @@ namespace CPP_SUPPORTED_SCHEMAS {
 
     using TupleItem = std::tuple<double, std::string, bool>;
 
-    using UnionItem = boost::variant<ObjectItem, OtherObjectItem>;
+    using UnionItem = boost::variant<
+        ObjectItem,
+        OtherObjectItem
+    >;
 
-    using DiscriminatedUnionItem = boost::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
+    using DiscriminatedUnionItem = boost::variant<
+        ObjectItemWithDiscriminator,
+        OtherObjectItemWithDiscriminator
+    >;
 
     struct IntersectionItem : public ObjectItem, public OtherObjectItem {
         // Intersection fields are inherited from base structs.
