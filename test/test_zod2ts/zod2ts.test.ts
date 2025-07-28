@@ -164,7 +164,9 @@ describe("Zod2Ts", () => {
             "export interface OtherObjectItem {\n" +
             "  otherKey: string;\n" +
             "}\n\n" +
-            "export type UnionItem = ObjectItem | OtherObjectItem;\n\n" +
+            "export type UnionItem =\n" +
+            "  | ObjectItem\n" +
+            "  | OtherObjectItem;\n\n" +
             "export interface ModelItem {\n" +
             "  item: UnionItem;\n" +
             "}";

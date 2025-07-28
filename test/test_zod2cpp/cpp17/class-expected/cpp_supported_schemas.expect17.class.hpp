@@ -56,7 +56,10 @@ namespace zodtocppclass {
         void set_other_key(const std::string& value) { this->other_key = value; }
     };
 
-    using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
+    using UnionItem = std::variant<
+        ObjectItem,
+        OtherObjectItem
+    >;
 
     class ObjectItemWithDiscriminator {
     private:
@@ -94,7 +97,10 @@ namespace zodtocppclass {
         void set_discriminator(const EnumItem& value) { this->discriminator = value; }
     };
 
-    using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
+    using DiscriminatedUnionItem = std::variant<
+        ObjectItemWithDiscriminator,
+        OtherObjectItemWithDiscriminator
+    >;
 
     class IntersectionItem : public ObjectItem, public OtherObjectItem {
     public:

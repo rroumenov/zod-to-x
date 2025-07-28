@@ -20,4 +20,6 @@ export class UserConfigUser {
     }
 }
 
-export type UserConfig = UserConfigAdmin | UserConfigUser;
+export type UserConfig =
+    | UserConfigAdmin
+    | UserConfigUser;

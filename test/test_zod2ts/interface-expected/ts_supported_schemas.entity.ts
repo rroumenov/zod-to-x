@@ -56,9 +56,13 @@ export type SetItem = Set<string>;
 
 export type TupleItem = [number, string, boolean];
 
-export type UnionItem = ObjectItem | OtherObjectItem;
+export type UnionItem =
+    | ObjectItem
+    | OtherObjectItem;
 
-export type DiscriminatedUnionItem = ObjectItemWithDiscriminator | OtherObjectItemWithDiscriminator;
+export type DiscriminatedUnionItem =
+    | ObjectItemWithDiscriminator
+    | OtherObjectItemWithDiscriminator;
 
 export type IntersectionItem = ObjectItem & OtherObjectItem;
 

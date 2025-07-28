@@ -467,7 +467,10 @@ describe("Zod2Cpp17", () => {
             "  struct OtherObjectItem {\n" +
             "    std::string other_key;\n" +
             "  };\n\n" +
-            "  using UnionItem = std::variant<ObjectItem, OtherObjectItem>;\n\n" +
+            "  using UnionItem = std::variant<\n" +
+            "    ObjectItem,\n" +
+            "    OtherObjectItem\n" +
+            "  >;\n\n" +
             "  struct ModelItem {\n" +
             "    UnionItem item;\n" +
             "  };\n\n" +
@@ -554,7 +557,10 @@ describe("Zod2Cpp17", () => {
             "    std::string other_key;\n" +
             "    EnumItem discriminator;\n" +
             "  };\n\n" +
-            "  using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;\n\n" +
+            "  using DiscriminatedUnionItem = std::variant<\n" +
+            "    ObjectItemWithDiscriminator,\n" +
+            "    OtherObjectItemWithDiscriminator\n" +
+            "  >;\n\n" +
             "  struct ModelItem {\n" +
             "    DiscriminatedUnionItem item;\n" +
             "  };\n\n" +
