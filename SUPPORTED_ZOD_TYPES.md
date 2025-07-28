@@ -23,7 +23,6 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.date()`                | `Date`                         |
 | `z.literal()`             | Literal value (`'value'`)      |
 | `z.enum()`                | `enum`                         |
-| `z.nativeEnum()`          | Native `enum`                  |
 | `z.array()`               | `T[]`                          |
 | `z.set()`                 | `Set<T>`                       |
 | `z.tuple()`               | `[T1, T2, T3]`                 |
@@ -49,7 +48,6 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.date()`                | Not supported                  |
 | `z.literal()`             | As string                      |
 | `z.enum()`                | `enum class T: int`            |
-| `z.nativeEnum()`          | `enum class T: int`            |
 | `z.array()`               | `std::vector<T>`               |
 | `z.set()`                 | `std::set<T>`                  |
 | `z.tuple()`               | `std::tuple<T1, T2, T3>`       |
@@ -77,7 +75,6 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.date()`                | `google.protobuf.Timestamp`    |
 | `z.literal()`             | As number or string            |
 | `z.enum()`                | `enum`                         |
-| `z.nativeEnum()`          | `enum`                         |
 | `z.array()`               | `repeated` field               |
 | `z.set()`                 | `repeated` field               |
 | `z.tuple()`               | `repeated` field               |

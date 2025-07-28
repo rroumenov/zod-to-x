@@ -4,7 +4,7 @@
 
 import * as USER_DTOS from "./user.dtos";
 
-export interface ReqUpdateUser extends USER_DTOS.CreateUserUseCaseDto {}
+export interface ReqUpdateUser extends USER_DTOS.UpdateUserUseCaseDto {}
 
 export interface ResUpdateUser extends USER_DTOS.UpdateUserUseCaseResultDto {}
 
