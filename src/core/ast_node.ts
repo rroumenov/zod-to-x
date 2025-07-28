@@ -153,6 +153,10 @@ export class Zod2Ast {
                         parentNamespace: layer.namespace,
                         aliasOf: metadata?.aliasOf,
                     };
+                } else {
+                    return {
+                        aliasOf: metadata?.aliasOf,
+                    };
                 }
             } else {
                 // Case 3: Only layer exists and belongs to a different file

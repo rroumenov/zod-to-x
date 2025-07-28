@@ -84,7 +84,6 @@ export function Layer(opt: IZod2xLayerMetadata) {
 
                         zodItem["_zod2x"] = metadata;
                     } else if (!metadata.typeName) {
-                        // Only possible if `zod2xExtendable` is used.
                         metadata.typeName = name;
                     }
 
@@ -94,8 +93,11 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         metadata.layer = opt;
                     }
 
-                    if (opt.externalInheritance !== false && metadata.layer.file !== opt.file) {
-                        // Type used from another layer. A new type is created inheriting the
+                    if (
+                        opt.externalInheritance !== false &&
+                        (metadata.layer.file !== opt.file || name !== metadata.typeName)
+                    ) {
+                        // Using an existing type. A new type is created that inherits from the
                         // original type.
                         zodItem = ZodHelpers.cloneZod(zodItem);
                         zodItem._zod2x = {

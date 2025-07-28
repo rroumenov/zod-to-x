@@ -12,7 +12,7 @@
 using nlohmann::json;
 
 namespace USER_API {
-    struct ReqUpdateUser : public USER_DTOS::CreateUserUseCaseDto {};
+    struct ReqUpdateUser : public USER_DTOS::UpdateUserUseCaseDto {};
 
     struct ResUpdateUser : public USER_DTOS::UpdateUserUseCaseResultDto {};
 
