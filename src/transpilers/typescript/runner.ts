@@ -65,6 +65,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
                 });
+                this.addExternalTypeImport(data);
             }
             return true;
         } else if (data.aliasOf) {
