@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        zod-version: ['3.22.3', '3.23.0', '3.24.0', 'latest']
+        zod-version: ['3.22.3', '3.23.0', '3.24.0', '3.25.0', '^3.25.76']
 
     steps:
       - uses: actions/checkout@v4
