@@ -521,8 +521,9 @@ In case of use of Google protobuf to improve communication performance, you can 
   - **packageName**: Name of the protobuf file package.
   - **header**: Text to add as a comment at the beginning of the output.
   - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
-  - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to true.
+  - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
   - **keepKeys**: Specifies whether property names should follow the Google Protobuf naming convention (false) or remain as originally defined (true). The default is `false`.
+  - **encodeDoubleAsInt**: Double values will be represented as integers in the proto file. Defaults to `false`.
 
 - Limitations:
   - ZodTuple is supported only for items of the same type.
