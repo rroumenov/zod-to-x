@@ -94,9 +94,8 @@ export interface IZod2xMetadata {
 
     /**
      * For Layered Modeling.
-     * When a type of another file is used without modifying it, by default it is sustituted by
-     * the import without creating a new type. If wanted. it can be forced to create a new type
-     * which will be the extension of the original type if `zod2xExtendable` is used.
+     * When a type of another file is used without modifying it, it is sustituted by its import
+     * instead of creating a new type.
      */
     aliasOf?: string;
     parentLayer?: IZod2xLayerMetadata;

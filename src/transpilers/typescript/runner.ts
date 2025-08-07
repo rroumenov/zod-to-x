@@ -36,9 +36,11 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "d-union" | "alias" }
+        opt?: { type?: "union" | "d-union" | "alias"; isInternal?: boolean }
     ) {
-        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
+        const extendedType = opt?.isInternal
+            ? aliasOf
+            : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
         if (opt?.type === "alias") {
             this.push0(`export type ${name} = ${extendedType};\n`);
@@ -57,6 +59,25 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
     }
 
+    protected checkExtendedTypeInclusion(data: ASTNode, type?: "alias" | "union" | "d-union") {
+        if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
+                    type,
+                });
+                this.addExternalTypeImport(data);
+            }
+            return true;
+        } else if (data.aliasOf) {
+            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
+                type,
+                isInternal: true,
+            });
+            return true;
+        }
+        return false;
+    }
+
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getAnyType = (): string => "any";
     protected getBooleanType = (): string => "boolean";
@@ -71,7 +92,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     protected getTupleType = (itemsType: string[]): string => `[${itemsType.join(", ")}]`;
 
     /** Ex: TypeA | TypeB */
-    protected getUnionType = (itemsType: string[]): string => itemsType.join(" | ");
+    protected getUnionType = (itemsType: string[]): string =>
+        itemsType.map((type) => `${this.indent[1]}| ${type}`).join("\n");
 
     /** Ex: TypeA & TypeB */
     protected getIntersectionType = (itemsType: string[]): string => itemsType.join(" & ");
@@ -114,12 +136,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     }
 
     protected transpileAliasedType(data: ASTAliasedTypes): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type: "alias",
-                });
-            }
+        if (this.checkExtendedTypeInclusion(data, "alias")) {
             return;
         }
 
@@ -143,12 +160,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *  }
      */
     protected transpileEnum(data: ASTEnum): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
-                    type: "alias",
-                });
-            }
+        if (this.checkExtendedTypeInclusion(data, "alias")) {
             return;
         }
 
@@ -186,10 +198,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileIntersection(data: ASTIntersection): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
-            }
+        if (this.checkExtendedTypeInclusion(data)) {
             return;
         }
 
@@ -208,10 +217,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     }
 
     protected transpileStruct(data: ASTObject): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
-            }
+        if (this.checkExtendedTypeInclusion(data)) {
             return;
         }
 
@@ -240,12 +246,12 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      * }
      * */
     protected transpileUnion(data: ASTUnion): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
-                    type: data.discriminantKey === undefined ? "union" : "d-union",
-                });
-            }
+        if (
+            this.checkExtendedTypeInclusion(
+                data,
+                data.discriminantKey === undefined ? "union" : "d-union"
+            )
+        ) {
             return;
         }
 
@@ -257,7 +263,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
             const attributesTypes = data.options.map(this.getAttributeType.bind(this));
 
-            this.push0(`export type ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+            this.push0(`export type ${data.name} =\n${this.getUnionType(attributesTypes)};\n`);
         }
     }
 

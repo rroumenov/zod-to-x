@@ -69,9 +69,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "alias" }
+        opt?: { type?: "union" | "alias"; isInternal?: boolean }
     ) {
-        const extendedType = this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
+        const extendedType = opt?.isInternal
+            ? aliasOf
+            : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
         if (opt?.type === "union" || opt?.type === "alias") {
             this.push0(`using ${name} = ${extendedType};\n`);
@@ -82,6 +84,25 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
                 this.push0(`struct ${name} : public ${extendedType} {};\n`);
             }
         }
+    }
+
+    protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias") {
+        if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
+                    type,
+                });
+                this.addExternalTypeImport(data);
+            }
+            return true;
+        } else if (data.aliasOf) {
+            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
+                type,
+                isInternal: true,
+            });
+            return true;
+        }
+        return false;
     }
 
     protected runAfter() {
@@ -148,7 +169,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     /** Ex: boost::variant<TypeA, TypeB> */
     protected getUnionType = (itemsType: string[]) => {
         this.imports.add(this.lib.variant);
-        return `boost::variant<${itemsType.join(", ")}>`;
+        const unionLines = itemsType.map((type) => `${this.indent[2]}${type}`).join(",\n");
+        return `boost::variant<\n${unionLines}\n${this.indent[1]}>`;
     };
 
     /** Ex: depends on number range (if any). One of:
@@ -222,12 +244,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     protected transpileAliasedType(data: ASTAliasedTypes): void {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type: "alias",
-                });
-            }
+        if (this.checkExtendedTypeInclusion(data, "alias")) {
             return;
         }
 
@@ -251,12 +268,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileEnum(data: ASTEnum) {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
-                    type: "alias",
-                });
-            }
+        if (this.checkExtendedTypeInclusion(data, "alias")) {
             return;
         }
 
@@ -293,10 +305,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     protected transpileIntersection(data: ASTIntersection) {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
-            }
+        if (this.checkExtendedTypeInclusion(data)) {
             return;
         }
 
@@ -334,12 +343,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     /** Ex: using TypeC = boost::variant<TypeA, TypeB> */
     protected transpileUnion(data: ASTUnion) {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!, {
-                    type: "union",
-                });
-            }
+        if (this.checkExtendedTypeInclusion(data, "union")) {
             return;
         }
 
@@ -361,10 +365,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     protected transpileStruct(data: ASTObject) {
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name, data.parentNamespace!, data.aliasOf!);
-            }
+        if (this.checkExtendedTypeInclusion(data)) {
             return;
         }
 
@@ -945,7 +946,8 @@ export class Zod2Cpp17 extends Zod2Cpp {
     /** Ex: std::variant<TypeA, TypeB> */
     protected override getUnionType = (itemsType: string[]) => {
         this.imports.add(this.lib.variant);
-        return `std::variant<${itemsType.join(", ")}>`;
+        const unionLines = itemsType.map((type) => `${this.indent[2]}${type}`).join(",\n");
+        return `std::variant<\n${unionLines}\n${this.indent[1]}>`;
     };
 
     protected override _getOptional(type: string) {

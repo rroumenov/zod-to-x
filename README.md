@@ -18,7 +18,7 @@
 
 [`@zod-to-x`](https://github.com/rroumenov/zod-to-x`) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
 
-<span style="color: red;">**Important Announcement:**</span> `zod-to-x@2.0.0` has been released, introducing migration to Zod V4. At this stage, only the existent behavior has been migrated, while new features like Literal Templates are still under analysis. Additionally, `zod-to-x@1.X.Y` will continue to be maintained for Zod V3, and any new transpilation languages will also be supported in version 1.
+<span style="color: red;">**Important Announcement:**</span> `zod-to-x@2.0.0` has been released, introducing migration to Zod V4. At this stage, only the existent behavior has been migrated, while new features like Literal Templates are still under analysis. Only the complete Zod V4 version will be supported, **not v4-mini**. Additionally, `zod-to-x@1.X.Y` will continue to be maintained for Zod V3, and any new transpilation languages will also be supported in version 1.
 
 
 
@@ -60,7 +60,7 @@ Automate the transpilation of data models to save time, reduce errors, and let y
 ```bash
 npm install zod-to-x zod
 ```
-(*) [`zod@3.25.0`](https://www.npmjs.com/package/zod/v/3.25.0) version or greather is required.
+(*) [`zod@3.25.28`](https://www.npmjs.com/package/zod/v/3.25.0) version or greather is required.
 
 ### 2) Extend Zod using the `extendZod` method after the first [`@zod`](https://github.com/colinhacks/zod) import:
 ```ts
@@ -521,8 +521,9 @@ In case of use of Google protobuf to improve communication performance, you can 
   - **packageName**: Name of the protobuf file package.
   - **header**: Text to add as a comment at the beginning of the output.
   - **indent**: Number of spaces to use for indentation in the generated code. Defaults to 4 if not specified.
-  - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to true.
+  - **includeComments**: Determines whether to include comments in the transpiled code. Defaults to `true`.
   - **keepKeys**: Specifies whether property names should follow the Google Protobuf naming convention (false) or remain as originally defined (true). The default is `false`.
+  - **encodeDoubleAsInt**: Double values will be represented as integers in the proto file. Defaults to `false`.
 
 - Limitations:
   - ZodTuple is supported only for items of the same type.

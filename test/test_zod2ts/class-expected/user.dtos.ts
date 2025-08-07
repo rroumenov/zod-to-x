@@ -36,12 +36,14 @@ export class CreateUserUseCaseResultDto {
     }
 }
 
+export class UpdateUserUseCaseDto extends CreateUserUseCaseDto {}
+
 export class UpdateUserUseCaseResultDto extends USER.UserEntity {}
 
 export class UserDtos {
     createUserUseCaseDto: CreateUserUseCaseDto;
     createUserUseCaseResultDto: CreateUserUseCaseResultDto;
-    updateUserUseCaseDto: CreateUserUseCaseDto;
+    updateUserUseCaseDto: UpdateUserUseCaseDto;
     updateUserUseCaseResultDto: UpdateUserUseCaseResultDto;
 
     constructor(data: UserDtos) {
