@@ -67,7 +67,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
     protected getStringType = (): string => "string";
 
     protected getNumberType = (isInt: boolean, range: { min?: number; max?: number }): string => {
-        if (!isInt) {
+        if (!isInt && this.opt.encodeDoubleAsInt !== true) {
             return "double";
         }
 
@@ -306,7 +306,12 @@ export function zod2ProtoV3(
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<
             IZod2ProtoV3Opt,
-            "packageName" | "keepKeys" | "header" | "indent" | "includeComments"
+            | "packageName"
+            | "keepKeys"
+            | "header"
+            | "indent"
+            | "includeComments"
+            | "encodeDoubleAsInt"
         > = {}
 ): string {
     const astNode = new Zod2Ast({ strict: opt.strict }).build(schema);

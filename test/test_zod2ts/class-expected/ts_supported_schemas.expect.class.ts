@@ -61,7 +61,9 @@ export class OtherObjectItemWithDiscriminator {
     }
 }
 
-export type DiscriminatedUnionItem = ObjectItemWithDiscriminator | OtherObjectItemWithDiscriminator;
+export type DiscriminatedUnionItem =
+    | ObjectItemWithDiscriminator
+    | OtherObjectItemWithDiscriminator;
 
 // Built from intersection of ObjectItem and OtherObjectItem
 export class IntersectionItem {

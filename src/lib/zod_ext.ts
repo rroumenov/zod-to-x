@@ -74,6 +74,12 @@ export interface IZod2xLayerMetadata {
      * intersection). Default is true.
      */
     basicTypes?: boolean;
+
+    /**
+     * Indicates if the layer class should be included as another node for transpilation.
+     * Default is true.
+     */
+    skipLayerInterface?: boolean;
 }
 
 export interface IZod2xMetadata {
@@ -96,9 +102,8 @@ export interface IZod2xMetadata {
 
     /**
      * For Layered Modeling.
-     * When a type of another file is used without modifying it, by default it is sustituted by
-     * the import without creating a new type. If wanted. it can be forced to create a new type
-     * which will be the extension of the original type if `zod2xExtendable` is used.
+     * When a type of another file is used without modifying it, it is sustituted by its import
+     * instead of creating a new type.
      */
     aliasOf?: string;
     parentLayer?: IZod2xLayerMetadata;
@@ -410,5 +415,22 @@ export function extendZod(zod: any /*typeof z ---> any type until solve type inc
 
             return newItem;
         };
+    }
+
+    Extended.setZ(zod);
+}
+
+/**
+ * Enforcing the same instance of Zod used by user. This resolves Bun incompatibilities.
+ */
+export class Extended {
+    private static zExt: any = z;
+
+    static getZ() {
+        return this.zExt;
+    }
+
+    static setZ(zod: any) {
+        this.zExt = zod;
     }
 }

@@ -2,24 +2,16 @@ import { z } from "zod";
 import { extendZod, Zod2XConverters } from "../../dist";
 extendZod(z);
 
+import { describe, test } from "vitest";
 import * as fs from "fs";
-import { diffLinesRaw } from "jest-diff";
 import * as pb from "protobufjs";
 
 import { header } from "../common/header";
+import { testOutput } from "../common/utils";
 import { getSchemas, modelBuilder } from "../common/zod_schemas";
 import { zProto3SupportedSchemas } from "./proto3_supported_schemas";
 
 const schemas = getSchemas();
-
-const testOutput = (output: string, expectedOutput: string) => {
-    try {
-        expect(output.trim()).toBe(expectedOutput.trim());
-    } catch (error) {
-        diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-        throw error;
-    }
-};
 
 describe("Zod2Proto3", () => {
     test("String Schema", () => {
@@ -304,16 +296,11 @@ describe("Zod2Proto3", () => {
             .readFileSync("./test/test_zod2proto3/proto3_supported_schemas.expect.proto")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2proto3/err-proto3_supported_schemas.expect.proto",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.proto"
+        );
     });
 
     test("Protobuf V3 supported schemas - as camelCase", () => {
@@ -330,15 +317,33 @@ describe("Zod2Proto3", () => {
             .readFileSync("test/test_zod2proto3/proto3_supported_schemas.expect.keep-keys.proto")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto"
+        );
+    });
+
+    test("Protobuf V3 supported schemas - double as integer", () => {
+        // Validate that expected proto file is a valid one.
+        pb.loadSync("test/test_zod2proto3/proto3_supported_schemas.expect.double-as-int.proto");
+
+        const output = Zod2XConverters.zod2ProtoV3(zProto3SupportedSchemas, {
+            strict: false,
+            header,
+            packageName: "supportedschemas",
+            encodeDoubleAsInt: true,
+        });
+        const expectedOutput = fs
+            .readFileSync(
+                "test/test_zod2proto3/proto3_supported_schemas.expect.double-as-int.proto"
+            )
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto"
+        );
     });
 });

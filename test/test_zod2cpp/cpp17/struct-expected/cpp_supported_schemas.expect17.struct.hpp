@@ -38,7 +38,10 @@ namespace zodtocppstruct {
         std::string other_key;
     };
 
-    using UnionItem = std::variant<ObjectItem, OtherObjectItem>;
+    using UnionItem = std::variant<
+        ObjectItem,
+        OtherObjectItem
+    >;
 
     struct ObjectItemWithDiscriminator {
         std::string key;
@@ -50,7 +53,10 @@ namespace zodtocppstruct {
         EnumItem discriminator;
     };
 
-    using DiscriminatedUnionItem = std::variant<ObjectItemWithDiscriminator, OtherObjectItemWithDiscriminator>;
+    using DiscriminatedUnionItem = std::variant<
+        ObjectItemWithDiscriminator,
+        OtherObjectItemWithDiscriminator
+    >;
 
     struct IntersectionItem : public ObjectItem, public OtherObjectItem {
         // Intersection fields are inherited from base structs.

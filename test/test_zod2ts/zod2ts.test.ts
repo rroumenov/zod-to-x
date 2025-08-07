@@ -3,9 +3,9 @@ import { Zod2XTypes, extendZod, Zod2Ast, Zod2XTranspilers } from "../../dist";
 extendZod(z);
 
 import * as fs from "fs";
-import { diffLinesRaw } from "jest-diff";
 
 import { header } from "../common/header";
+import { testOutput } from "../common/utils";
 import { getSchemas, modelBuilder } from "../common/zod_schemas";
 import { zTsSupportedSchemas } from "./ts_supported_schemas";
 import {
@@ -18,15 +18,6 @@ import { userDtos as userDtosMixin } from "../common/layered_mixin_schemas";
 const schemas = getSchemas();
 
 let tsSupportedSchemas: Zod2XTypes.ASTNodes;
-
-const testOutput = (output: string, expectedOutput: string) => {
-    try {
-        expect(output.trim()).toBe(expectedOutput.trim());
-    } catch (error) {
-        diffLinesRaw(output.split("\n"), expectedOutput.split("\n"));
-        throw error;
-    }
-};
 
 describe("Zod2Ts", () => {
     beforeAll(() => {
@@ -173,7 +164,9 @@ describe("Zod2Ts", () => {
             "export interface OtherObjectItem {\n" +
             "  otherKey: string;\n" +
             "}\n\n" +
-            "export type UnionItem = ObjectItem | OtherObjectItem;\n\n" +
+            "export type UnionItem =\n" +
+            "  | ObjectItem\n" +
+            "  | OtherObjectItem;\n\n" +
             "export interface ModelItem {\n" +
             "  item: UnionItem;\n" +
             "}";
@@ -231,16 +224,11 @@ describe("Zod2Ts", () => {
             )
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.expect.interface.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.expect.interface.ts"
+        );
     });
 
     test("Typescript supported schemas - as class", () => {
@@ -251,16 +239,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.expect.class.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.expect.class.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-ts_supported_schemas.expect.class.ts"
+        );
     });
 
     test("Typescript layered modeling - domain", () => {
@@ -269,13 +252,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/user.entity.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.entity.ts", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-user.entity.ts"
+        );
     });
 
     test("Typescript layered modeling - application", () => {
@@ -284,13 +265,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/user.dtos.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.dtos.ts", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-user.dtos.ts"
+        );
     });
 
     test("Typescript layered modeling - infrastructure", () => {
@@ -299,13 +278,7 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/user.api.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.api.ts", output);
-            throw error;
-        }
+        testOutput(output, expectedOutput, "./test/test_zod2ts/interface-expected/err-user.api.ts");
     });
 
     test("Typescript layered modeling - domain as class", () => {
@@ -314,13 +287,7 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/user.entity.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.entity.ts", output);
-            throw error;
-        }
+        testOutput(output, expectedOutput, "./test/test_zod2ts/class-expected/err-user.entity.ts");
     });
 
     test("Typescript layered modeling - application as class", () => {
@@ -329,13 +296,7 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/user.dtos.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.dtos.ts", output);
-            throw error;
-        }
+        testOutput(output, expectedOutput, "./test/test_zod2ts/class-expected/err-user.dtos.ts");
     });
 
     test("Typescript layered modeling - infrastructure as class", () => {
@@ -344,13 +305,7 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/user.api.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.api.ts", output);
-            throw error;
-        }
+        testOutput(output, expectedOutput, "./test/test_zod2ts/class-expected/err-user.api.ts");
     });
 
     test("Typescript layered modeling mixin - application", () => {
@@ -359,13 +314,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/user.dtos.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/interface-expected/err-user.dtos.ts", output);
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-user.dtos.ts"
+        );
     });
 
     test("Typescript layered modeling mixin - application as class", () => {
@@ -377,13 +330,7 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/user.dtos.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync("./test/test_zod2ts/class-expected/err-user.dtos.ts", output);
-            throw error;
-        }
+        testOutput(output, expectedOutput, "./test/test_zod2ts/class-expected/err-user.dtos.ts");
     });
 
     test("Typescript layered modeling supported schemas - entity", () => {
@@ -396,16 +343,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/ts_supported_schemas.entity.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.entity.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.entity.ts"
+        );
     });
 
     test("Typescript layered modeling supported schemas - entity as class", () => {
@@ -418,16 +360,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.entity.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.entity.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-ts_supported_schemas.entity.ts"
+        );
     });
 
     test("Typescript layered modeling supported schemas - application", () => {
@@ -440,16 +377,11 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/interface-expected/ts_supported_schemas.app.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.app.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-ts_supported_schemas.app.ts"
+        );
     });
 
     test("Typescript layered modeling supported schemas - application as class", () => {
@@ -462,15 +394,10 @@ describe("Zod2Ts", () => {
             .readFileSync("./test/test_zod2ts/class-expected/ts_supported_schemas.app.ts")
             .toString();
 
-        try {
-            expect(output.trim()).toBe(expectedOutput.trim());
-        } catch (error) {
-            diffLinesRaw(expectedOutput.split("\n"), output.split("\n"));
-            fs.writeFileSync(
-                "./test/test_zod2ts/class-expected/err-ts_supported_schemas.app.ts",
-                output
-            );
-            throw error;
-        }
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-ts_supported_schemas.app.ts"
+        );
     });
 });

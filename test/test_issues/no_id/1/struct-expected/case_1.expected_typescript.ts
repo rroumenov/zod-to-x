@@ -10,10 +10,6 @@ export interface UserConfigUser {
     banned: boolean;
 }
 
-export type UserConfig = UserConfigAdmin | UserConfigUser;
-
-export interface UserDtos {
-    userConfigAdmin: UserConfigAdmin;
-    userConfigUser: UserConfigUser;
-    userConfig: UserConfig;
-}
+export type UserConfig =
+    | UserConfigAdmin
+    | UserConfigUser;

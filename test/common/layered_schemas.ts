@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Application, Domain, Infrastructure, Zod2XModel } from "../../dist";
 
-@Domain({ namespace: "USER", file: "user.entity" })
+@Domain({ namespace: "USER", file: "user.entity", skipLayerInterface: false })
 class UserModels extends Zod2XModel {
     userRole = z.enum(["Admin", "User"]);
 
@@ -16,7 +16,7 @@ class UserModels extends Zod2XModel {
 
 export const userModels = new UserModels();
 
-@Application({ namespace: "USER_DTOS", file: "user.dtos" })
+@Application({ namespace: "USER_DTOS", file: "user.dtos", skipLayerInterface: false })
 class UserDtos extends Zod2XModel {
     createUserUseCaseDto = userModels.userEntity.omit({ id: true });
 
@@ -31,7 +31,7 @@ class UserDtos extends Zod2XModel {
 
 export const userDtos = new UserDtos();
 
-@Infrastructure({ namespace: "USER_API", file: "user.api" })
+@Infrastructure({ namespace: "USER_API", file: "user.api", skipLayerInterface: false })
 class UserApi extends Zod2XModel {
     reqUpdateUser = userDtos.updateUserUseCaseDto;
     resUpdateUser = userDtos.updateUserUseCaseResultDto;
