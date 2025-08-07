@@ -18,7 +18,7 @@
 
 [`@zod-to-x`](https://github.com/rroumenov/zod-to-x`) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
 
-<span style="color: red;">**Important Announcement:**</span> `zod-to-x@2.0.0` has been released, introducing migration to Zod V4. At this stage, only the existent behavior has been migrated, while new features like Literal Templates are still under analysis. Additionally, `zod-to-x@1.X.Y` will continue to be maintained for Zod V3, and any new transpilation languages will also be supported in version 1.
+<span style="color: red;">**Important Announcement:**</span> `zod-to-x@2.0.0` has been released, introducing migration to Zod V4. At this stage, only the existent behavior has been migrated, while new features like Literal Templates are still under analysis. Only the complete Zod V4 version will be supported, **not v4-mini**. Additionally, `zod-to-x@1.X.Y` will continue to be maintained for Zod V3, and any new transpilation languages will also be supported in version 1.
 
 
 
