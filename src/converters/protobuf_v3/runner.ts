@@ -1,4 +1,5 @@
 import Case from "case";
+import { ZodDiscriminatedUnion, ZodUnion } from "zod";
 
 import {
     ASTAliasedTypes,
@@ -302,7 +303,10 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
  * @returns The Protocol Buffers v3 definition as a string.
  */
 export function zod2ProtoV3(
-    schema: ZodObject<any>,
+    schema:
+        | ZodObject<any>
+        | ZodDiscriminatedUnion<string, ZodObject<any>[]>
+        | ZodUnion<[ZodObject<any>, ...ZodObject<any>[]]>,
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<
             IZod2ProtoV3Opt,
@@ -314,6 +318,6 @@ export function zod2ProtoV3(
             | "encodeDoubleAsInt"
         > = {}
 ): string {
-    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema);
+    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema as any);
     return new Zod2ProtoV3(opt).transpile(astNode);
 }
