@@ -74,7 +74,7 @@ namespace USER {
         j["id"] = x.id;
         j["name"] = x.name;
         j["email"] = x.email;
-        set_opt<std::uint64_t>(j, "age", x.age);
+        USER::set_opt<std::uint64_t>(j, "age", x.age);
         j["role"] = x.role;
     }
 
@@ -82,7 +82,7 @@ namespace USER {
         x.id = j.at("id").get<std::string>();
         x.name = j.at("name").get<std::string>();
         x.email = j.at("email").get<std::string>();
-        x.age = get_opt<std::uint64_t>(j, "age");
+        x.age = USER::get_opt<std::uint64_t>(j, "age");
         x.role = j.at("role").get<UserRole>();
     }
 

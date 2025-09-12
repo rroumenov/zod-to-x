@@ -267,8 +267,8 @@ namespace zodtocppstruct {
         j["discriminatedUnionItem"] = x.discriminated_union_item;
         j["intersectionItem"] = x.intersection_item;
         j["anyItem"] = x.any_item;
-        set_opt<std::string>(j, "optionalItem", x.optional_item);
-        set_opt<std::string>(j, "nullableItem", x.nullable_item);
+        zodtocppstruct::set_opt<std::string>(j, "optionalItem", x.optional_item);
+        zodtocppstruct::set_opt<std::string>(j, "nullableItem", x.nullable_item);
     }
 
     inline void from_json(const json& j, CppSupportedSchemas& x) {
@@ -292,8 +292,8 @@ namespace zodtocppstruct {
         x.discriminated_union_item = j.at("discriminatedUnionItem").get<DiscriminatedUnionItem>();
         x.intersection_item = j.at("intersectionItem").get<IntersectionItem>();
         x.any_item = j.at("anyItem").get<json>();
-        x.optional_item = get_opt<std::string>(j, "optionalItem");
-        x.nullable_item = get_opt<std::string>(j, "nullableItem");
+        x.optional_item = zodtocppstruct::get_opt<std::string>(j, "optionalItem");
+        x.nullable_item = zodtocppstruct::get_opt<std::string>(j, "nullableItem");
     }
 
 }

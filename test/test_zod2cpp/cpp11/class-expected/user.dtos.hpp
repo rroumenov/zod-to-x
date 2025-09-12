@@ -137,14 +137,14 @@ namespace USER_DTOS {
     inline void to_json(json& j, const CreateUserUseCaseDto& x) {
         j["name"] = x.get_name();
         j["email"] = x.get_email();
-        set_opt<std::uint64_t>(j, "age", x.get_age());
+        USER_DTOS::set_opt<std::uint64_t>(j, "age", x.get_age());
         j["role"] = x.get_role();
     }
 
     inline void from_json(const json& j, CreateUserUseCaseDto& x) {
         x.set_name(j.at("name").get<std::string>());
         x.set_email(j.at("email").get<std::string>());
-        x.set_age(get_opt<std::uint64_t>(j, "age"));
+        x.set_age(USER_DTOS::get_opt<std::uint64_t>(j, "age"));
         x.set_role(j.at("role").get<USER::UserRole>());
     }
 
@@ -152,7 +152,7 @@ namespace USER_DTOS {
         j["id"] = x.get_id();
         j["name"] = x.get_name();
         j["email"] = x.get_email();
-        set_opt<std::uint64_t>(j, "age", x.get_age());
+        USER_DTOS::set_opt<std::uint64_t>(j, "age", x.get_age());
         j["createdAt"] = x.get_created_at();
         j["updatedAt"] = x.get_updated_at();
     }
@@ -161,7 +161,7 @@ namespace USER_DTOS {
         x.set_id(j.at("id").get<std::string>());
         x.set_name(j.at("name").get<std::string>());
         x.set_email(j.at("email").get<std::string>());
-        x.set_age(get_opt<std::uint64_t>(j, "age"));
+        x.set_age(USER_DTOS::get_opt<std::uint64_t>(j, "age"));
         x.set_created_at(j.at("createdAt").get<std::string>());
         x.set_updated_at(j.at("updatedAt").get<std::string>());
     }

@@ -538,6 +538,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Structure attributes data.
      */
     private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[]) {
+        const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
@@ -545,7 +546,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             } else {
                 this._push1(
                     this.serializers,
-                    `set_opt<${i.typeName}>(j, "${i.origName}", x.${i.snakeName});`
+                    `${prefix}set_opt<${i.typeName}>(j, "${i.origName}", x.${i.snakeName});`
                 );
             }
         });
@@ -564,6 +565,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Structure attributes data.
      */
     private _createStructDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
+        const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
@@ -574,7 +576,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             } else {
                 this._push1(
                     this.serializers,
-                    `x.${i.snakeName} = get_opt<${i.typeName}>(j, "${i.origName}");`
+                    `x.${i.snakeName} = ${prefix}get_opt<${i.typeName}>(j, "${i.origName}");`
                 );
             }
         });
@@ -596,6 +598,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Structure attributes data.
      */
     private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[]) {
+        const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
         this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
@@ -603,7 +606,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             } else {
                 this._push1(
                     this.serializers,
-                    `set_opt<${i.typeName}>(j, "${i.origName}", x.get_${i.snakeName}());`
+                    `${prefix}set_opt<${i.typeName}>(j, "${i.origName}", x.get_${i.snakeName}());`
                 );
             }
         });
@@ -622,6 +625,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param childs - Structure attributes data.
      */
     private _createClassDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
+        const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
         this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
@@ -632,7 +636,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             } else {
                 this._push1(
                     this.serializers,
-                    `x.set_${i.snakeName}(get_opt<${i.typeName}>(j, "${i.origName}"));`
+                    `x.set_${i.snakeName}(${prefix}get_opt<${i.typeName}>(j, "${i.origName}"));`
                 );
             }
         });

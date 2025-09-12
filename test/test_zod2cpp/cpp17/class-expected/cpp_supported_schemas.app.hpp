@@ -211,8 +211,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         j["newDiscriminatedUnionItem"] = x.get_new_discriminated_union_item();
         j["newIntersectionItem"] = x.get_new_intersection_item();
         j["newAnyItem"] = x.get_new_any_item();
-        set_opt<std::string>(j, "newOptionalItem", x.get_new_optional_item());
-        set_opt<std::string>(j, "newNullableItem", x.get_new_nullable_item());
+        CPP_SUPPORTED_SCHEMAS_APP::set_opt<std::string>(j, "newOptionalItem", x.get_new_optional_item());
+        CPP_SUPPORTED_SCHEMAS_APP::set_opt<std::string>(j, "newNullableItem", x.get_new_nullable_item());
     }
 
     inline void from_json(const json& j, CppSupportedSchemasApplication& x) {
@@ -236,8 +236,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         x.set_new_discriminated_union_item(j.at("newDiscriminatedUnionItem").get<NewDiscriminatedUnionItem>());
         x.set_new_intersection_item(j.at("newIntersectionItem").get<NewIntersectionItem>());
         x.set_new_any_item(j.at("newAnyItem").get<NewAnyItem>());
-        x.set_new_optional_item(get_opt<std::string>(j, "newOptionalItem"));
-        x.set_new_nullable_item(get_opt<std::string>(j, "newNullableItem"));
+        x.set_new_optional_item(CPP_SUPPORTED_SCHEMAS_APP::get_opt<std::string>(j, "newOptionalItem"));
+        x.set_new_nullable_item(CPP_SUPPORTED_SCHEMAS_APP::get_opt<std::string>(j, "newNullableItem"));
     }
 
 }
