@@ -268,6 +268,54 @@ describe("Zod2Proto3", () => {
         testOutput(output, expectedOutput);
     });
 
+    test("Union Schema - main union message", () => {
+        const output = Zod2XConverters.zod2ProtoV3(schemas.zUnion, {
+            indent: 2,
+            strict: false,
+        });
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItem {\n" +
+            "  string key = 1;\n" +
+            "}\n\n" +
+            "message OtherObjectItem {\n" +
+            "  string other_key = 1;\n" +
+            "}\n\n" +
+            "message UnionItem {\n" +
+            "  oneof union_item_oneof {\n" +
+            "    ObjectItem object_item = 1;\n" +
+            "    OtherObjectItem other_object_item = 2;\n" +
+            "  }\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Discriminant Union Schema - main union message", () => {
+        const output = Zod2XConverters.zod2ProtoV3(schemas.zDiscriminantUnion, {
+            indent: 2,
+            strict: false,
+        });
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItemWithDiscriminator {\n" +
+            "  string key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message OtherObjectItemWithDiscriminator {\n" +
+            "  string other_key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message DiscriminatedUnionItem {\n" +
+            "  oneof discriminated_union_item_oneof {\n" +
+            "    ObjectItemWithDiscriminator object_item_with_discriminator = 1;\n" +
+            "    OtherObjectItemWithDiscriminator other_object_item_with_discriminator = 2;\n" +
+            "  }\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
     test("Any Schema", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zAny), {
             indent: 2,
