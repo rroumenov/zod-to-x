@@ -748,10 +748,10 @@ describe("Zod2Cpp17", () => {
             "  }\n" +
             "  #endif\n\n" +
             "  inline void to_json(json& j, const ModelItem& x) {\n" +
-            '    set_opt<std::string>(j, "item", x.item);\n' +
+            '    zodtocpp::set_opt<std::string>(j, "item", x.item);\n' +
             "  }\n\n" +
             "  inline void from_json(const json& j, ModelItem& x) {\n" +
-            '    x.item = get_opt<std::string>(j, "item");\n' +
+            '    x.item = zodtocpp::get_opt<std::string>(j, "item");\n' +
             "  }\n\n" +
             "}";
 
@@ -791,10 +791,10 @@ describe("Zod2Cpp17", () => {
             "  }\n" +
             "  #endif\n\n" +
             "  inline void to_json(json& j, const ModelItem& x) {\n" +
-            '    set_opt<std::string>(j, "item", x.item);\n' +
+            '    zodtocpp::set_opt<std::string>(j, "item", x.item);\n' +
             "  }\n\n" +
             "  inline void from_json(const json& j, ModelItem& x) {\n" +
-            '    x.item = get_opt<std::string>(j, "item");\n' +
+            '    x.item = zodtocpp::get_opt<std::string>(j, "item");\n' +
             "  }\n\n" +
             "}";
 
