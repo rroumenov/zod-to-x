@@ -10,8 +10,6 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-using nlohmann::json;
-
 namespace USER_DTOS {
     struct CreateUserUseCaseDto {
         std::string name;
@@ -46,7 +44,7 @@ namespace USER_DTOS {
     #ifndef NLOHMANN_OPTIONAL_HELPER_USER_DTOS
     #define NLOHMANN_OPTIONAL_HELPER_USER_DTOS
     template <typename T>
-    boost::optional<T> get_opt(const json& j, const std::string& key) {
+    boost::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -55,7 +53,7 @@ namespace USER_DTOS {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const boost::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const boost::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -65,21 +63,21 @@ namespace USER_DTOS {
     }
     #endif
 
-    inline void to_json(json& j, const CreateUserUseCaseDto& x) {
+    inline void to_json(nlohmann::json& j, const CreateUserUseCaseDto& x) {
         j["name"] = x.name;
         j["email"] = x.email;
         USER_DTOS::set_opt<std::uint64_t>(j, "age", x.age);
         j["role"] = x.role;
     }
 
-    inline void from_json(const json& j, CreateUserUseCaseDto& x) {
+    inline void from_json(const nlohmann::json& j, CreateUserUseCaseDto& x) {
         x.name = j.at("name").get<std::string>();
         x.email = j.at("email").get<std::string>();
         x.age = USER_DTOS::get_opt<std::uint64_t>(j, "age");
         x.role = j.at("role").get<USER::UserRole>();
     }
 
-    inline void to_json(json& j, const CreateUserUseCaseResultDto& x) {
+    inline void to_json(nlohmann::json& j, const CreateUserUseCaseResultDto& x) {
         j["id"] = x.id;
         j["name"] = x.name;
         j["email"] = x.email;
@@ -88,7 +86,7 @@ namespace USER_DTOS {
         j["updatedAt"] = x.updated_at;
     }
 
-    inline void from_json(const json& j, CreateUserUseCaseResultDto& x) {
+    inline void from_json(const nlohmann::json& j, CreateUserUseCaseResultDto& x) {
         x.id = j.at("id").get<std::string>();
         x.name = j.at("name").get<std::string>();
         x.email = j.at("email").get<std::string>();
@@ -97,14 +95,14 @@ namespace USER_DTOS {
         x.updated_at = j.at("updatedAt").get<std::string>();
     }
 
-    inline void to_json(json& j, const UserDtos& x) {
+    inline void to_json(nlohmann::json& j, const UserDtos& x) {
         j["createUserUseCaseDto"] = x.create_user_use_case_dto;
         j["createUserUseCaseResultDto"] = x.create_user_use_case_result_dto;
         j["updateUserUseCaseDto"] = x.update_user_use_case_dto;
         j["updateUserUseCaseResultDto"] = x.update_user_use_case_result_dto;
     }
 
-    inline void from_json(const json& j, UserDtos& x) {
+    inline void from_json(const nlohmann::json& j, UserDtos& x) {
         x.create_user_use_case_dto = j.at("createUserUseCaseDto").get<CreateUserUseCaseDto>();
         x.create_user_use_case_result_dto = j.at("createUserUseCaseResultDto").get<CreateUserUseCaseResultDto>();
         x.update_user_use_case_dto = j.at("updateUserUseCaseDto").get<UpdateUserUseCaseDto>();

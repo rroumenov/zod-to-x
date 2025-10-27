@@ -15,8 +15,6 @@
 #include <unordered_map>
 #include <vector>
 
-using nlohmann::json;
-
 namespace CPP_SUPPORTED_SCHEMAS {
     using StringItem = std::string;
 
@@ -132,7 +130,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         // Intersection fields are inherited from base classes.
     };
 
-    using AnyItem = json;
+    using AnyItem = nlohmann::json;
 
     class CppSupportedSchemas {
     private:
@@ -271,7 +269,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     #ifndef NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS
     #define NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS
     template <typename T>
-    boost::optional<T> get_opt(const json& j, const std::string& key) {
+    boost::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -280,7 +278,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const boost::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const boost::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -290,7 +288,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
     #endif
 
-    inline void to_json(json& j, const EnumItem& x) {
+    inline void to_json(nlohmann::json& j, const EnumItem& x) {
         switch (x) {
             case EnumItem::Enum1: j = "Enum1"; break;
             case EnumItem::Enum2: j = "Enum2"; break;
@@ -299,14 +297,14 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, EnumItem& x) {
+    inline void from_json(const nlohmann::json& j, EnumItem& x) {
         if (j == "Enum1") x = EnumItem::Enum1;
         else if (j == "Enum2") x = EnumItem::Enum2;
         else if (j == "Enum3") x = EnumItem::Enum3;
         else { throw std::runtime_error("Unexpected value deserializing enum EnumItem."); }
     }
 
-    inline void to_json(json& j, const NativeEnumItem& x) {
+    inline void to_json(nlohmann::json& j, const NativeEnumItem& x) {
         switch (x) {
             case NativeEnumItem::NativeEnum1: j = 1; break;
             case NativeEnumItem::NativeEnum2: j = 2; break;
@@ -315,50 +313,50 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, NativeEnumItem& x) {
+    inline void from_json(const nlohmann::json& j, NativeEnumItem& x) {
         if (j == 1) x = NativeEnumItem::NativeEnum1;
         else if (j == 2) x = NativeEnumItem::NativeEnum2;
         else if (j == "NativeEnum3") x = NativeEnumItem::NativeEnum3;
         else { throw std::runtime_error("Unexpected value deserializing enum NativeEnumItem."); }
     }
 
-    inline void to_json(json& j, const ObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItem& x) {
         j["key"] = x.get_key();
     }
 
-    inline void from_json(const json& j, ObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItem& x) {
         x.set_key(j.at("key").get<std::string>());
     }
 
-    inline void to_json(json& j, const OtherObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItem& x) {
         j["otherKey"] = x.get_other_key();
     }
 
-    inline void from_json(const json& j, OtherObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItem& x) {
         x.set_other_key(j.at("otherKey").get<std::string>());
     }
 
-    inline void to_json(json& j, const ObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItemWithDiscriminator& x) {
         j["key"] = x.get_key();
         j["discriminator"] = x.get_discriminator();
     }
 
-    inline void from_json(const json& j, ObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItemWithDiscriminator& x) {
         x.set_key(j.at("key").get<std::string>());
         x.set_discriminator(j.at("discriminator").get<EnumItem>());
     }
 
-    inline void to_json(json& j, const OtherObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItemWithDiscriminator& x) {
         j["otherKey"] = x.get_other_key();
         j["discriminator"] = x.get_discriminator();
     }
 
-    inline void from_json(const json& j, OtherObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItemWithDiscriminator& x) {
         x.set_other_key(j.at("otherKey").get<std::string>());
         x.set_discriminator(j.at("discriminator").get<EnumItem>());
     }
 
-    inline void to_json(json& j, const UnionItem& x) {
+    inline void to_json(nlohmann::json& j, const UnionItem& x) {
         if (x.type() == typeid(ObjectItem)) {
             j = boost::get<ObjectItem>(x);
         }
@@ -370,7 +368,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, UnionItem& x) {
+    inline void from_json(const nlohmann::json& j, UnionItem& x) {
         try {
             // Try to deserialize as ObjectItem
             x = j.get<ObjectItem>();
@@ -388,7 +386,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void to_json(json& j, const DiscriminatedUnionItem& x) {
+    inline void to_json(nlohmann::json& j, const DiscriminatedUnionItem& x) {
         if (x.type() == typeid(ObjectItemWithDiscriminator)) {
             j = boost::get<ObjectItemWithDiscriminator>(x);
         }
@@ -400,7 +398,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, DiscriminatedUnionItem& x) {
+    inline void from_json(const nlohmann::json& j, DiscriminatedUnionItem& x) {
         const auto& k = j.at("discriminator").get<std::string>();
         if (k == "Enum1") {
             x = j.get<ObjectItemWithDiscriminator>();
@@ -414,17 +412,17 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void to_json(json& j, const IntersectionItem& x) {
+    inline void to_json(nlohmann::json& j, const IntersectionItem& x) {
         to_json(j, static_cast<const ObjectItem&>(x));
         to_json(j, static_cast<const OtherObjectItem&>(x));
     }
 
-    inline void from_json(const json& j, IntersectionItem& x) {
+    inline void from_json(const nlohmann::json& j, IntersectionItem& x) {
         from_json(j, static_cast<ObjectItem&>(x));
         from_json(j, static_cast<OtherObjectItem&>(x));
     }
 
-    inline void to_json(json& j, const CppSupportedSchemas& x) {
+    inline void to_json(nlohmann::json& j, const CppSupportedSchemas& x) {
         j["stringItem"] = x.get_string_item();
         j["literalStringItem"] = x.get_literal_string_item();
         j["literalNumberItem"] = x.get_literal_number_item();
@@ -452,7 +450,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         CPP_SUPPORTED_SCHEMAS::set_opt<std::string>(j, "nullableItem", x.get_nullable_item());
     }
 
-    inline void from_json(const json& j, CppSupportedSchemas& x) {
+    inline void from_json(const nlohmann::json& j, CppSupportedSchemas& x) {
         x.set_string_item(j.at("stringItem").get<StringItem>());
         x.set_literal_string_item(j.at("literalStringItem").get<std::string>());
         x.set_literal_number_item(j.at("literalNumberItem").get<std::uint32_t>());

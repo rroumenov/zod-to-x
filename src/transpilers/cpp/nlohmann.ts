@@ -1,3 +1,5 @@
+export const NLOHMANN = "nlohmann::json";
+
 /**
  * @description Generates a reusable C++ utility for handling optional fields in JSON serialization
  *              and deserialization using the nlohmann::json library and boost::optional.
@@ -17,7 +19,7 @@ export function getNlohmannOptionalHelper(
     const setOpt = includeNulls
         ? [
               `template <typename T>`,
-              `void set_opt(json& j, const std::string& key, const ${optType}<T>& opt) {`,
+              `void set_opt(${NLOHMANN}& j, const std::string& key, const ${optType}<T>& opt) {`,
               `${" ".repeat(indent)}if (opt) {`,
               `${" ".repeat(indent * 2)}j[key] = *opt;`,
               `${" ".repeat(indent)}}`,
@@ -29,7 +31,7 @@ export function getNlohmannOptionalHelper(
           ]
         : [
               `template <typename T>`,
-              `void set_opt(json& j, const std::string& key, const ${optType}<T>& opt) {`,
+              `void set_opt(${NLOHMANN}& j, const std::string& key, const ${optType}<T>& opt) {`,
               `${" ".repeat(indent)}if (opt) {`,
               `${" ".repeat(indent * 2)}j[key] = *opt;`,
               `${" ".repeat(indent)}}`,
@@ -40,7 +42,7 @@ export function getNlohmannOptionalHelper(
         `#ifndef NLOHMANN_OPTIONAL_HELPER_${namespace}`,
         `#define NLOHMANN_OPTIONAL_HELPER_${namespace}`,
         "template <typename T>",
-        `${optType}<T> get_opt(const json& j, const std::string& key) {`,
+        `${optType}<T> get_opt(const ${NLOHMANN}& j, const std::string& key) {`,
         `${" ".repeat(indent)}auto it = j.find(key);`,
         `${" ".repeat(indent)}if (it != j.end() && !it->is_null()) {`,
         `${" ".repeat(indent * 2)}return it->get<T>();`,

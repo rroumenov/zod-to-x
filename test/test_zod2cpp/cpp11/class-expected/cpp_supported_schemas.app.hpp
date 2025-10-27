@@ -10,8 +10,6 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-using nlohmann::json;
-
 namespace CPP_SUPPORTED_SCHEMAS_APP {
     using NewStringItem = CPP_SUPPORTED_SCHEMAS::StringItem;
 
@@ -171,7 +169,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     #ifndef NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS_APP
     #define NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS_APP
     template <typename T>
-    boost::optional<T> get_opt(const json& j, const std::string& key) {
+    boost::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -180,7 +178,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const boost::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const boost::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -190,7 +188,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
     #endif
 
-    inline void to_json(json& j, const CppSupportedSchemasApplication& x) {
+    inline void to_json(nlohmann::json& j, const CppSupportedSchemasApplication& x) {
         j["newStringItem"] = x.get_new_string_item();
         j["newLiteralStringItem"] = x.get_new_literal_string_item();
         j["newLiteralNumberItem"] = x.get_new_literal_number_item();
@@ -215,7 +213,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         CPP_SUPPORTED_SCHEMAS_APP::set_opt<std::string>(j, "newNullableItem", x.get_new_nullable_item());
     }
 
-    inline void from_json(const json& j, CppSupportedSchemasApplication& x) {
+    inline void from_json(const nlohmann::json& j, CppSupportedSchemasApplication& x) {
         x.set_new_string_item(j.at("newStringItem").get<NewStringItem>());
         x.set_new_literal_string_item(j.at("newLiteralStringItem").get<std::string>());
         x.set_new_literal_number_item(j.at("newLiteralNumberItem").get<std::uint32_t>());

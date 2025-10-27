@@ -14,8 +14,8 @@ import {
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 
-import { getLibs, USING } from "./libs";
-import { getNlohmannOptionalHelper } from "./nlohmann";
+import { getLibs } from "./libs";
+import { getNlohmannOptionalHelper, NLOHMANN } from "./nlohmann";
 import { defaultOpts, IZod2CppOpt } from "./options";
 
 /** Required data to serialize structure/class attribute. */
@@ -134,10 +134,6 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.output.push(...this.serializers);
             this.output.push("}");
         }
-
-        if (this.imports.has(this.lib.nlohmann)) {
-            this.postImports.add(`${USING.nlohmann}`);
-        }
     }
 
     protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
@@ -157,7 +153,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
     protected getAnyType = () => {
         this.imports.add(this.lib.nlohmann);
-        return "json";
+        return NLOHMANN;
     };
 
     /** Ex: std::set<TypeA> */
@@ -528,7 +524,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @description Generates a JSON serializer for a struct. Each required field is serialized
      *              directly, and optional fields are checked for existence before serialization.
      * Ex:
-     *      inline void to_json(json& j, const MyStruct& x) {
+     *      inline void to_json(nlohmann::json& j, const MyStruct& x) {
      *          j["requiredField"] = x.required_field;
      *          if (x.optional_field) {
      *              j["optionalField"] = x.optional_field;
@@ -539,7 +535,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
+        this._push0(this.serializers, `inline void to_json(${NLOHMANN}& j, const ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.${i.snakeName};`);
@@ -557,7 +553,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @description Generates a JSON deserializer for a struct. Each required field is deserialized
      *              using at, while optional fields are handled with get_opt.
      * Ex:
-     *      inline void from_json(const json& j, MyStruct& x) {
+     *      inline void from_json(const nlohmann::json& j, MyStruct& x) {
      *          x.required_field(j.at("requiredField").get<int>());
      *          x.optional_field(get_opt<std::string>(j, "optionalField"));
      *      }
@@ -566,7 +562,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     private _createStructDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void from_json(const ${NLOHMANN}& j, ${parent}& x) {`
+        );
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(
@@ -588,7 +587,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *              access class attributes. Optional fields are checked for existence before
      *              serialization.
      * Ex:
-     *      inline void to_json(json& j, const MyClass& x) {
+     *      inline void to_json(nlohmann::json& j, const MyClass& x) {
      *          j["requiredField"] = x.get_required_field();
      *          if (x.get_optional_field()) {
      *              j["optionalField"] = x.get_optional_field();
@@ -599,7 +598,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[]) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
+        this._push0(this.serializers, `inline void to_json(${NLOHMANN}& j, const ${parent}& x) {`);
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.get_${i.snakeName}();`);
@@ -617,7 +616,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @description Generates a JSON deserializer for a class. The deserializer uses setter methods
      *              to populate class attributes.
      * Ex:
-     *      inline void from_json(const json& j, MyClass& x) {
+     *      inline void from_json(const nlohmann::json& j, MyClass& x) {
      *          x.set_required_field(j.at("requiredField").get<int>());
      *          x.set_optional_field(get_opt<std::string>(j, "optionalField"));
      *      }
@@ -626,7 +625,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      */
     private _createClassDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void from_json(const ${NLOHMANN}& j, ${parent}& x) {`
+        );
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(
@@ -647,7 +649,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @description Generates a JSON serializer for an enum. Maps enum values to strings for
      *              serialization, with a default case for unexpected values.
      * Ex:
-     *      inline void to_json(json& j, const MyEnum& x) {
+     *      inline void to_json(nlohmann::json& j, const MyEnum& x) {
      *      switch (x) {
      *          case MyEnum::Value1: j = "VALUE_1"; break;
      *          case MyEnum::Value2: j = "VALUE_2"; break;
@@ -661,7 +663,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _createEnumSerializer(parent: string, childs: IEnumItemSerialData[]) {
         this.imports.add(this.lib.exceptions);
 
-        this._push0(this.serializers, `inline void to_json(json& j, const ${parent}& x) {`);
+        this._push0(this.serializers, `inline void to_json(${NLOHMANN}& j, const ${parent}& x) {`);
         this._push1(this.serializers, `switch (x) {`);
         childs.forEach((i) => {
             const value = isNaN(Number(i.origValue)) ? `"${i.origValue}"` : i.origValue;
@@ -680,7 +682,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @description Generates a JSON deserializer for an enum. Maps strings to enum values, with an
      *              error for unexpected strings.
      * Ex:
-     *      inline void from_json(const json& j, MyEnum& x) {
+     *      inline void from_json(const nlohmann::json& j, MyEnum& x) {
      *          if (j == "VALUE_1") x = MyEnum::Value1;
      *          else if (j == "VALUE_2") x = MyEnum::Value2;
      *          else {
@@ -693,7 +695,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _createEnumDeserializer(parent: string, childs: IEnumItemSerialData[]) {
         this.imports.add(this.lib.exceptions);
 
-        this._push0(this.serializers, `inline void from_json(const json& j, ${parent}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void from_json(const ${NLOHMANN}& j, ${parent}& x) {`
+        );
         childs.forEach((i, index) => {
             const value = isNaN(Number(i.origValue)) ? `"${i.origValue}"` : i.origValue;
 
@@ -718,7 +723,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *              multiple types.
      *
      * @example
-     * // inline void to_json(json& j, const DerivedType& x) {
+     * // inline void to_json(nlohmann::json& j, const DerivedType& x) {
      * //     to_json(j, static_cast<const BaseType1&>(x));
      * //     to_json(j, static_cast<const BaseType2&>(x));
      * // }
@@ -727,7 +732,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * @param itemsType - An array of strings representing the names of the base types to serialize.
      */
     private _createIntersectionSerializer(intersectName: string, itemsType: string[]) {
-        this._push0(this.serializers, `inline void to_json(json& j, const ${intersectName}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${intersectName}& x) {`
+        );
 
         itemsType.forEach((i) =>
             this._push1(this.serializers, `to_json(j, static_cast<const ${i}&>(x));`)
@@ -741,7 +749,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *              multiple types.
      *
      * @example
-     * // inline void from_json(const json& j, DerivedType& x) {
+     * // inline void from_json(const nlohmann::json& j, DerivedType& x) {
      * //     from_json(j, static_cast<BaseType1&>(x));
      * //     from_json(j, static_cast<BaseType2&>(x));
      * // }
@@ -752,7 +760,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     private _createIntersectionDeserializer(intersectName: string, itemsType: string[]) {
         this._push0(
             this.serializers,
-            `inline void from_json(const json& j, ${intersectName}& x) {`
+            `inline void from_json(const ${NLOHMANN}& j, ${intersectName}& x) {`
         );
 
         itemsType.forEach((i) =>
@@ -773,7 +781,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
      * // The generated output might look like:
      * //
-     * // inline void to_json(json& j, const MyUnion& x) {
+     * // inline void to_json(nlohmann::json& j, const MyUnion& x) {
      * //     if (x.type() == typeid(int)) {
      * //         j = boost::get<int>(x);
      * //     } else if (x.type() == typeid(std::string)) {
@@ -786,7 +794,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected _createUnionSerializer(unionName: string, itemsType: string[]) {
         this.imports.add(this.lib.exceptions);
 
-        this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${unionName}& x) {`
+        );
 
         itemsType.forEach((i, index) => {
             const condition = index === 0 ? "if" : "else if";
@@ -822,7 +833,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * //           {"type": "PhoneContact", "discriminantValue": "phone"} }
      * //
      * // The generated output might look like:
-     * // inline void from_json(const json& j, MyUnion& x) {
+     * // inline void from_json(const nlohmann::json& j, MyUnion& x) {
      * //     const auto& k = j.at("type").get<std::string>();
      * //     if (k == "email") {
      * //         x = j.get<EmailContact>();
@@ -838,7 +849,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * // Given: unionName = "MyUnion", items = { {"type": "int"}, {"type": "std::string"} }
      * //
      * // The generated output might look like:
-     * // inline void from_json(const json& j, MyUnion& x) {
+     * // inline void from_json(const nlohmann::json& j, MyUnion& x) {
      * //     try {
      * //         // Try to deserialize as int
      * //         x = j.get<int>();
@@ -864,7 +875,10 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     ) {
         this.imports.add(this.lib.exceptions);
 
-        this._push0(this.serializers, `inline void from_json(const json& j, ${unionName}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void from_json(const ${NLOHMANN}& j, ${unionName}& x) {`
+        );
 
         const useDiscriminator = discriminator && items.every((i) => i.discriminantValue);
 
@@ -970,7 +984,7 @@ export class Zod2Cpp17 extends Zod2Cpp {
      * // Given: unionName = "MyUnion", itemsType = {"int", "std::string"}
      * // The generated output might look like:
      * //
-     * // inline void to_json(json& j, const MyUnion& x) {
+     * // inline void to_json(nlohmann::json& j, const MyUnion& x) {
      * //     std::visit(
      * //         [&j](auto&& arg) {
      * //             using T = std::decay_t<decltype(arg)>;
@@ -989,7 +1003,10 @@ export class Zod2Cpp17 extends Zod2Cpp {
     protected override _createUnionSerializer(unionName: string, itemsType: string[]) {
         this.imports.add(this.lib.exceptions);
 
-        this._push0(this.serializers, `inline void to_json(json& j, const ${unionName}& x) {`);
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${unionName}& x) {`
+        );
         this._push1(this.serializers, `std::visit(`);
         this._push2(this.serializers, `[&j](auto&& arg) {`);
         this._push3(this.serializers, `using T = std::decay_t<decltype(arg)>;`);
