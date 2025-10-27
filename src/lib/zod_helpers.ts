@@ -2,7 +2,15 @@ import { z, ZodEnum, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
 import { Extended } from "./zod_ext";
 
-export type { ZodArray, ZodType, ZodIntersection, ZodObject, ZodEnum } from "zod/v4";
+export type {
+    ZodArray,
+    ZodType,
+    ZodIntersection,
+    ZodObject,
+    ZodEnum,
+    ZodDiscriminatedUnion,
+    ZodUnion,
+} from "zod/v4";
 export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any>;
 
 type ZodNumberConstraints = {
@@ -77,14 +85,14 @@ export class ZodHelpers {
     static isZodUnion(i: ZodType): i is z.ZodUnion<any> {
         return (
             i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
-            (i as z.ZodDiscriminatedUnion).def.discriminator === undefined
+            (i as z.ZodDiscriminatedUnion)._zod?.def?.discriminator === undefined
         );
     }
 
     static isZodDiscriminatedUnion(i: ZodType): i is z.ZodDiscriminatedUnion {
         return (
             i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
-            (i as z.ZodDiscriminatedUnion).def.discriminator !== undefined
+            (i as z.ZodDiscriminatedUnion)._zod?.def?.discriminator !== undefined
         );
     }
 

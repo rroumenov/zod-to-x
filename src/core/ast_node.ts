@@ -457,7 +457,7 @@ export class Zod2Ast {
     private _getUnionAst(schema: ZodAnyUnionType): ASTDefintion {
         const def = schema.def;
         const discriminator = ZodHelpers.isZodDiscriminatedUnion(schema)
-            ? schema.def.discriminator
+            ? schema._zod.def.discriminator
             : undefined;
 
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);

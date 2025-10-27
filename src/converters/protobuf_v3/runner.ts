@@ -1,5 +1,4 @@
 import Case from "case";
-import { ZodDiscriminatedUnion, ZodUnion } from "zod";
 
 import {
     ASTAliasedTypes,
@@ -12,7 +11,7 @@ import {
     Zod2Ast,
     Zod2X,
 } from "@/core";
-import { ZodObject } from "@/lib/zod_helpers";
+import { ZodObject, ZodDiscriminatedUnion, ZodUnion } from "@/lib/zod_helpers";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 import StringUtils from "@/utils/string_utils";
 
@@ -305,7 +304,7 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 export function zod2ProtoV3(
     schema:
         | ZodObject<any>
-        | ZodDiscriminatedUnion<string, any> // TODO: fix any to force only ZodObjects
+        | ZodDiscriminatedUnion // TODO: fix any to force only ZodObjects
         | ZodUnion<any>, // TODO: fix any to force only ZodObjects
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<

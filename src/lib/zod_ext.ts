@@ -137,7 +137,10 @@ declare module "zod/v4" {
         ): this;
     }
 
-    interface ZodEnum<T extends util.EnumLike = util.EnumLike> extends ZodType {
+    /** @ts-ignore Cast variance */
+    interface ZodEnum<out T extends util.EnumLike = util.EnumLike>
+        extends ZodType<core.$ZodEnumInternals<T>>,
+            core.$ZodEnum<T> {
         /**
          * Creates a new Zod enum with the specified `typeName` metadata property.
          *
@@ -202,7 +205,7 @@ declare module "zod/v4" {
         ): this;
     }
 
-    interface ZodUnion<T extends readonly core.$ZodType[] = readonly core.$ZodType[]>
+    interface ZodUnion<T extends readonly core.SomeType[] = readonly core.$ZodType[]>
         extends ZodType {
         /**
          * Creates a new Zod union with the specified `typeName` metadata property.
@@ -235,8 +238,8 @@ declare module "zod/v4" {
     }
 
     interface ZodIntersection<
-        A extends core.$ZodType = core.$ZodType,
-        B extends core.$ZodType = core.$ZodType,
+        A extends core.SomeType = core.$ZodType,
+        B extends core.SomeType = core.$ZodType,
     > extends ZodType {
         /**
          * Creates a new Zod intersection with the specified `typeName` metadata property.
@@ -268,7 +271,7 @@ declare module "zod/v4" {
         ): this;
     }
 
-    interface ZodLiteral<T extends util.Primitive = util.Primitive> extends ZodType {
+    interface ZodLiteral<T extends util.Literal = util.Literal> extends ZodType {
         /**
          * Creates a new Zod literal with the specified `parentEnum` metadata property.
          *
