@@ -33,17 +33,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::string item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::string>();\n' +
             "  }\n\n" +
             "}";
@@ -58,17 +57,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::string item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::string>();\n' +
             "  }\n\n" +
             "}";
@@ -83,17 +81,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <cstdint>\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::uint32_t item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::uint32_t>();\n' +
             "  }\n\n" +
             "}";
@@ -108,7 +105,6 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <stdexcept>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class EnumItem: int {\n" +
             "    Enum1,\n" +
@@ -120,7 +116,7 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const EnumItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const EnumItem& x) {\n" +
             "    switch (x) {\n" +
             '      case EnumItem::Enum1: j = "Enum1"; break;\n' +
             '      case EnumItem::Enum2: j = "Enum2"; break;\n' +
@@ -128,16 +124,16 @@ describe("Zod2Cpp17", () => {
             '      default: throw std::runtime_error("Unexpected value serializing enum EnumItem: " + std::to_string(static_cast<int>(x)));\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, EnumItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, EnumItem& x) {\n" +
             '    if (j == "Enum1") x = EnumItem::Enum1;\n' +
             '    else if (j == "Enum2") x = EnumItem::Enum2;\n' +
             '    else if (j == "Enum3") x = EnumItem::Enum3;\n' +
             '    else { throw std::runtime_error("Unexpected value deserializing enum EnumItem."); }\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<EnumItem>();\n' +
             "  }\n\n" +
             "}";
@@ -152,7 +148,6 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <stdexcept>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class NativeEnumItem: int {\n" +
             "    NativeEnum1,\n" +
@@ -164,7 +159,7 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const NativeEnumItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const NativeEnumItem& x) {\n" +
             "    switch (x) {\n" +
             "      case NativeEnumItem::NativeEnum1: j = 1; break;\n" +
             "      case NativeEnumItem::NativeEnum2: j = 2; break;\n" +
@@ -172,16 +167,16 @@ describe("Zod2Cpp17", () => {
             '      default: throw std::runtime_error("Unexpected value serializing enum NativeEnumItem: " + std::to_string(static_cast<int>(x)));\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, NativeEnumItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, NativeEnumItem& x) {\n" +
             "    if (j == 1) x = NativeEnumItem::NativeEnum1;\n" +
             "    else if (j == 2) x = NativeEnumItem::NativeEnum2;\n" +
             '    else if (j == "NativeEnum3") x = NativeEnumItem::NativeEnum3;\n' +
             '    else { throw std::runtime_error("Unexpected value deserializing enum NativeEnumItem."); }\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<NativeEnumItem>();\n' +
             "  }\n\n" +
             "}";
@@ -195,17 +190,16 @@ describe("Zod2Cpp17", () => {
         const expectedOutput =
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    double item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<double>();\n' +
             "  }\n\n" +
             "}";
@@ -220,17 +214,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <cstdint>\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::int64_t item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::int64_t>();\n' +
             "  }\n\n" +
             "}";
@@ -245,17 +238,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <cstdint>\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::int64_t item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::int64_t>();\n' +
             "  }\n\n" +
             "}";
@@ -270,17 +262,16 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <cstdint>\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::int32_t item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::int32_t>();\n' +
             "  }\n\n" +
             "}";
@@ -294,17 +285,16 @@ describe("Zod2Cpp17", () => {
         const expectedOutput =
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    bool item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<bool>();\n' +
             "  }\n\n" +
             "}";
@@ -319,7 +309,6 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
             "    std::string key;\n" +
@@ -329,16 +318,16 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ObjectItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ObjectItem& x) {\n" +
             '    j["key"] = x.key;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ObjectItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ObjectItem& x) {\n" +
             '    x.key = j.at("key").get<std::string>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<ObjectItem>();\n' +
             "  }\n\n" +
             "}";
@@ -354,17 +343,16 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
             "#include <unordered_map>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::unordered_map<std::string, double> item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::unordered_map<std::string, double>>();\n' +
             "  }\n\n" +
             "}";
@@ -380,17 +368,16 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
             "#include <unordered_map>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::unordered_map<std::string, double> item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::unordered_map<std::string, double>>();\n' +
             "  }\n\n" +
             "}";
@@ -406,17 +393,16 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <set>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::set<std::string> item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::set<std::string>>();\n' +
             "  }\n\n" +
             "}";
@@ -432,17 +418,16 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n" +
             "#include <tuple>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::tuple<double, std::string, bool> item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<std::tuple<double, std::string, bool>>();\n' +
             "  }\n\n" +
             "}";
@@ -459,7 +444,6 @@ describe("Zod2Cpp17", () => {
             "#include <stdexcept>\n" +
             "#include <string>\n" +
             "#include <variant>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
             "    std::string key;\n" +
@@ -476,19 +460,19 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ObjectItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ObjectItem& x) {\n" +
             '    j["key"] = x.key;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ObjectItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ObjectItem& x) {\n" +
             '    x.key = j.at("key").get<std::string>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const OtherObjectItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const OtherObjectItem& x) {\n" +
             '    j["otherKey"] = x.other_key;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, OtherObjectItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, OtherObjectItem& x) {\n" +
             '    x.other_key = j.at("otherKey").get<std::string>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const UnionItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const UnionItem& x) {\n" +
             "    std::visit(\n" +
             "      [&j](auto&& arg) {\n" +
             "        using T = std::decay_t<decltype(arg)>;\n" +
@@ -505,7 +489,7 @@ describe("Zod2Cpp17", () => {
             "      x\n" +
             "    );\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, UnionItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, UnionItem& x) {\n" +
             "    try {\n" +
             "      // Try to deserialize as ObjectItem\n" +
             "      x = j.get<ObjectItem>();\n" +
@@ -522,10 +506,10 @@ describe("Zod2Cpp17", () => {
             '      throw std::runtime_error("Failed to deserialize UnionItem: unknown format");\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<UnionItem>();\n' +
             "  }\n\n" +
             "}";
@@ -542,7 +526,6 @@ describe("Zod2Cpp17", () => {
             "#include <stdexcept>\n" +
             "#include <string>\n" +
             "#include <variant>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  enum class EnumItem: int {\n" +
             "    Enum1,\n" +
@@ -566,7 +549,7 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const EnumItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const EnumItem& x) {\n" +
             "    switch (x) {\n" +
             '      case EnumItem::Enum1: j = "Enum1"; break;\n' +
             '      case EnumItem::Enum2: j = "Enum2"; break;\n' +
@@ -574,29 +557,29 @@ describe("Zod2Cpp17", () => {
             '      default: throw std::runtime_error("Unexpected value serializing enum EnumItem: " + std::to_string(static_cast<int>(x)));\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, EnumItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, EnumItem& x) {\n" +
             '    if (j == "Enum1") x = EnumItem::Enum1;\n' +
             '    else if (j == "Enum2") x = EnumItem::Enum2;\n' +
             '    else if (j == "Enum3") x = EnumItem::Enum3;\n' +
             '    else { throw std::runtime_error("Unexpected value deserializing enum EnumItem."); }\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ObjectItemWithDiscriminator& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ObjectItemWithDiscriminator& x) {\n" +
             '    j["key"] = x.key;\n' +
             '    j["discriminator"] = x.discriminator;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ObjectItemWithDiscriminator& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ObjectItemWithDiscriminator& x) {\n" +
             '    x.key = j.at("key").get<std::string>();\n' +
             '    x.discriminator = j.at("discriminator").get<EnumItem>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const OtherObjectItemWithDiscriminator& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const OtherObjectItemWithDiscriminator& x) {\n" +
             '    j["otherKey"] = x.other_key;\n' +
             '    j["discriminator"] = x.discriminator;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, OtherObjectItemWithDiscriminator& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, OtherObjectItemWithDiscriminator& x) {\n" +
             '    x.other_key = j.at("otherKey").get<std::string>();\n' +
             '    x.discriminator = j.at("discriminator").get<EnumItem>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const DiscriminatedUnionItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const DiscriminatedUnionItem& x) {\n" +
             "    std::visit(\n" +
             "      [&j](auto&& arg) {\n" +
             "        using T = std::decay_t<decltype(arg)>;\n" +
@@ -613,7 +596,7 @@ describe("Zod2Cpp17", () => {
             "      x\n" +
             "    );\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, DiscriminatedUnionItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, DiscriminatedUnionItem& x) {\n" +
             '    const auto& k = j.at("discriminator").get<std::string>();\n' +
             '    if (k == "Enum1") {\n' +
             "      x = j.get<ObjectItemWithDiscriminator>();\n" +
@@ -626,10 +609,10 @@ describe("Zod2Cpp17", () => {
             '      throw std::runtime_error("Failed to deserialize DiscriminatedUnionItem: unknown format");\n' +
             "    }\n" +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<DiscriminatedUnionItem>();\n' +
             "  }\n\n" +
             "}";
@@ -644,7 +627,6 @@ describe("Zod2Cpp17", () => {
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ObjectItem {\n" +
             "    std::string key;\n" +
@@ -660,30 +642,30 @@ describe("Zod2Cpp17", () => {
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ObjectItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ObjectItem& x) {\n" +
             '    j["key"] = x.key;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ObjectItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ObjectItem& x) {\n" +
             '    x.key = j.at("key").get<std::string>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const OtherObjectItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const OtherObjectItem& x) {\n" +
             '    j["otherKey"] = x.other_key;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, OtherObjectItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, OtherObjectItem& x) {\n" +
             '    x.other_key = j.at("otherKey").get<std::string>();\n' +
             "  }\n\n" +
-            "  inline void to_json(json& j, const IntersectionItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const IntersectionItem& x) {\n" +
             "    to_json(j, static_cast<const ObjectItem&>(x));\n" +
             "    to_json(j, static_cast<const OtherObjectItem&>(x));\n" +
             "  }\n\n" +
-            "  inline void from_json(const json& j, IntersectionItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, IntersectionItem& x) {\n" +
             "    from_json(j, static_cast<ObjectItem&>(x));\n" +
             "    from_json(j, static_cast<OtherObjectItem&>(x));\n" +
             "  }\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = j.at("item").get<IntersectionItem>();\n' +
             "  }\n\n" +
             "}";
@@ -697,18 +679,17 @@ describe("Zod2Cpp17", () => {
         const expectedOutput =
             "#pragma once\n\n" +
             "#include <nlohmann/json.hpp>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
-            "    json item;\n" +
+            "    nlohmann::json item;\n" +
             "  };\n\n" +
             "}\n\n" +
             "namespace zodtocpp {\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    j["item"] = x.item;\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
-            '    x.item = j.at("item").get<json>();\n' +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
+            '    x.item = j.at("item").get<nlohmann::json>();\n' +
             "  }\n\n" +
             "}";
 
@@ -723,7 +704,6 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <optional>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::optional<std::string> item;\n" +
@@ -733,7 +713,7 @@ describe("Zod2Cpp17", () => {
             "  #ifndef NLOHMANN_OPTIONAL_HELPER_zodtocpp\n" +
             "  #define NLOHMANN_OPTIONAL_HELPER_zodtocpp\n" +
             "  template <typename T>\n" +
-            "  std::optional<T> get_opt(const json& j, const std::string& key) {\n" +
+            "  std::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {\n" +
             "    auto it = j.find(key);\n" +
             "    if (it != j.end() && !it->is_null()) {\n" +
             "      return it->get<T>();\n" +
@@ -741,16 +721,16 @@ describe("Zod2Cpp17", () => {
             "    return std::optional<T>();\n" +
             "  }\n\n" +
             "  template <typename T>\n" +
-            "  void set_opt(json& j, const std::string& key, const std::optional<T>& opt) {\n" +
+            "  void set_opt(nlohmann::json& j, const std::string& key, const std::optional<T>& opt) {\n" +
             "    if (opt) {\n" +
             "      j[key] = *opt;\n" +
             "    }\n" +
             "  }\n" +
             "  #endif\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    zodtocpp::set_opt<std::string>(j, "item", x.item);\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = zodtocpp::get_opt<std::string>(j, "item");\n' +
             "  }\n\n" +
             "}";
@@ -766,7 +746,6 @@ describe("Zod2Cpp17", () => {
             "#include <nlohmann/json.hpp>\n" +
             "#include <optional>\n" +
             "#include <string>\n\n" +
-            "using nlohmann::json;\n\n" +
             "namespace zodtocpp {\n" +
             "  struct ModelItem {\n" +
             "    std::optional<std::string> item;\n" +
@@ -776,7 +755,7 @@ describe("Zod2Cpp17", () => {
             "  #ifndef NLOHMANN_OPTIONAL_HELPER_zodtocpp\n" +
             "  #define NLOHMANN_OPTIONAL_HELPER_zodtocpp\n" +
             "  template <typename T>\n" +
-            "  std::optional<T> get_opt(const json& j, const std::string& key) {\n" +
+            "  std::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {\n" +
             "    auto it = j.find(key);\n" +
             "    if (it != j.end() && !it->is_null()) {\n" +
             "      return it->get<T>();\n" +
@@ -784,16 +763,16 @@ describe("Zod2Cpp17", () => {
             "    return std::optional<T>();\n" +
             "  }\n\n" +
             "  template <typename T>\n" +
-            "  void set_opt(json& j, const std::string& key, const std::optional<T>& opt) {\n" +
+            "  void set_opt(nlohmann::json& j, const std::string& key, const std::optional<T>& opt) {\n" +
             "    if (opt) {\n" +
             "      j[key] = *opt;\n" +
             "    }\n" +
             "  }\n" +
             "  #endif\n\n" +
-            "  inline void to_json(json& j, const ModelItem& x) {\n" +
+            "  inline void to_json(nlohmann::json& j, const ModelItem& x) {\n" +
             '    zodtocpp::set_opt<std::string>(j, "item", x.item);\n' +
             "  }\n\n" +
-            "  inline void from_json(const json& j, ModelItem& x) {\n" +
+            "  inline void from_json(const nlohmann::json& j, ModelItem& x) {\n" +
             '    x.item = zodtocpp::get_opt<std::string>(j, "item");\n' +
             "  }\n\n" +
             "}";

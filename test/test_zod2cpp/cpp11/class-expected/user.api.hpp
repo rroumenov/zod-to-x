@@ -9,8 +9,6 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
-using nlohmann::json;
-
 namespace USER_API {
     class ReqUpdateUser : public USER_DTOS::UpdateUserUseCaseDto {};
 
@@ -60,23 +58,23 @@ namespace USER_API {
 }
 
 namespace USER_API {
-    inline void to_json(json& j, const ResUpdateUserMulti& x) {
+    inline void to_json(nlohmann::json& j, const ResUpdateUserMulti& x) {
         j["amount"] = x.get_amount();
         j["data"] = x.get_data();
     }
 
-    inline void from_json(const json& j, ResUpdateUserMulti& x) {
+    inline void from_json(const nlohmann::json& j, ResUpdateUserMulti& x) {
         x.set_amount(j.at("amount").get<std::uint64_t>());
         x.set_data(j.at("data").get<std::vector<USER_DTOS::UpdateUserUseCaseResultDto>>());
     }
 
-    inline void to_json(json& j, const UserApi& x) {
+    inline void to_json(nlohmann::json& j, const UserApi& x) {
         j["reqUpdateUser"] = x.get_req_update_user();
         j["resUpdateUser"] = x.get_res_update_user();
         j["resUpdateUserMulti"] = x.get_res_update_user_multi();
     }
 
-    inline void from_json(const json& j, UserApi& x) {
+    inline void from_json(const nlohmann::json& j, UserApi& x) {
         x.set_req_update_user(j.at("reqUpdateUser").get<ReqUpdateUser>());
         x.set_res_update_user(j.at("resUpdateUser").get<ResUpdateUser>());
         x.set_res_update_user_multi(j.at("resUpdateUserMulti").get<ResUpdateUserMulti>());
