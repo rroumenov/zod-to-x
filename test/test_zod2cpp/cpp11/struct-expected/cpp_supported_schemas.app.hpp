@@ -49,7 +49,11 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
 
     struct CppSupportedSchemasApplication {
         NewStringItem new_string_item;
+        
+        // A literal string
         std::string new_literal_string_item;
+        
+        // A literal number
         std::uint32_t new_literal_number_item;
         NewEnumItem new_enum_item;
         NewNativeEnumItem new_native_enum_item;
@@ -68,7 +72,11 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         NewDiscriminatedUnionItem new_discriminated_union_item;
         NewIntersectionItem new_intersection_item;
         NewAnyItem new_any_item;
+        
+        // An optional string
         boost::optional<std::string> new_optional_item;
+        
+        // A nullable string
         boost::optional<std::string> new_nullable_item;
     };
 

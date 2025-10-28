@@ -8,26 +8,31 @@ package supportedschemas;
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 
+// An enum
 enum EnumItem {
     Enum1 = 0;
     Enum2 = 1;
     Enum3 = 2;
 }
 
+// A native enum
 enum NativeEnumItem {
     NativeEnum1 = 0;
     NativeEnum2 = 1;
     NativeEnum3 = 2;
 }
 
+// An object
 message ObjectItem {
     string key = 1;
 }
 
+// Another object
 message OtherObjectItem {
     string other_key = 1;
 }
 
+// A union of two objects
 message UnionItem {
     oneof union_item_oneof {
         ObjectItem object_item = 1;
@@ -35,16 +40,19 @@ message UnionItem {
     }
 }
 
+// An object with a discriminator
 message ObjectItemWithDiscriminator {
     string key = 1;
     string discriminator = 2;
 }
 
+// Another object with a discriminator
 message OtherObjectItemWithDiscriminator {
     string other_key = 1;
     string discriminator = 2;
 }
 
+// A discriminated union of two objects
 message DiscriminatedUnionItem {
     oneof discriminated_union_item_oneof {
         ObjectItemWithDiscriminator object_item_with_discriminator = 1;
@@ -53,24 +61,54 @@ message DiscriminatedUnionItem {
 }
 
 message Proto3SupportedSchemas {
+
+    // A simple string
     string string_item = 1;
+
+    // A literal string
     string literal_string_item = 2;
+
+    // A literal number
     uint32 literal_number_item = 3;
     EnumItem enum_item = 4;
     NativeEnumItem native_enum_item = 5;
+
+    // A double
     int64 double_item = 6;
+
+    // A big integer
     int64 big_int_item = 7;
+
+    // A 64-bit integer
     int64 int64_item = 8;
+
+    // A 32-bit integer
     int32 int32_item = 9;
+
+    // A boolean
     bool boolean_item = 10;
     ObjectItem object_item = 11;
+
+    // A date
     google.protobuf.Timestamp date_item = 12;
+
+    // A one-dimensional array of numbers
     repeated int64 array_item = 13;
+
+    // A record with string keys and number values
     map<string, int64> record_item = 14;
+
+    // A map with string keys and number values
     map<string, int64> map_item = 15;
+
+    // A set of strings
     repeated string set_item = 16;
+
+    // A tuple of two numbers
     repeated int64 tuple_item = 17;
     UnionItem union_item = 18;
     DiscriminatedUnionItem discriminated_union_item = 19;
+
+    // Any type
     google.protobuf.Any any_item = 20;
 }

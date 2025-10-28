@@ -204,7 +204,12 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
-            if (value.description && !this.isTranspilerable(value)) {
+            if (
+                this.opt.includeComments &&
+                value.description &&
+                !value.name &&
+                !this.isTranspilerable(value)
+            ) {
                 // Avoid duplicated descriptions for transpiled items.
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
