@@ -142,6 +142,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
         let extendedType: string | undefined = undefined;
 
+        this.addComment(data.description);
+
         if (data instanceof ASTArray) {
             extendedType = this.getAttributeType(data.item);
         } else {

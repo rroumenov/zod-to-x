@@ -16,72 +16,113 @@
 #include <vector>
 
 namespace zodtocppstruct {
+    // An enum
     enum class EnumItem: int {
         Enum1,
         Enum2,
         Enum3
     };
 
+    // A native enum
     enum class NativeEnumItem: int {
         NativeEnum1,
         NativeEnum2,
         NativeEnum3
     };
 
+    // An object
     struct ObjectItem {
         std::string key;
     };
 
+    // Another object
     struct OtherObjectItem {
         std::string other_key;
     };
 
+    // A union of two objects
     using UnionItem = std::variant<
         ObjectItem,
         OtherObjectItem
     >;
 
+    // An object with a discriminator
     struct ObjectItemWithDiscriminator {
         std::string key;
         EnumItem discriminator;
     };
 
+    // Another object with a discriminator
     struct OtherObjectItemWithDiscriminator {
         std::string other_key;
         EnumItem discriminator;
     };
 
+    // A discriminated union of two objects
     using DiscriminatedUnionItem = std::variant<
         ObjectItemWithDiscriminator,
         OtherObjectItemWithDiscriminator
     >;
 
+    // An intersection of two objects
     struct IntersectionItem : public ObjectItem, public OtherObjectItem {
         // Intersection fields are inherited from base structs.
     };
 
     struct CppSupportedSchemas {
+        
+        // A simple string
         std::string string_item;
+        
+        // A literal string
         std::string literal_string_item;
+        
+        // A literal number
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
+        
+        // A double
         double double_item;
+        
+        // A big integer
         std::int64_t big_int_item;
+        
+        // A 64-bit integer
         std::int64_t int64_item;
+        
+        // A 32-bit integer
         std::int32_t int32_item;
+        
+        // A boolean
         bool boolean_item;
         ObjectItem object_item;
+        
+        // A two-dimensional array of numbers
         std::vector<std::vector<double>> array_item;
+        
+        // A record with string keys and number values
         std::unordered_map<std::string, double> record_item;
+        
+        // A map with string keys and number values
         std::unordered_map<std::string, double> map_item;
+        
+        // A set of strings
         std::set<std::string> set_item;
+        
+        // A tuple of a number, a string, and a boolean
         std::tuple<double, std::string, bool> tuple_item;
         UnionItem union_item;
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
+        
+        // Any type
         nlohmann::json any_item;
+        
+        // An optional string
         std::optional<std::string> optional_item;
+        
+        // A nullable string
         std::optional<std::string> nullable_item;
     };
 

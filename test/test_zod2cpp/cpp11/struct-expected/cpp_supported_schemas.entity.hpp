@@ -16,77 +16,102 @@
 #include <vector>
 
 namespace CPP_SUPPORTED_SCHEMAS {
+    // A simple string
     using StringItem = std::string;
 
+    // An enum
     enum class EnumItem: int {
         Enum1,
         Enum2,
         Enum3
     };
 
+    // A native enum
     enum class NativeEnumItem: int {
         NativeEnum1,
         NativeEnum2,
         NativeEnum3
     };
 
+    // A double
     using DoubleItem = double;
 
+    // A big integer
     using BigIntItem = std::int64_t;
 
+    // A 64-bit integer
     using Int64Item = std::int64_t;
 
+    // A 32-bit integer
     using Int32Item = std::int32_t;
 
+    // A boolean
     using BooleanItem = bool;
 
+    // An object
     struct ObjectItem {
         std::string key;
     };
 
+    // An object with otherKey
     struct OtherObjectItem {
         std::string other_key;
     };
 
+    // An object with a discriminator
     struct ObjectItemWithDiscriminator {
         std::string key;
         EnumItem discriminator;
     };
 
+    // Another object with a discriminator
     struct OtherObjectItemWithDiscriminator {
         std::string other_key;
         EnumItem discriminator;
     };
 
+    // A two-dimensional array of numbers
     using ArrayItem = std::vector<std::vector<double>>;
 
+    // A record with string keys and number values
     using RecordItem = std::unordered_map<std::string, double>;
 
+    // A map with string keys and number values
     using MapItem = std::unordered_map<std::string, double>;
 
+    // A set of strings
     using SetItem = std::set<std::string>;
 
+    // A tuple of a number, a string, and a boolean
     using TupleItem = std::tuple<double, std::string, bool>;
 
+    // A union of ObjectItem and OtherObjectItem
     using UnionItem = boost::variant<
         ObjectItem,
         OtherObjectItem
     >;
 
+    // A discriminated union based on the discriminator field
     using DiscriminatedUnionItem = boost::variant<
         ObjectItemWithDiscriminator,
         OtherObjectItemWithDiscriminator
     >;
 
+    // An intersection of ObjectItem and OtherObjectItem
     struct IntersectionItem : public ObjectItem, public OtherObjectItem {
         // Intersection fields are inherited from base structs.
     };
 
+    // Any type
     using AnyItem = nlohmann::json;
 
     struct CppSupportedSchemas {
         StringItem string_item;
+        
+        // A literal string
         std::string literal_string_item;
+        
+        // A literal number
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
@@ -108,7 +133,11 @@ namespace CPP_SUPPORTED_SCHEMAS {
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
         AnyItem any_item;
+        
+        // An optional string
         boost::optional<std::string> optional_item;
+        
+        // A nullable string
         boost::optional<std::string> nullable_item;
     };
 
