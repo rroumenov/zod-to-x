@@ -72,23 +72,36 @@ export type ASTAliasedTypes =
 /**
  * Represents a usage of any existing ASTNode. Used to reduce node size.
  */
-export class ASTDefintion extends ASTCommon {
+export class ASTDefinition extends ASTCommon {
     name: string;
     instanceType: string;
     constraints?: Record<string, any>;
 
-    constructor(data: ASTDefintion & ASTCommon) {
+    // In case of model definition that uses a generic template. Shall follow the same order as
+    // templates definition.
+    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
+
+    constructor(data: ASTDefinition & ASTCommon) {
         super(data);
 
         this.name = data.name;
         this.instanceType = data.instanceType;
         this.constraints = data.constraints;
+        this.templatesTranslation = data.templatesTranslation;
     }
 }
 
-export type ASTType = ASTNode | ASTDefintion;
+export type ASTType = ASTNode | ASTDefinition;
 
 export type ASTNodes = {
     nodes: Map<string, ASTNode>;
     warnings: string[];
 };
+
+export class ASTGenericType {
+    name: string;
+
+    constructor(name: string) {
+        this.name = name;
+    }
+}

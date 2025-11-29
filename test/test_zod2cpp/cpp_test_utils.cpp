@@ -202,3 +202,219 @@ json jSupportedSchemasLayeredApplication = {
     {"newOptionalItem", "optionalValue"},
     {"newNullableItem", nullptr}
 };
+
+// Test data for layered generics
+json jGenericUserEntities = {
+    {"normalUserEntity", {
+        {"id", "user_001"},
+        {"name", "John Doe"},
+        {"email", "john@example.com"},
+        {"age", 30},
+        {"metadata", {
+            {"favoriteColor", "blue"},
+            {"hobbies", {"reading", "coding", "gaming"}}
+        }}
+    }},
+    {"adminUserEntity", {
+        {"id", "admin_001"},
+        {"name", "Jane Smith"},
+        {"email", "jane@admin.com"},
+        {"age", 35},
+        {"metadata", {
+            {"adminLevel", 5},
+            {"permissions", {"read", "write", "delete", "admin"}}
+        }}
+    }}
+};
+
+// Infrastructure types for struct version (using double for success)
+json jInfrastructureTypesStruct = {
+    {"httpSuccessfulResponse", {
+        {"success", true},
+        {"data", {
+            {"id", "dto_001"},
+            {"name", "Test Result"},
+            {"age", 25}
+        }}
+    }},
+    {"httpUnsuccessfulResponse", {
+        {"success", false},
+        {"message", "Operation failed"},
+        {"details", {
+            {"errorCode", "ERR_001"},
+            {"timestamp", "2025-11-29T10:00:00Z"}
+        }}
+    }},
+    {"objectWithGeneric", {
+        {"internal", {
+            {"success", true},
+            {"data", {
+                {"id", "internal_001"},
+                {"name", "Internal Data"},
+                {"age", 28}
+            }}
+        }},
+        {"item", {
+            {"success", true},
+            {"data", {
+                {"id", "item_001"},
+                {"name", "Item Data"},
+                {"age", 32}
+            }}
+        }},
+        {"userItem", {
+            {"id", "user_002"},
+            {"name", "User Item"},
+            {"email", "user@item.com"},
+            {"age", 27},
+            {"metadata", {
+                {"id", "meta_001"},
+                {"name", "Meta Data"},
+                {"age", 20}
+            }}
+        }},
+        {"otherUserItem", {
+            {"id", "admin_002"},
+            {"name", "Admin Item"},
+            {"email", "admin@item.com"},
+            {"age", 40},
+            {"metadata", {
+                {"adminLevel", 3},
+                {"permissions", {"read", "write"}}
+            }}
+        }}
+    }},
+    {"dataRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "retrieve_001"},
+            {"name", "Retrieved Data"},
+            {"age", 29}
+        }}
+    }},
+    {"userRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "normal_001"},
+            {"name", "Normal User"},
+            {"email", "normal@user.com"},
+            {"age", 26},
+            {"metadata", {
+                {"favoriteColor", "green"},
+                {"hobbies", {"swimming", "running"}}
+            }}
+        }}
+    }},
+    {"intersectedDataRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "intersect_data_001"},
+            {"name", "Intersect Data"},
+            {"age", 31}
+        }},
+        {"id", "intersect_user_001"},
+        {"name", "Intersect User"},
+        {"email", "intersect@user.com"},
+        {"age", 33},
+        {"metadata", {
+            {"code", "CODE_001"},
+            {"description", "Intersection metadata"}
+        }}
+    }}
+};
+
+// Infrastructure types for class version (using bool for success)
+json jInfrastructureTypesClass = {
+    {"httpSuccessfulResponse", {
+        {"success", true},
+        {"data", {
+            {"id", "dto_001"},
+            {"name", "Test Result"},
+            {"age", 25}
+        }}
+    }},
+    {"httpUnsuccessfulResponse", {
+        {"success", false},
+        {"message", "Operation failed"},
+        {"details", {
+            {"errorCode", "ERR_001"},
+            {"timestamp", "2025-11-29T10:00:00Z"}
+        }}
+    }},
+    {"objectWithGeneric", {
+        {"internal", {
+            {"success", true},
+            {"data", {
+                {"id", "internal_001"},
+                {"name", "Internal Data"},
+                {"age", 28}
+            }}
+        }},
+        {"item", {
+            {"success", true},
+            {"data", {
+                {"id", "item_001"},
+                {"name", "Item Data"},
+                {"age", 32}
+            }}
+        }},
+        {"userItem", {
+            {"id", "user_002"},
+            {"name", "User Item"},
+            {"email", "user@item.com"},
+            {"age", 27},
+            {"metadata", {
+                {"id", "meta_001"},
+                {"name", "Meta Data"},
+                {"age", 20}
+            }}
+        }},
+        {"otherUserItem", {
+            {"id", "admin_002"},
+            {"name", "Admin Item"},
+            {"email", "admin@item.com"},
+            {"age", 40},
+            {"metadata", {
+                {"adminLevel", 3},
+                {"permissions", {"read", "write"}}
+            }}
+        }}
+    }},
+    {"dataRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "retrieve_001"},
+            {"name", "Retrieved Data"},
+            {"age", 29}
+        }}
+    }},
+    {"userRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "normal_001"},
+            {"name", "Normal User"},
+            {"email", "normal@user.com"},
+            {"age", 26},
+            {"metadata", {
+                {"favoriteColor", "green"},
+                {"hobbies", {"swimming", "running"}}
+            }}
+        }}
+    }},
+    {"intersectedDataRetrieve", {
+        {"success", true},
+        {"data", {
+            {"id", "intersect_data_001"},
+            {"name", "Intersect Data"},
+            {"age", 31}
+        }},
+        {"id", "intersect_user_001"},
+        {"name", "Intersect User"},
+        {"email", "intersect@user.com"},
+        {"age", 33},
+        {"metadata", {
+            {"code", "CODE_001"},
+            {"description", "Intersection metadata"}
+        }}
+    }}
+};

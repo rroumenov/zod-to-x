@@ -4,6 +4,7 @@ import {
     ASTAliasedTypes,
     ASTEnum,
     ASTIntersection,
+    ASTNode,
     ASTObject,
     ASTUnion,
     IZod2AstOpt,
@@ -49,6 +50,11 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 
     protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
         // Zod2ProtoV3 does not support layered modeling.
+        return "";
+    }
+
+    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
+        // Zod2ProtoV3 does not support layered modeling nor generics.
         return "";
     }
 

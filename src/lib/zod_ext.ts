@@ -99,6 +99,24 @@ export interface IZod2xMetadata {
      */
     aliasOf?: string;
     parentLayer?: IZod2xLayerMetadata;
+
+    /**
+     * For Layered Modeling defining generics.
+     * When a generic type is used with `useGenericType`, it stores the templates translation for
+     * the associated key.
+     */
+    genericTypes?: {
+        typeName: string;
+        layer: IZod2xLayerMetadata;
+    }[]; // For generics, the layers associated to each child type.
+
+    /**
+     * For Layered Modeling defining generics.
+     * Indicates when useGenericType was used to create a definition (set to true during Layer
+     * decorator) or if it is used inline as part of another definition (set to false).
+     * Defaults to false.
+     */
+    isGenericChild?: boolean;
 }
 
 declare module "zod/v4" {

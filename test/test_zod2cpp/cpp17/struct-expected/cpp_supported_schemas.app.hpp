@@ -105,6 +105,38 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
     #endif
 
+    inline void to_json(nlohmann::json& j, const NewObjectItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewObjectItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewDiscriminatedUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewDiscriminatedUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewIntersectionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewIntersectionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
     inline void to_json(nlohmann::json& j, const CppSupportedSchemasApplication& x) {
         j["newStringItem"] = x.new_string_item;
         j["newLiteralStringItem"] = x.new_literal_string_item;
