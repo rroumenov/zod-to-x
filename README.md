@@ -27,9 +27,10 @@
 - [Intersections and Unions](#intersections-and-unions)
   - [Expected outputs](#expected-outputs)
   - [Tips for discriminated unions](#tips-for-discriminated-unions)
-- [Layered modeling](#layered-modeling) <sup>*(new)*</sup>
+- [Layered modeling](#layered-modeling)
   - [Usage example](#usage-example)
   - [Custom layers](#custom-layers)
+  - [Generic types](#generic-types) <sup>*(new)*</sup>
 - [Currently supported output languages](#currently-supported-output-languages)
   - [Typescript](#1-typescript)
   - [C++](#2-c)
@@ -502,6 +503,106 @@ class MyEntityModels extends Zod2XModel {
 }
 ```
 
+### Generic types
+Since `v1.5.0`, basic generic types can be generated using layered modeling. A few key points should be kept in mind when working with them:
+1) Generic types can only be created for `ZodObject` properties. The new `createGenericType` method should be used to indicate the generic property.
+```ts
+@Infrastructure({
+  namespace: "GENERICS_INFRA",
+  file: "layered_generics.infra",
+})
+class GenericsInfrastructure extends Zod2XModel {
+  readonly HttpSuccessfulResponse = z.object({
+    success: z.literal(true),
+    data: createGenericType("T"),
+  });
+
+  readonly HttpUnsuccessfulResponse = z.object({
+    success: z.literal(false),
+    message: z.string(),
+    details: z.record(z.any()).optional(),
+  });
+}
+// Output:
+// export interface HttpSuccessfulResponse<T> {
+//   success: true;
+//   data: T;
+// }
+//
+// export interface HttpUnsuccessfulResponse {
+//   success: false;
+//   message: string;
+//   details?: Record<string, any>;
+// }
+```
+2) To create a type based on a generic type definition, the `useGenericType` method should be used to indicate the parent generic type and the value that the generic will take, which should be a previously defined type.
+```ts
+// inside GenericsInfrastructure class
+readonly SomeDtoResult = z.object({
+  id: z.string(),
+  name: z.string(),
+  age: z.number().int().nonnegative(),
+});
+
+readonly ResponseItem = useGenericType(this.HttpSuccessfulResponse, {
+  data: this.SomeDtoResult, // Indicate the generic property and the value it takes
+  // ... other generic properties, if exist.
+});
+
+// Output:
+// export interface SomeDtoResult {
+//   id: string;
+//   name: string;
+//   age: number;
+// }
+//
+// export interface ResponseItem extends HttpSuccessfulResponse<SomeDtoResult> {}
+
+```
+3) New types based on generics, due to how TypeScript and Decorators work, should be used with Zod's `z.lazy()` operator. This is **required** to ensure metadata existence. It is applied to the used type, **except when dealing with `ZodIntersect`, `ZodUnion` or `ZodDiscriminatedUnion`**, where it should be applied to these methods instead of the type. Additionally, they support only inline generics usage:
+```ts
+// inside GenericsInfrastructure class
+readonly ObjectWithGeneric = z.object({
+  // Property with reference to a generic based type: requires lazy operator
+  directGenericUse: z.lazy(() => this.ResponseItem),
+
+  // Property with inline generic usage: `useGenericType` is lazy by default
+  indirectGenericUse: useGenericType(this.HttpSuccessfulResponse, {
+    data: this.SomeDtoResult
+  }),
+});
+
+// Case of ZodUnion, ZodDiscriminatedUnion or ZodIntersection.
+readonly DiscriminantDataRetrieve = z.lazy(() =>  // Lazy the zod type itself
+  z.discriminatedUnion(
+    "success",
+    [
+      // Inline generic usage
+      useGenericType(
+        this.HttpSuccessfulResponse,
+        { data: this.SomeDtoResult },
+        true  // Disable default lazy wrapper
+      ),
+
+      // Non generic types: normal references
+      this.HttpUnsuccessfulResponse,
+    ]
+  )
+);
+
+// Output
+// export interface ObjectWithGeneric {
+//   directGenericUse: ResponseItem;
+//   indirectGenericUse: HttpSuccessfulResponse<SomeDtoResult>;
+// }
+//
+// export type DiscriminantDataRetrieve =
+//   | HttpSuccessfulResponse<SomeDtoResult>
+//   | HttpUnsuccessfulResponse;
+```
+
+Complete definition examples can be found [here](https://github.com/rroumenov/zod-to-x/blob/main/test/common/layered_generics.ts).
+
 ## Currently supported output languages
 Common options:
 - **header**: Text to add as a comment at the beginning of the output.
@@ -645,7 +746,7 @@ class UserDtos extends Zod2XModel {
     createUserUseCaseResultDtoV2 = this.createUserUseCaseResultDto;
 
     // OK, but avoid it - Redeclaration of an alias. It will wait until
-    // "createUserUseCaseResultDto" is aliased and then will becosa an alias
+    // "createUserUseCaseResultDto" is aliased and then will become an alias
     // of "createUserUseCaseResultDto"
     createUserUseCaseResultDtoV3 = z.lazy(() => this.createUserUseCaseResultDto),
 }

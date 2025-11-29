@@ -10,8 +10,6 @@
 #include <optional>
 #include <string>
 
-using nlohmann::json;
-
 namespace CPP_SUPPORTED_SCHEMAS_APP {
     using NewStringItem = CPP_SUPPORTED_SCHEMAS::StringItem;
 
@@ -51,7 +49,11 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
 
     struct CppSupportedSchemasApplication {
         NewStringItem new_string_item;
+        
+        // A literal string
         std::string new_literal_string_item;
+        
+        // A literal number
         std::uint32_t new_literal_number_item;
         NewEnumItem new_enum_item;
         NewNativeEnumItem new_native_enum_item;
@@ -70,7 +72,11 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         NewDiscriminatedUnionItem new_discriminated_union_item;
         NewIntersectionItem new_intersection_item;
         NewAnyItem new_any_item;
+        
+        // An optional string
         std::optional<std::string> new_optional_item;
+        
+        // A nullable string
         std::optional<std::string> new_nullable_item;
     };
 
@@ -80,7 +86,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     #ifndef NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS_APP
     #define NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS_APP
     template <typename T>
-    std::optional<T> get_opt(const json& j, const std::string& key) {
+    std::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -89,7 +95,7 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const std::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const std::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -99,7 +105,39 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
     }
     #endif
 
-    inline void to_json(json& j, const CppSupportedSchemasApplication& x) {
+    inline void to_json(nlohmann::json& j, const NewObjectItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewObjectItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewDiscriminatedUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewDiscriminatedUnionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const NewIntersectionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, NewIntersectionItem& x) {
+        CPP_SUPPORTED_SCHEMAS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const CppSupportedSchemasApplication& x) {
         j["newStringItem"] = x.new_string_item;
         j["newLiteralStringItem"] = x.new_literal_string_item;
         j["newLiteralNumberItem"] = x.new_literal_number_item;
@@ -120,11 +158,11 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         j["newDiscriminatedUnionItem"] = x.new_discriminated_union_item;
         j["newIntersectionItem"] = x.new_intersection_item;
         j["newAnyItem"] = x.new_any_item;
-        set_opt<std::string>(j, "newOptionalItem", x.new_optional_item);
-        set_opt<std::string>(j, "newNullableItem", x.new_nullable_item);
+        CPP_SUPPORTED_SCHEMAS_APP::set_opt<std::string>(j, "newOptionalItem", x.new_optional_item);
+        CPP_SUPPORTED_SCHEMAS_APP::set_opt<std::string>(j, "newNullableItem", x.new_nullable_item);
     }
 
-    inline void from_json(const json& j, CppSupportedSchemasApplication& x) {
+    inline void from_json(const nlohmann::json& j, CppSupportedSchemasApplication& x) {
         x.new_string_item = j.at("newStringItem").get<NewStringItem>();
         x.new_literal_string_item = j.at("newLiteralStringItem").get<std::string>();
         x.new_literal_number_item = j.at("newLiteralNumberItem").get<std::uint32_t>();
@@ -145,8 +183,8 @@ namespace CPP_SUPPORTED_SCHEMAS_APP {
         x.new_discriminated_union_item = j.at("newDiscriminatedUnionItem").get<NewDiscriminatedUnionItem>();
         x.new_intersection_item = j.at("newIntersectionItem").get<NewIntersectionItem>();
         x.new_any_item = j.at("newAnyItem").get<NewAnyItem>();
-        x.new_optional_item = get_opt<std::string>(j, "newOptionalItem");
-        x.new_nullable_item = get_opt<std::string>(j, "newNullableItem");
+        x.new_optional_item = CPP_SUPPORTED_SCHEMAS_APP::get_opt<std::string>(j, "newOptionalItem");
+        x.new_nullable_item = CPP_SUPPORTED_SCHEMAS_APP::get_opt<std::string>(j, "newNullableItem");
     }
 
 }

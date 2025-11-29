@@ -15,80 +15,103 @@
 #include <variant>
 #include <vector>
 
-using nlohmann::json;
-
 namespace CPP_SUPPORTED_SCHEMAS {
+    // A simple string
     using StringItem = std::string;
 
+    // An enum
     enum class EnumItem: int {
         Enum1,
         Enum2,
         Enum3
     };
 
+    // A native enum
     enum class NativeEnumItem: int {
         NativeEnum1,
         NativeEnum2,
         NativeEnum3
     };
 
+    // A double
     using DoubleItem = double;
 
+    // A big integer
     using BigIntItem = std::int64_t;
 
+    // A 64-bit integer
     using Int64Item = std::int64_t;
 
+    // A 32-bit integer
     using Int32Item = std::int32_t;
 
+    // A boolean
     using BooleanItem = bool;
 
+    // An object
     struct ObjectItem {
         std::string key;
     };
 
+    // An object with otherKey
     struct OtherObjectItem {
         std::string other_key;
     };
 
+    // An object with a discriminator
     struct ObjectItemWithDiscriminator {
         std::string key;
         EnumItem discriminator;
     };
 
+    // Another object with a discriminator
     struct OtherObjectItemWithDiscriminator {
         std::string other_key;
         EnumItem discriminator;
     };
 
+    // A two-dimensional array of numbers
     using ArrayItem = std::vector<std::vector<double>>;
 
+    // A record with string keys and number values
     using RecordItem = std::unordered_map<std::string, double>;
 
+    // A map with string keys and number values
     using MapItem = std::unordered_map<std::string, double>;
 
+    // A set of strings
     using SetItem = std::set<std::string>;
 
+    // A tuple of a number, a string, and a boolean
     using TupleItem = std::tuple<double, std::string, bool>;
 
+    // A union of ObjectItem and OtherObjectItem
     using UnionItem = std::variant<
         ObjectItem,
         OtherObjectItem
     >;
 
+    // A discriminated union based on the discriminator field
     using DiscriminatedUnionItem = std::variant<
         ObjectItemWithDiscriminator,
         OtherObjectItemWithDiscriminator
     >;
 
+    // An intersection of ObjectItem and OtherObjectItem
     struct IntersectionItem : public ObjectItem, public OtherObjectItem {
         // Intersection fields are inherited from base structs.
     };
 
-    using AnyItem = json;
+    // Any type
+    using AnyItem = nlohmann::json;
 
     struct CppSupportedSchemas {
         StringItem string_item;
+        
+        // A literal string
         std::string literal_string_item;
+        
+        // A literal number
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
@@ -110,7 +133,11 @@ namespace CPP_SUPPORTED_SCHEMAS {
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
         AnyItem any_item;
+        
+        // An optional string
         std::optional<std::string> optional_item;
+        
+        // A nullable string
         std::optional<std::string> nullable_item;
     };
 
@@ -120,7 +147,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     #ifndef NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS
     #define NLOHMANN_OPTIONAL_HELPER_CPP_SUPPORTED_SCHEMAS
     template <typename T>
-    std::optional<T> get_opt(const json& j, const std::string& key) {
+    std::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -129,7 +156,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const std::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const std::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -139,7 +166,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
     }
     #endif
 
-    inline void to_json(json& j, const EnumItem& x) {
+    inline void to_json(nlohmann::json& j, const EnumItem& x) {
         switch (x) {
             case EnumItem::Enum1: j = "Enum1"; break;
             case EnumItem::Enum2: j = "Enum2"; break;
@@ -148,14 +175,14 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, EnumItem& x) {
+    inline void from_json(const nlohmann::json& j, EnumItem& x) {
         if (j == "Enum1") x = EnumItem::Enum1;
         else if (j == "Enum2") x = EnumItem::Enum2;
         else if (j == "Enum3") x = EnumItem::Enum3;
         else { throw std::runtime_error("Unexpected value deserializing enum EnumItem."); }
     }
 
-    inline void to_json(json& j, const NativeEnumItem& x) {
+    inline void to_json(nlohmann::json& j, const NativeEnumItem& x) {
         switch (x) {
             case NativeEnumItem::NativeEnum1: j = 1; break;
             case NativeEnumItem::NativeEnum2: j = 2; break;
@@ -164,50 +191,50 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void from_json(const json& j, NativeEnumItem& x) {
+    inline void from_json(const nlohmann::json& j, NativeEnumItem& x) {
         if (j == 1) x = NativeEnumItem::NativeEnum1;
         else if (j == 2) x = NativeEnumItem::NativeEnum2;
         else if (j == "NativeEnum3") x = NativeEnumItem::NativeEnum3;
         else { throw std::runtime_error("Unexpected value deserializing enum NativeEnumItem."); }
     }
 
-    inline void to_json(json& j, const ObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItem& x) {
         j["key"] = x.key;
     }
 
-    inline void from_json(const json& j, ObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItem& x) {
         x.key = j.at("key").get<std::string>();
     }
 
-    inline void to_json(json& j, const OtherObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItem& x) {
         j["otherKey"] = x.other_key;
     }
 
-    inline void from_json(const json& j, OtherObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItem& x) {
         x.other_key = j.at("otherKey").get<std::string>();
     }
 
-    inline void to_json(json& j, const ObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItemWithDiscriminator& x) {
         j["key"] = x.key;
         j["discriminator"] = x.discriminator;
     }
 
-    inline void from_json(const json& j, ObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItemWithDiscriminator& x) {
         x.key = j.at("key").get<std::string>();
         x.discriminator = j.at("discriminator").get<EnumItem>();
     }
 
-    inline void to_json(json& j, const OtherObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItemWithDiscriminator& x) {
         j["otherKey"] = x.other_key;
         j["discriminator"] = x.discriminator;
     }
 
-    inline void from_json(const json& j, OtherObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItemWithDiscriminator& x) {
         x.other_key = j.at("otherKey").get<std::string>();
         x.discriminator = j.at("discriminator").get<EnumItem>();
     }
 
-    inline void to_json(json& j, const UnionItem& x) {
+    inline void to_json(nlohmann::json& j, const UnionItem& x) {
         std::visit(
             [&j](auto&& arg) {
                 using T = std::decay_t<decltype(arg)>;
@@ -225,7 +252,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         );
     }
 
-    inline void from_json(const json& j, UnionItem& x) {
+    inline void from_json(const nlohmann::json& j, UnionItem& x) {
         try {
             // Try to deserialize as ObjectItem
             x = j.get<ObjectItem>();
@@ -243,7 +270,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void to_json(json& j, const DiscriminatedUnionItem& x) {
+    inline void to_json(nlohmann::json& j, const DiscriminatedUnionItem& x) {
         std::visit(
             [&j](auto&& arg) {
                 using T = std::decay_t<decltype(arg)>;
@@ -261,7 +288,7 @@ namespace CPP_SUPPORTED_SCHEMAS {
         );
     }
 
-    inline void from_json(const json& j, DiscriminatedUnionItem& x) {
+    inline void from_json(const nlohmann::json& j, DiscriminatedUnionItem& x) {
         const auto& k = j.at("discriminator").get<std::string>();
         if (k == "Enum1") {
             x = j.get<ObjectItemWithDiscriminator>();
@@ -275,17 +302,17 @@ namespace CPP_SUPPORTED_SCHEMAS {
         }
     }
 
-    inline void to_json(json& j, const IntersectionItem& x) {
+    inline void to_json(nlohmann::json& j, const IntersectionItem& x) {
         to_json(j, static_cast<const ObjectItem&>(x));
         to_json(j, static_cast<const OtherObjectItem&>(x));
     }
 
-    inline void from_json(const json& j, IntersectionItem& x) {
+    inline void from_json(const nlohmann::json& j, IntersectionItem& x) {
         from_json(j, static_cast<ObjectItem&>(x));
         from_json(j, static_cast<OtherObjectItem&>(x));
     }
 
-    inline void to_json(json& j, const CppSupportedSchemas& x) {
+    inline void to_json(nlohmann::json& j, const CppSupportedSchemas& x) {
         j["stringItem"] = x.string_item;
         j["literalStringItem"] = x.literal_string_item;
         j["literalNumberItem"] = x.literal_number_item;
@@ -309,11 +336,11 @@ namespace CPP_SUPPORTED_SCHEMAS {
         j["discriminatedUnionItem"] = x.discriminated_union_item;
         j["intersectionItem"] = x.intersection_item;
         j["anyItem"] = x.any_item;
-        set_opt<std::string>(j, "optionalItem", x.optional_item);
-        set_opt<std::string>(j, "nullableItem", x.nullable_item);
+        CPP_SUPPORTED_SCHEMAS::set_opt<std::string>(j, "optionalItem", x.optional_item);
+        CPP_SUPPORTED_SCHEMAS::set_opt<std::string>(j, "nullableItem", x.nullable_item);
     }
 
-    inline void from_json(const json& j, CppSupportedSchemas& x) {
+    inline void from_json(const nlohmann::json& j, CppSupportedSchemas& x) {
         x.string_item = j.at("stringItem").get<StringItem>();
         x.literal_string_item = j.at("literalStringItem").get<std::string>();
         x.literal_number_item = j.at("literalNumberItem").get<std::uint32_t>();
@@ -337,8 +364,8 @@ namespace CPP_SUPPORTED_SCHEMAS {
         x.discriminated_union_item = j.at("discriminatedUnionItem").get<DiscriminatedUnionItem>();
         x.intersection_item = j.at("intersectionItem").get<IntersectionItem>();
         x.any_item = j.at("anyItem").get<AnyItem>();
-        x.optional_item = get_opt<std::string>(j, "optionalItem");
-        x.nullable_item = get_opt<std::string>(j, "nullableItem");
+        x.optional_item = CPP_SUPPORTED_SCHEMAS::get_opt<std::string>(j, "optionalItem");
+        x.nullable_item = CPP_SUPPORTED_SCHEMAS::get_opt<std::string>(j, "nullableItem");
     }
 
 }

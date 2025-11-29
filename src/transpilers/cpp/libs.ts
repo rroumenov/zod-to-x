@@ -20,7 +20,3 @@ export function getLibs(useBoost: boolean) {
         variant: useBoost ? "#include <boost/variant.hpp>" : "#include <variant>",
     };
 }
-
-export const USING = {
-    nlohmann: "using nlohmann::json;",
-};

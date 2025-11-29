@@ -18,6 +18,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zString), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
@@ -29,6 +30,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zLiteralString), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  string item = 1;\n" + "}\n";
@@ -40,6 +42,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zLiteralNumber), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  uint32 item = 1;\n" + "}\n";
@@ -51,6 +54,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zEnum), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -70,6 +74,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zNativeEnum), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -89,6 +94,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zDouble), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  double item = 1;\n" + "}\n";
@@ -100,6 +106,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zBigInt), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
@@ -111,6 +118,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zInt64), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int64 item = 1;\n" + "}\n";
@@ -122,6 +130,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zInt32), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  int32 item = 1;\n" + "}\n";
@@ -133,6 +142,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zBoolean), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' + "message ModelItem {\n" + "  bool item = 1;\n" + "}\n";
@@ -144,6 +154,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zObject), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -161,6 +172,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zDate), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -176,6 +188,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zArray1D), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -190,6 +203,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zRecord), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -204,6 +218,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zMap), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -218,6 +233,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zSet), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -232,6 +248,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zTuple), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -246,6 +263,7 @@ describe("Zod2Proto3", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zUnion), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -268,10 +286,61 @@ describe("Zod2Proto3", () => {
         testOutput(output, expectedOutput);
     });
 
+    test("Union Schema - main union message", () => {
+        const output = Zod2XConverters.zod2ProtoV3(schemas.zUnion, {
+            indent: 2,
+            strict: false,
+            includeComments: false,
+        });
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItem {\n" +
+            "  string key = 1;\n" +
+            "}\n\n" +
+            "message OtherObjectItem {\n" +
+            "  string other_key = 1;\n" +
+            "}\n\n" +
+            "message UnionItem {\n" +
+            "  oneof union_item_oneof {\n" +
+            "    ObjectItem object_item = 1;\n" +
+            "    OtherObjectItem other_object_item = 2;\n" +
+            "  }\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
+    test("Discriminant Union Schema - main union message", () => {
+        const output = Zod2XConverters.zod2ProtoV3(schemas.zDiscriminantUnion, {
+            indent: 2,
+            strict: false,
+            includeComments: false,
+        });
+        const expectedOutput =
+            'syntax = "proto3";\n\n' +
+            "message ObjectItemWithDiscriminator {\n" +
+            "  string key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message OtherObjectItemWithDiscriminator {\n" +
+            "  string other_key = 1;\n" +
+            "  string discriminator = 2;\n" +
+            "}\n\n" +
+            "message DiscriminatedUnionItem {\n" +
+            "  oneof discriminated_union_item_oneof {\n" +
+            "    ObjectItemWithDiscriminator object_item_with_discriminator = 1;\n" +
+            "    OtherObjectItemWithDiscriminator other_object_item_with_discriminator = 2;\n" +
+            "  }\n" +
+            "}\n";
+
+        testOutput(output, expectedOutput);
+    });
+
     test("Any Schema", () => {
         const output = Zod2XConverters.zod2ProtoV3(modelBuilder(schemas.zAny), {
             indent: 2,
             strict: false,
+            includeComments: false,
         });
         const expectedOutput =
             'syntax = "proto3";\n\n' +
@@ -320,7 +389,7 @@ describe("Zod2Proto3", () => {
         testOutput(
             output,
             expectedOutput,
-            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto"
+            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.keep-keys.proto"
         );
     });
 
@@ -343,7 +412,7 @@ describe("Zod2Proto3", () => {
         testOutput(
             output,
             expectedOutput,
-            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.camel.proto"
+            "./test/test_zod2proto3/err-proto3_supported_schemas.expect.double-as-int.proto"
         );
     });
 });

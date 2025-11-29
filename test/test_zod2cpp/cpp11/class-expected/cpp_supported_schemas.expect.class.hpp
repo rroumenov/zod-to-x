@@ -15,21 +15,22 @@
 #include <unordered_map>
 #include <vector>
 
-using nlohmann::json;
-
 namespace zodtocppclass {
+    // An enum
     enum class EnumItem: int {
         Enum1,
         Enum2,
         Enum3
     };
 
+    // A native enum
     enum class NativeEnumItem: int {
         NativeEnum1,
         NativeEnum2,
         NativeEnum3
     };
 
+    // An object
     class ObjectItem {
     private:
         std::string key;
@@ -43,6 +44,7 @@ namespace zodtocppclass {
         void set_key(const std::string& value) { this->key = value; }
     };
 
+    // Another object
     class OtherObjectItem {
     private:
         std::string other_key;
@@ -56,11 +58,13 @@ namespace zodtocppclass {
         void set_other_key(const std::string& value) { this->other_key = value; }
     };
 
+    // A union of two objects
     using UnionItem = boost::variant<
         ObjectItem,
         OtherObjectItem
     >;
 
+    // An object with a discriminator
     class ObjectItemWithDiscriminator {
     private:
         std::string key;
@@ -79,6 +83,7 @@ namespace zodtocppclass {
         void set_discriminator(const EnumItem& value) { this->discriminator = value; }
     };
 
+    // Another object with a discriminator
     class OtherObjectItemWithDiscriminator {
     private:
         std::string other_key;
@@ -97,11 +102,13 @@ namespace zodtocppclass {
         void set_discriminator(const EnumItem& value) { this->discriminator = value; }
     };
 
+    // A discriminated union of two objects
     using DiscriminatedUnionItem = boost::variant<
         ObjectItemWithDiscriminator,
         OtherObjectItemWithDiscriminator
     >;
 
+    // An intersection of two objects
     class IntersectionItem : public ObjectItem, public OtherObjectItem {
     public:
         IntersectionItem() = default;
@@ -112,27 +119,59 @@ namespace zodtocppclass {
 
     class CppSupportedSchemas {
     private:
+        
+        // A simple string
         std::string string_item;
+        
+        // A literal string
         std::string literal_string_item;
+        
+        // A literal number
         std::uint32_t literal_number_item;
         EnumItem enum_item;
         NativeEnumItem native_enum_item;
+        
+        // A double
         double double_item;
+        
+        // A big integer
         std::int64_t big_int_item;
+        
+        // A 64-bit integer
         std::int64_t int64_item;
+        
+        // A 32-bit integer
         std::int32_t int32_item;
+        
+        // A boolean
         bool boolean_item;
         ObjectItem object_item;
+        
+        // A two-dimensional array of numbers
         std::vector<std::vector<double>> array_item;
+        
+        // A record with string keys and number values
         std::unordered_map<std::string, double> record_item;
+        
+        // A map with string keys and number values
         std::unordered_map<std::string, double> map_item;
+        
+        // A set of strings
         std::set<std::string> set_item;
+        
+        // A tuple of a number, a string, and a boolean
         std::tuple<double, std::string, bool> tuple_item;
         UnionItem union_item;
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
-        json any_item;
+        
+        // Any type
+        nlohmann::json any_item;
+        
+        // An optional string
         boost::optional<std::string> optional_item;
+        
+        // A nullable string
         boost::optional<std::string> nullable_item;
     
     public:
@@ -215,9 +254,9 @@ namespace zodtocppclass {
         IntersectionItem& get_mut_intersection_item() { return this->intersection_item; }
         void set_intersection_item(const IntersectionItem& value) { this->intersection_item = value; }
         
-        const json& get_any_item() const { return this->any_item; }
-        json& get_mut_any_item() { return this->any_item; }
-        void set_any_item(const json& value) { this->any_item = value; }
+        const nlohmann::json& get_any_item() const { return this->any_item; }
+        nlohmann::json& get_mut_any_item() { return this->any_item; }
+        void set_any_item(const nlohmann::json& value) { this->any_item = value; }
         
         boost::optional<std::string> get_optional_item() const { return this->optional_item; }
         void set_optional_item(boost::optional<std::string> value) { this->optional_item = value; }
@@ -232,7 +271,7 @@ namespace zodtocppclass {
     #ifndef NLOHMANN_OPTIONAL_HELPER_zodtocppclass
     #define NLOHMANN_OPTIONAL_HELPER_zodtocppclass
     template <typename T>
-    boost::optional<T> get_opt(const json& j, const std::string& key) {
+    boost::optional<T> get_opt(const nlohmann::json& j, const std::string& key) {
         auto it = j.find(key);
         if (it != j.end() && !it->is_null()) {
             return it->get<T>();
@@ -241,7 +280,7 @@ namespace zodtocppclass {
     }
 
     template <typename T>
-    void set_opt(json& j, const std::string& key, const boost::optional<T>& opt) {
+    void set_opt(nlohmann::json& j, const std::string& key, const boost::optional<T>& opt) {
         if (opt) {
             j[key] = *opt;
         }
@@ -251,7 +290,7 @@ namespace zodtocppclass {
     }
     #endif
 
-    inline void to_json(json& j, const EnumItem& x) {
+    inline void to_json(nlohmann::json& j, const EnumItem& x) {
         switch (x) {
             case EnumItem::Enum1: j = "Enum1"; break;
             case EnumItem::Enum2: j = "Enum2"; break;
@@ -260,14 +299,14 @@ namespace zodtocppclass {
         }
     }
 
-    inline void from_json(const json& j, EnumItem& x) {
+    inline void from_json(const nlohmann::json& j, EnumItem& x) {
         if (j == "Enum1") x = EnumItem::Enum1;
         else if (j == "Enum2") x = EnumItem::Enum2;
         else if (j == "Enum3") x = EnumItem::Enum3;
         else { throw std::runtime_error("Unexpected value deserializing enum EnumItem."); }
     }
 
-    inline void to_json(json& j, const NativeEnumItem& x) {
+    inline void to_json(nlohmann::json& j, const NativeEnumItem& x) {
         switch (x) {
             case NativeEnumItem::NativeEnum1: j = 1; break;
             case NativeEnumItem::NativeEnum2: j = 2; break;
@@ -276,30 +315,30 @@ namespace zodtocppclass {
         }
     }
 
-    inline void from_json(const json& j, NativeEnumItem& x) {
+    inline void from_json(const nlohmann::json& j, NativeEnumItem& x) {
         if (j == 1) x = NativeEnumItem::NativeEnum1;
         else if (j == 2) x = NativeEnumItem::NativeEnum2;
         else if (j == "NativeEnum3") x = NativeEnumItem::NativeEnum3;
         else { throw std::runtime_error("Unexpected value deserializing enum NativeEnumItem."); }
     }
 
-    inline void to_json(json& j, const ObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItem& x) {
         j["key"] = x.get_key();
     }
 
-    inline void from_json(const json& j, ObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItem& x) {
         x.set_key(j.at("key").get<std::string>());
     }
 
-    inline void to_json(json& j, const OtherObjectItem& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItem& x) {
         j["otherKey"] = x.get_other_key();
     }
 
-    inline void from_json(const json& j, OtherObjectItem& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItem& x) {
         x.set_other_key(j.at("otherKey").get<std::string>());
     }
 
-    inline void to_json(json& j, const UnionItem& x) {
+    inline void to_json(nlohmann::json& j, const UnionItem& x) {
         if (x.type() == typeid(ObjectItem)) {
             j = boost::get<ObjectItem>(x);
         }
@@ -311,7 +350,7 @@ namespace zodtocppclass {
         }
     }
 
-    inline void from_json(const json& j, UnionItem& x) {
+    inline void from_json(const nlohmann::json& j, UnionItem& x) {
         try {
             // Try to deserialize as ObjectItem
             x = j.get<ObjectItem>();
@@ -329,27 +368,27 @@ namespace zodtocppclass {
         }
     }
 
-    inline void to_json(json& j, const ObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const ObjectItemWithDiscriminator& x) {
         j["key"] = x.get_key();
         j["discriminator"] = x.get_discriminator();
     }
 
-    inline void from_json(const json& j, ObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, ObjectItemWithDiscriminator& x) {
         x.set_key(j.at("key").get<std::string>());
         x.set_discriminator(j.at("discriminator").get<EnumItem>());
     }
 
-    inline void to_json(json& j, const OtherObjectItemWithDiscriminator& x) {
+    inline void to_json(nlohmann::json& j, const OtherObjectItemWithDiscriminator& x) {
         j["otherKey"] = x.get_other_key();
         j["discriminator"] = x.get_discriminator();
     }
 
-    inline void from_json(const json& j, OtherObjectItemWithDiscriminator& x) {
+    inline void from_json(const nlohmann::json& j, OtherObjectItemWithDiscriminator& x) {
         x.set_other_key(j.at("otherKey").get<std::string>());
         x.set_discriminator(j.at("discriminator").get<EnumItem>());
     }
 
-    inline void to_json(json& j, const DiscriminatedUnionItem& x) {
+    inline void to_json(nlohmann::json& j, const DiscriminatedUnionItem& x) {
         if (x.type() == typeid(ObjectItemWithDiscriminator)) {
             j = boost::get<ObjectItemWithDiscriminator>(x);
         }
@@ -361,7 +400,7 @@ namespace zodtocppclass {
         }
     }
 
-    inline void from_json(const json& j, DiscriminatedUnionItem& x) {
+    inline void from_json(const nlohmann::json& j, DiscriminatedUnionItem& x) {
         const auto& k = j.at("discriminator").get<std::string>();
         if (k == "Enum1") {
             x = j.get<ObjectItemWithDiscriminator>();
@@ -375,17 +414,17 @@ namespace zodtocppclass {
         }
     }
 
-    inline void to_json(json& j, const IntersectionItem& x) {
+    inline void to_json(nlohmann::json& j, const IntersectionItem& x) {
         to_json(j, static_cast<const ObjectItem&>(x));
         to_json(j, static_cast<const OtherObjectItem&>(x));
     }
 
-    inline void from_json(const json& j, IntersectionItem& x) {
+    inline void from_json(const nlohmann::json& j, IntersectionItem& x) {
         from_json(j, static_cast<ObjectItem&>(x));
         from_json(j, static_cast<OtherObjectItem&>(x));
     }
 
-    inline void to_json(json& j, const CppSupportedSchemas& x) {
+    inline void to_json(nlohmann::json& j, const CppSupportedSchemas& x) {
         j["stringItem"] = x.get_string_item();
         j["literalStringItem"] = x.get_literal_string_item();
         j["literalNumberItem"] = x.get_literal_number_item();
@@ -406,11 +445,11 @@ namespace zodtocppclass {
         j["discriminatedUnionItem"] = x.get_discriminated_union_item();
         j["intersectionItem"] = x.get_intersection_item();
         j["anyItem"] = x.get_any_item();
-        set_opt<std::string>(j, "optionalItem", x.get_optional_item());
-        set_opt<std::string>(j, "nullableItem", x.get_nullable_item());
+        zodtocppclass::set_opt<std::string>(j, "optionalItem", x.get_optional_item());
+        zodtocppclass::set_opt<std::string>(j, "nullableItem", x.get_nullable_item());
     }
 
-    inline void from_json(const json& j, CppSupportedSchemas& x) {
+    inline void from_json(const nlohmann::json& j, CppSupportedSchemas& x) {
         x.set_string_item(j.at("stringItem").get<std::string>());
         x.set_literal_string_item(j.at("literalStringItem").get<std::string>());
         x.set_literal_number_item(j.at("literalNumberItem").get<std::uint32_t>());
@@ -430,9 +469,9 @@ namespace zodtocppclass {
         x.set_union_item(j.at("unionItem").get<UnionItem>());
         x.set_discriminated_union_item(j.at("discriminatedUnionItem").get<DiscriminatedUnionItem>());
         x.set_intersection_item(j.at("intersectionItem").get<IntersectionItem>());
-        x.set_any_item(j.at("anyItem").get<json>());
-        x.set_optional_item(get_opt<std::string>(j, "optionalItem"));
-        x.set_nullable_item(get_opt<std::string>(j, "nullableItem"));
+        x.set_any_item(j.at("anyItem").get<nlohmann::json>());
+        x.set_optional_item(zodtocppclass::get_opt<std::string>(j, "optionalItem"));
+        x.set_nullable_item(zodtocppclass::get_opt<std::string>(j, "nullableItem"));
     }
 
 }

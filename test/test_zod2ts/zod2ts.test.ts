@@ -2,11 +2,13 @@ import { z } from "zod";
 import { Zod2XTypes, extendZod, Zod2Ast, Zod2XTranspilers } from "../../dist";
 extendZod(z);
 
+import { describe, beforeAll, test } from "vitest";
 import * as fs from "fs";
 
 import { header } from "../common/header";
 import { testOutput } from "../common/utils";
 import { getSchemas, modelBuilder } from "../common/zod_schemas";
+import { genericsApplication, genericsInfrastructure } from "../common/layered_generics";
 import { zTsSupportedSchemas } from "./ts_supported_schemas";
 import {
     tsSupportedSchemasApplicationModel,
@@ -26,7 +28,9 @@ describe("Zod2Ts", () => {
 
     test("String Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zString));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: string;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -34,7 +38,9 @@ describe("Zod2Ts", () => {
 
     test("Literal String Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zLiteralString));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + '  item: "literal";\n' + "}";
 
         testOutput(output, expectedOutput);
@@ -42,7 +48,9 @@ describe("Zod2Ts", () => {
 
     test("Literal Number Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zLiteralNumber));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: 1;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -50,7 +58,9 @@ describe("Zod2Ts", () => {
 
     test("Enum Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zEnum));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export enum EnumItem {\n" +
             '  Enum1 = "Enum1",\n' +
@@ -66,7 +76,9 @@ describe("Zod2Ts", () => {
 
     test("Native Enum Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zNativeEnum));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export enum NativeEnumItem {\n" +
             "  NativeEnum1 = 1,\n" +
@@ -82,7 +94,9 @@ describe("Zod2Ts", () => {
 
     test("Number Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zDouble));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: number;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -90,7 +104,9 @@ describe("Zod2Ts", () => {
 
     test("Object Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zObject));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
@@ -104,7 +120,9 @@ describe("Zod2Ts", () => {
 
     test("Date Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zDate));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: Date;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -112,7 +130,9 @@ describe("Zod2Ts", () => {
 
     test("Array Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zArray2D));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Array<number[]>;\n" + "}";
 
@@ -121,7 +141,9 @@ describe("Zod2Ts", () => {
 
     test("Record Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zRecord));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Record<string, number>;\n" + "}";
 
@@ -130,7 +152,9 @@ describe("Zod2Ts", () => {
 
     test("Map Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zMap));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: Map<string, number>;\n" + "}";
 
@@ -139,7 +163,9 @@ describe("Zod2Ts", () => {
 
     test("Set Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zSet));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: Set<string>;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -147,7 +173,9 @@ describe("Zod2Ts", () => {
 
     test("Tuple Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zTuple));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ModelItem {\n" + "  item: [number, number];\n" + "}";
 
@@ -156,7 +184,9 @@ describe("Zod2Ts", () => {
 
     test("Union Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zUnion));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
@@ -176,7 +206,9 @@ describe("Zod2Ts", () => {
 
     test("Intersection Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zIntersection));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput =
             "export interface ObjectItem {\n" +
             "  key: string;\n" +
@@ -194,7 +226,9 @@ describe("Zod2Ts", () => {
 
     test("Any Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zAny));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: any;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -202,7 +236,9 @@ describe("Zod2Ts", () => {
 
     test("Optional Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zOptional));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item?: string;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -210,7 +246,9 @@ describe("Zod2Ts", () => {
 
     test("Nullable Schema", () => {
         const ast = new Zod2Ast({ strict: false }).build(modelBuilder(schemas.zNullable));
-        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2 }).transpile(ast);
+        const output = new Zod2XTranspilers.Zod2Ts({ indent: 2, includeComments: false }).transpile(
+            ast
+        );
         const expectedOutput = "export interface ModelItem {\n" + "  item: string | null;\n" + "}";
 
         testOutput(output, expectedOutput);
@@ -398,6 +436,78 @@ describe("Zod2Ts", () => {
             output,
             expectedOutput,
             "./test/test_zod2ts/class-expected/err-ts_supported_schemas.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - application", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/layered_generics.app.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-layered_generics.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - infrastructure", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/layered_generics.infra.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-layered_generics.infra.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - application as class", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/layered_generics.app.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-layered_generics.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - infrastructure as class", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/layered_generics.infra.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-layered_generics.infra.ts"
         );
     });
 });

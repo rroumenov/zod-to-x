@@ -1,9 +1,11 @@
 import Case from "case";
+import { ZodDiscriminatedUnion, ZodUnion } from "zod";
 
 import {
     ASTAliasedTypes,
     ASTEnum,
     ASTIntersection,
+    ASTNode,
     ASTObject,
     ASTUnion,
     IZod2AstOpt,
@@ -49,6 +51,11 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 
     protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
         // Zod2ProtoV3 does not support layered modeling.
+        return "";
+    }
+
+    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
+        // Zod2ProtoV3 does not support layered modeling nor generics.
         return "";
     }
 
@@ -203,7 +210,12 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
-            if (value.description && !this.isTranspilerable(value)) {
+            if (
+                this.opt.includeComments &&
+                value.description &&
+                !value.name &&
+                !this.isTranspilerable(value)
+            ) {
                 // Avoid duplicated descriptions for transpiled items.
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
@@ -302,7 +314,10 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
  * @returns The Protocol Buffers v3 definition as a string.
  */
 export function zod2ProtoV3(
-    schema: ZodObject<any>,
+    schema:
+        | ZodObject<any>
+        | ZodDiscriminatedUnion<string, ZodObject<any>[]>
+        | ZodUnion<[ZodObject<any>, ...ZodObject<any>[]]>,
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<
             IZod2ProtoV3Opt,
@@ -314,6 +329,6 @@ export function zod2ProtoV3(
             | "encodeDoubleAsInt"
         > = {}
 ): string {
-    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema);
+    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema as any);
     return new Zod2ProtoV3(opt).transpile(astNode);
 }

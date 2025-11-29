@@ -27,12 +27,19 @@ export class ASTEnum extends ASTCommon {
 export class ASTObject extends ASTCommon {
     name: string;
     properties: Record<string, ASTType>;
+    templates: Set<string>; // In case of generic template definition. Ex: "T", "K", "Data", ...
+
+    // In case of model definition that uses a generic template. Shall follow the same order as
+    // templates definition.
+    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
 
     constructor(data: ASTObject & ASTCommon) {
         super(data);
 
         this.name = data.name;
         this.properties = data.properties;
+        this.templates = data.templates;
+        this.templatesTranslation = data.templatesTranslation;
     }
 }
 

@@ -3,6 +3,7 @@ import Case from "case";
 import {
     ASTAliasedTypes,
     ASTArray,
+    ASTDefinition,
     ASTEnum,
     ASTIntersection,
     ASTNode,
@@ -36,26 +37,53 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "d-union" | "alias"; isInternal?: boolean }
+        opt?: { type?: "union" | "d-union" | "alias"; isInternal?: boolean; templates?: string }
     ) {
         const extendedType = opt?.isInternal
             ? aliasOf
             : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
+        const templates = opt?.templates ?? "";
+
         if (opt?.type === "alias") {
-            this.push0(`export type ${name} = ${extendedType};\n`);
+            this.push0(`export type ${name} = ${extendedType}${templates};\n`);
         } else if (this.opt.outType === "class") {
             if (opt?.type === "d-union") {
-                this.push0(`export type ${name} = ${extendedType};\n`);
+                this.push0(`export type ${name} = ${extendedType}${templates};\n`);
             } else {
-                this.push0(`export class ${name} extends ${extendedType} {}\n`);
+                this.push0(`export class ${name} extends ${extendedType}${templates} {}\n`);
             }
         } else {
             if (opt?.type === "union" || opt?.type === "d-union") {
-                this.push0(`export type ${name} = ${extendedType};\n`);
+                this.push0(`export type ${name} = ${extendedType}${templates};\n`);
             } else {
-                this.push0(`export interface ${name} extends ${extendedType} {}\n`);
+                this.push0(`export interface ${name} extends ${extendedType}${templates} {}\n`);
             }
+        }
+    }
+
+    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
+        if (
+            (data instanceof ASTObject || data instanceof ASTDefinition) &&
+            data.templatesTranslation.length > 0
+        ) {
+            return (
+                "<" +
+                data.templatesTranslation
+                    .map((t) => {
+                        if (this.isExternalTypeImport(t)) {
+                            this.addExternalTypeImport(t);
+                            return this.getTypeFromExternalNamespace(
+                                t.parentNamespace!,
+                                t.aliasOf!
+                            );
+                        } else {
+                            return t.aliasOf!;
+                        }
+                    })
+                    .join(", ") +
+                ">"
+            );
         }
     }
 
@@ -64,6 +92,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
             if (data.aliasOf) {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
+                    templates: this.getGenericTemplatesTranslation(data),
                 });
                 this.addExternalTypeImport(data);
             }
@@ -72,6 +101,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 type,
                 isInternal: true,
+                templates: this.getGenericTemplatesTranslation(data),
             });
             return true;
         }
@@ -141,6 +171,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
 
         let extendedType: string | undefined = undefined;
+
+        this.addComment(data.description);
 
         if (data instanceof ASTArray) {
             extendedType = this.getAttributeType(data.item);
@@ -274,7 +306,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *  }
      * */
     private _transpileStructuAsInterface(data: ASTObject) {
-        this.push0(`export interface ${data.name} {`);
+        const templates = data.templates.size > 0 ? `<${[...data.templates].join(", ")}>` : "";
+        this.push0(`export interface ${data.name}${templates} {`);
 
         for (const [key, value] of Object.entries(data.properties)) {
             this._transpileMember(this.opt.keepKeys === true ? key : Case.camel(key), value);
@@ -295,7 +328,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
      *  }
      * */
     private _transpileStructAsClass(data: ASTObject) {
-        this.push0(`export class ${data.name} {`);
+        const templates = data.templates.size > 0 ? `<${[...data.templates].join(", ")}>` : "";
+        this.push0(`export class ${data.name}${templates} {`);
         const constructorBody: string[] = [];
 
         for (const [key, value] of Object.entries(data.properties)) {
@@ -305,7 +339,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
 
         this.push0("");
-        this.push1(`constructor(data: ${data.name}) {`);
+        this.push1(`constructor(data: ${data.name}${templates}) {`);
         constructorBody.forEach((i) => this.push2(i));
         this.push1("}");
 

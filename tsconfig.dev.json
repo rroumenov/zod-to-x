@@ -5,5 +5,5 @@
     "sourceMap": true, // Enable source maps for debugging
     "removeComments": false // Keep comments for easier debugging
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "test_dev/**/*"]
 }

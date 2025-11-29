@@ -3,23 +3,26 @@
 #include "../cpp_test_utils.cpp"
 
 int main() {
-    testTypeSerialization(
+    int totalTests = 0, passedTests = 0;
+
+    if (testTypeSerialization(
         "C++17 - Supported Schemas as Struct",
         typeid(zodtocppstruct::CppSupportedSchemas).name(),
         zodtocppstruct::CppSupportedSchemas(),
         jSupportedSchemas,
         false
-    );
+    )) passedTests++; totalTests++;
     
-    testTypeSerialization(
+    if (testTypeSerialization(
         "C++17 - Supported Schemas as Class",
         typeid(zodtocppclass::CppSupportedSchemas).name(),
         zodtocppclass::CppSupportedSchemas(),
         jSupportedSchemas,
         false
-    );
+    )) passedTests++; totalTests++;
 
     std::cout << "-----------------------------------------" << std::endl;
+    std::cout << (passedTests == totalTests ? "✓" : "✗") << " (" << passedTests << "/" << totalTests << ")" << std::endl;
 
-    return 0;
+    return passedTests == totalTests ? 0 : 1;
 }

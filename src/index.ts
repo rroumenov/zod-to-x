@@ -1,5 +1,6 @@
 // Core
 export { extendZod, IZod2xLayerMetadata } from "./lib/zod_ext";
+export { createGenericType, useGenericType } from "./lib/zod_helpers";
 export * as Zod2XTypes from "./core/ast-types";
 export { Zod2Ast } from "./core/ast_node";
 export { Zod2X } from "./core/transpiler";

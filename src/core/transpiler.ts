@@ -5,8 +5,9 @@ import {
     ASTBoolean,
     ASTCommon,
     ASTDate,
-    ASTDefintion,
+    ASTDefinition,
     ASTEnum,
+    ASTGenericType,
     ASTIntersection,
     ASTLiteral,
     ASTMap,
@@ -96,6 +97,11 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected abstract getTypeFromExternalNamespace(namespace: string, typeName: string): string;
 
     /**
+     * Returns the translation of generic templates for a given AST node.
+     */
+    protected abstract getGenericTemplatesTranslation(data: ASTNode): string | undefined;
+
+    /**
      * For Layered Modeling.
      * If a property type is an imported type, without any modification, the transpiled type will be
      * an inherited type from the imported type.
@@ -137,7 +143,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * @param parentEnumNameKey - Optional tuple containing the parent enum name and key reference.
      */
     protected abstract getLiteralStringType(
-        value: string | number,
+        value: string | number | boolean,
         parentEnumNameKey?: [string, string]
     ): string | number;
 
@@ -293,7 +299,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected getAttributeType(token: ASTType): string {
         let varType: string = "";
 
-        if (token instanceof ASTDefintion) {
+        if (token instanceof ASTDefinition) {
+            const template = this.getGenericTemplatesTranslation(token) || "";
             if (this.opt.useImports === true && token.parentNamespace) {
                 this.addExternalTypeImport({
                     parentNamespace: token.parentNamespace,
@@ -308,6 +315,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             } else {
                 varType = token.name;
             }
+
+            varType += template;
         } else if (this.isTranspilerable(token)) {
             varType = token.name!;
         } else if (token instanceof ASTString) {
@@ -345,6 +354,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
             } else {
                 varType = this.getRecordType(key, value);
             }
+        } else if (token instanceof ASTGenericType) {
+            varType = token.name;
         } else {
             console.log("  # Unknown attribute equivalent for ---> ", token.constructor.name);
         }

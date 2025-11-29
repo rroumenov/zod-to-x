@@ -121,6 +121,10 @@ export class ZodHelpers {
         return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodDefault;
     }
 
+    static isZodPromise(i: ZodTypeAny): i is z.ZodPromise<any> {
+        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodPromise;
+    }
+
     static isZodAnyUnionType(i: ZodTypeAny) {
         return this.isZodUnion(i) || this.isZodDiscriminatedUnion(i);
     }
@@ -188,6 +192,18 @@ export class ZodHelpers {
         );
     }
 
+    /**
+     * Zod2X generics are represented as Promise<"TypeName">.
+     * Ex: z.promise(z.literal("K")) will be transpiled to Template<K>
+     */
+    static isZod2XGeneric(i: ZodTypeAny): boolean {
+        return (
+            this.isZodPromise(i) &&
+            this.isZodLiteral(i._def.type) &&
+            typeof i._def.type._def.value === "string"
+        );
+    }
+
     static cloneZod(i: ZodTypeAny) {
         const zodType: ZodFirstPartyTypeKind = i._def.typeName;
         return new (Extended.getZ()[zodType] as any)({ ...i._def });
@@ -214,4 +230,64 @@ export class ZodHelpers {
 
         return constraints;
     }
+}
+
+export function createGenericType(name: string) {
+    return Extended.getZ().promise(Extended.getZ().literal(name));
+}
+
+/**
+ * Use generic types defined in a generic ZodObject by replacing them with the actual child types.
+ * It preserves the zod2x metadata including the genericTypes array which will be moved to the
+ * new type during layer modeling metadata assignment.
+ * @param genObj ZodObject with generic types.
+ * @param childrens Record of child types to replace generics.
+ * @returns The extended ZodObject with replaced generic types.
+ */
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodTypeAny>,
+    skipLazy: true
+): ZodObject<any>;
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodTypeAny>,
+    skipLazy?: false
+): z.ZodLazy<ZodObject<any>>;
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodTypeAny>,
+    skipLazy?: boolean
+): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
+    const builder = () => {
+        let extended = genObj;
+        for (const [key, property] of Object.entries<ZodTypeAny>(genObj.shape)) {
+            if (ZodHelpers.isZod2XGeneric(property)) {
+                const childType = childrens[key];
+                if (!childType) {
+                    throw new Error(
+                        `Missing child type for generic property ${key} in ${genObj._zod2x!.typeName}.`
+                    );
+                }
+                const zod2xMeta = structuredClone(extended._zod2x);
+                extended = extended.extend({ [key]: childType });
+                extended._zod2x = zod2xMeta;
+                extended._zod2x!.isGenericChild = false;
+
+                if (!Array.isArray(extended._zod2x!.genericTypes)) {
+                    extended._zod2x!.genericTypes = [];
+                }
+
+                if (childType._zod2x !== undefined) {
+                    extended._zod2x!.genericTypes!.push({
+                        typeName: childType._zod2x.typeName,
+                        layer: childType._zod2x.layer!,
+                    });
+                }
+            }
+        }
+        return extended;
+    };
+
+    return skipLazy ? builder() : z.lazy(builder);
 }

@@ -30,18 +30,21 @@ class TsSupportedSchemas extends Zod2XModel {
         .object({
             otherKey: z.string(),
         })
+        .describe("Other Object Item")
         .zod2x("OtherObjectItem");
     objectItemWithDiscriminator = z
         .object({
             key: z.string(),
             discriminator: z.literal(this.enumItem.Values.Enum1).zod2x(this.enumItem),
         })
+        .describe("Object Item With Discriminator")
         .zod2x("ObjectItemWithDiscriminator");
     otherObjectItemWithDiscriminator = z
         .object({
             otherKey: z.string(),
             discriminator: z.literal(this.enumItem.Values.Enum2).zod2x(this.enumItem),
         })
+        .describe("Other Object Item With Discriminator")
         .zod2x("OtherObjectItemWithDiscriminator");
 
     dateItem = tsSupportedSchemas.dateItem;
@@ -53,12 +56,16 @@ class TsSupportedSchemas extends Zod2XModel {
     setItem = tsSupportedSchemas.setItem;
     tupleItem = tsSupportedSchemas.tupleItem;
 
-    unionItem = z.union([this.objectItem, this.otherObjectItem]);
-    discriminatedUnionItem = z.discriminatedUnion("discriminator", [
-        this.objectItemWithDiscriminator,
-        this.otherObjectItemWithDiscriminator,
-    ]);
-    intersectionItem = z.intersection(this.objectItem, this.otherObjectItem);
+    unionItem = z.union([this.objectItem, this.otherObjectItem]).describe("Union Item");
+    discriminatedUnionItem = z
+        .discriminatedUnion("discriminator", [
+            this.objectItemWithDiscriminator,
+            this.otherObjectItemWithDiscriminator,
+        ])
+        .describe("Discriminated Union Item");
+    intersectionItem = z
+        .intersection(this.objectItem, this.otherObjectItem)
+        .describe("Intersection Item");
 
     anyItem = tsSupportedSchemas.anyItem;
     optionalItem = tsSupportedSchemas.optionalItem;

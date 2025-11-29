@@ -2,30 +2,39 @@
 // a multiline
 // header.
 
+// A simple string
 export type StringItem = string;
 
+// An enum
 export enum EnumItem {
     Enum1 = "Enum1",
     Enum2 = "Enum2",
     Enum3 = "Enum3",
 }
 
+// A native enum
 export enum NativeEnumItem {
     NativeEnum1 = 1,
     NativeEnum2 = 2,
     NativeEnum3 = "NativeEnum3",
 }
 
+// A double
 export type DoubleItem = number;
 
+// A big integer
 export type BigIntItem = number;
 
+// A 64-bit integer
 export type Int64Item = number;
 
+// A 32-bit integer
 export type Int32Item = number;
 
+// A boolean
 export type BooleanItem = boolean;
 
+// An object
 export class ObjectItem {
     key: string;
 
@@ -34,6 +43,7 @@ export class ObjectItem {
     }
 }
 
+// Other Object Item
 export class OtherObjectItem {
     otherKey: string;
 
@@ -42,6 +52,7 @@ export class OtherObjectItem {
     }
 }
 
+// Object Item With Discriminator
 export class ObjectItemWithDiscriminator {
     key: string;
     discriminator: EnumItem.Enum1;
@@ -52,6 +63,7 @@ export class ObjectItemWithDiscriminator {
     }
 }
 
+// Other Object Item With Discriminator
 export class OtherObjectItemWithDiscriminator {
     otherKey: string;
     discriminator: EnumItem.Enum2;
@@ -62,19 +74,25 @@ export class OtherObjectItemWithDiscriminator {
     }
 }
 
+// A date
 export type DateItem = Date;
 
+// A two-dimensional array of numbers
 export type ArrayItem = Array<number[]>;
 
+// A record with string keys and number values
 export type RecordItem = Record<string, number>;
 
+// A map with string keys and number values
 export type MapItem = Map<string, number>;
 
+// A set of strings
 export type SetItem = Set<string>;
 
+// A tuple of a number, a string, and a boolean
 export type TupleItem = [number, string, boolean];
 
-// Built from union of ObjectItem, OtherObjectItem
+// Union Item - Built from union of ObjectItem, OtherObjectItem
 export class UnionItem {
     key: string;
     otherKey: string;
@@ -85,11 +103,12 @@ export class UnionItem {
     }
 }
 
+// Discriminated Union Item
 export type DiscriminatedUnionItem =
     | ObjectItemWithDiscriminator
     | OtherObjectItemWithDiscriminator;
 
-// Built from intersection of ObjectItem and OtherObjectItem
+// Intersection Item - Built from intersection of ObjectItem and OtherObjectItem
 export class IntersectionItem {
     key: string;
     otherKey: string;
@@ -100,11 +119,16 @@ export class IntersectionItem {
     }
 }
 
+// Any type
 export type AnyItem = any;
 
 export class TsSupportedSchemas {
     stringItem: StringItem;
+
+    // A literal string
     literalStringItem: "literal";
+
+    // A literal number
     literalNumberItem: 1;
     enumItem: EnumItem;
     nativeEnumItem: NativeEnumItem;
@@ -127,7 +151,11 @@ export class TsSupportedSchemas {
     discriminatedUnionItem: DiscriminatedUnionItem;
     intersectionItem: IntersectionItem;
     anyItem: AnyItem;
+
+    // An optional string
     optionalItem?: string;
+
+    // A nullable string
     nullableItem: string | null;
 
     constructor(data: TsSupportedSchemas) {
