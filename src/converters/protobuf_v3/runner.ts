@@ -4,6 +4,7 @@ import {
     ASTAliasedTypes,
     ASTEnum,
     ASTIntersection,
+    ASTNode,
     ASTObject,
     ASTUnion,
     IZod2AstOpt,
@@ -11,7 +12,7 @@ import {
     Zod2Ast,
     Zod2X,
 } from "@/core";
-import { ZodObject } from "@/lib/zod_helpers";
+import { ZodObject, ZodDiscriminatedUnion, ZodUnion } from "@/lib/zod_helpers";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
 import StringUtils from "@/utils/string_utils";
 
@@ -49,6 +50,11 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
 
     protected getTypeFromExternalNamespace(namespace: string, typeName: string): string {
         // Zod2ProtoV3 does not support layered modeling.
+        return "";
+    }
+
+    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
+        // Zod2ProtoV3 does not support layered modeling nor generics.
         return "";
     }
 
@@ -203,7 +209,12 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         this.push0(`message ${data.name} {`);
 
         Object.entries(data.properties).forEach(([key, value], index) => {
-            if (value.description && !this.isTranspilerable(value)) {
+            if (
+                this.opt.includeComments &&
+                value.description &&
+                !value.name &&
+                !this.isTranspilerable(value)
+            ) {
                 // Avoid duplicated descriptions for transpiled items.
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
@@ -302,7 +313,10 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
  * @returns The Protocol Buffers v3 definition as a string.
  */
 export function zod2ProtoV3(
-    schema: ZodObject<any>,
+    schema:
+        | ZodObject<any>
+        | ZodDiscriminatedUnion // TODO: fix any to force only ZodObjects
+        | ZodUnion<any>, // TODO: fix any to force only ZodObjects
     opt: Pick<IZod2AstOpt, "strict"> &
         Pick<
             IZod2ProtoV3Opt,
@@ -314,6 +328,6 @@ export function zod2ProtoV3(
             | "encodeDoubleAsInt"
         > = {}
 ): string {
-    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema);
+    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema as any);
     return new Zod2ProtoV3(opt).transpile(astNode);
 }

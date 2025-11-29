@@ -1,8 +1,17 @@
-import { z, ZodEnum, ZodNumber, ZodObject, ZodType } from "zod/v4";
+import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
 import { Extended } from "./zod_ext";
 
-export type { ZodArray, ZodType, ZodIntersection, ZodObject, ZodEnum } from "zod/v4";
+export type {
+    ZodArray,
+    ZodType,
+    ZodIntersection,
+    ZodObject,
+    ZodEnum,
+    ZodDiscriminatedUnion,
+    ZodUnion,
+    ZodLiteral,
+} from "zod/v4";
 export type ZodAnyUnionType = z.ZodUnion<any> | z.ZodDiscriminatedUnion<any>;
 
 type ZodNumberConstraints = {
@@ -32,6 +41,7 @@ export enum ZodFirstPartyTypeKind {
     ZodOptional = "optional",
     ZodNullable = "nullable",
     ZodDefault = "default",
+    ZodPromise = "promise",
 }
 
 /**
@@ -77,14 +87,14 @@ export class ZodHelpers {
     static isZodUnion(i: ZodType): i is z.ZodUnion<any> {
         return (
             i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
-            (i as z.ZodDiscriminatedUnion).def.discriminator === undefined
+            (i as z.ZodDiscriminatedUnion)._zod?.def?.discriminator === undefined
         );
     }
 
     static isZodDiscriminatedUnion(i: ZodType): i is z.ZodDiscriminatedUnion {
         return (
             i?.def?.type === ZodFirstPartyTypeKind.ZodUnion &&
-            (i as z.ZodDiscriminatedUnion).def.discriminator !== undefined
+            (i as z.ZodDiscriminatedUnion)._zod?.def?.discriminator !== undefined
         );
     }
 
@@ -130,6 +140,10 @@ export class ZodHelpers {
 
     static isZodDefault(i: ZodType): i is z.ZodDefault<any> {
         return i?.def?.type === ZodFirstPartyTypeKind.ZodDefault;
+    }
+
+    static isZodPromise<T extends ZodType>(i: ZodType): i is z.ZodPromise<T> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodPromise;
     }
 
     static isZodAnyUnionType(i: ZodType) {
@@ -194,6 +208,18 @@ export class ZodHelpers {
         return i.meta({ ...(i.meta() || {}) });
     }
 
+    /**
+     * Zod2X generics are represented as Promise<"TypeName">.
+     * Ex: z.promise(z.literal("K")) will be transpiled to Template<K>
+     */
+    static isZod2XGeneric(i: ZodType): boolean {
+        return (
+            this.isZodPromise<ZodLiteral>(i) &&
+            this.isZodLiteral(i.unwrap()) &&
+            typeof i.unwrap().def.values[0] === "string"
+        );
+    }
+
     static createZodObject(properties: Map<string, ZodType>): ZodObject<any> {
         return Extended.getZ().object(Object.fromEntries(properties));
     }
@@ -217,4 +243,64 @@ export class ZodHelpers {
 
         return constraints;
     }
+}
+
+export function createGenericType(name: string) {
+    return Extended.getZ().promise(Extended.getZ().literal(name));
+}
+
+/**
+ * Use generic types defined in a generic ZodObject by replacing them with the actual child types.
+ * It preserves the zod2x metadata including the genericTypes array which will be moved to the
+ * new type during layer modeling metadata assignment.
+ * @param genObj ZodObject with generic types.
+ * @param childrens Record of child types to replace generics.
+ * @returns The extended ZodObject with replaced generic types.
+ */
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodType>,
+    skipLazy: true
+): ZodObject<any>;
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodType>,
+    skipLazy?: false
+): z.ZodLazy<ZodObject<any>>;
+export function useGenericType(
+    genObj: ZodObject<any>,
+    childrens: Record<string, ZodType>,
+    skipLazy?: boolean
+): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
+    const builder = () => {
+        let extended = genObj;
+        for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
+            if (ZodHelpers.isZod2XGeneric(property)) {
+                const childType = childrens[key];
+                if (!childType) {
+                    throw new Error(
+                        `Missing child type for generic property ${key} in ${genObj._zod2x!.typeName}.`
+                    );
+                }
+                const zod2xMeta = structuredClone(extended._zod2x);
+                extended = extended.extend({ [key]: childType });
+                extended._zod2x = zod2xMeta;
+                extended._zod2x!.isGenericChild = false;
+
+                if (!Array.isArray(extended._zod2x!.genericTypes)) {
+                    extended._zod2x!.genericTypes = [];
+                }
+
+                if (childType._zod2x !== undefined) {
+                    extended._zod2x!.genericTypes!.push({
+                        typeName: childType._zod2x.typeName,
+                        layer: childType._zod2x.layer!,
+                    });
+                }
+            }
+        }
+        return extended;
+    };
+
+    return skipLazy ? builder() : z.lazy(builder);
 }

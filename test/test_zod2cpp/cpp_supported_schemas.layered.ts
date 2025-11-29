@@ -30,18 +30,21 @@ class CppSupportedSchemas extends Zod2XModel {
         .object({
             otherKey: z.string(),
         })
+        .describe("An object with otherKey")
         .zod2x("OtherObjectItem");
     objectItemWithDiscriminator = z
         .object({
             key: z.string(),
             discriminator: z.literal(this.enumItem.enum.Enum1).zod2x(this.enumItem),
         })
+        .describe("An object with a discriminator")
         .zod2x("ObjectItemWithDiscriminator");
     otherObjectItemWithDiscriminator = z
         .object({
             otherKey: z.string(),
             discriminator: z.literal(this.enumItem.enum.Enum2).zod2x(this.enumItem),
         })
+        .describe("Another object with a discriminator")
         .zod2x("OtherObjectItemWithDiscriminator");
 
     arrayItem = cppSupportedSchemas.arrayItem;
@@ -51,12 +54,18 @@ class CppSupportedSchemas extends Zod2XModel {
     setItem = cppSupportedSchemas.setItem;
     tupleItem = cppSupportedSchemas.tupleItem;
 
-    unionItem = z.union([this.objectItem, this.otherObjectItem]);
-    discriminatedUnionItem = z.discriminatedUnion("discriminator", [
-        this.objectItemWithDiscriminator,
-        this.otherObjectItemWithDiscriminator,
-    ]);
-    intersectionItem = z.intersection(this.objectItem, this.otherObjectItem);
+    unionItem = z
+        .union([this.objectItem, this.otherObjectItem])
+        .describe("A union of ObjectItem and OtherObjectItem");
+    discriminatedUnionItem = z
+        .discriminatedUnion("discriminator", [
+            this.objectItemWithDiscriminator,
+            this.otherObjectItemWithDiscriminator,
+        ])
+        .describe("A discriminated union based on the discriminator field");
+    intersectionItem = z
+        .intersection(this.objectItem, this.otherObjectItem)
+        .describe("An intersection of ObjectItem and OtherObjectItem");
 
     anyItem = cppSupportedSchemas.anyItem;
     optionalItem = cppSupportedSchemas.optionalItem;

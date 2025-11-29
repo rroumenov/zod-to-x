@@ -101,12 +101,16 @@ export function Layer(opt: IZod2xLayerMetadata) {
                             aliasOf: metadata.typeName,
                             layer: opt,
                             typeName: name,
+                            // Generics associated to parent, but related to current type.
+                            genericTypes: metadata.genericTypes,
+                            isGenericChild: true,
                         };
                     }
 
                     return zodItem;
                 };
 
+                const lazyProperties: any[] = [];
                 Object.getOwnPropertyNames(this).forEach((prop) => {
                     const item = (this as any)[prop];
 
@@ -115,6 +119,23 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         ZodHelpers.isTranspilerableAliasedZodType(item, opt.basicTypes === false)
                     ) {
                         (this as any)[prop] = setMetadata(Case.pascal(prop), item, opt);
+                    } else if (ZodHelpers.isZodLazy(item)) {
+                        lazyProperties.push(prop);
+                    }
+                });
+
+                // Process lazy properties after initial pass to ensure proper metadata assignment.
+                lazyProperties.forEach((i) => {
+                    const lazyItem = (this as any)[i]._def.getter();
+
+                    if (
+                        ZodHelpers.isTranspilerableZodType(lazyItem) ||
+                        ZodHelpers.isTranspilerableAliasedZodType(
+                            lazyItem,
+                            opt.basicTypes === false
+                        )
+                    ) {
+                        (this as any)[i] = setMetadata(Case.pascal(i), lazyItem, opt);
                     }
                 });
             }

@@ -3,9 +3,11 @@ import {
     ASTAny,
     ASTArray,
     ASTBoolean,
+    ASTCommon,
     ASTDate,
-    ASTDefintion,
+    ASTDefinition,
     ASTEnum,
+    ASTGenericType,
     ASTIntersection,
     ASTLiteral,
     ASTMap,
@@ -28,6 +30,7 @@ import {
     ZodIntersection,
     ZodObject,
     ZodType,
+    ZodLiteral,
 } from "@/lib/zod_helpers";
 import { log } from "@/utils/logger";
 
@@ -85,7 +88,7 @@ export class Zod2Ast {
     /**
      * Lazy schemas for further analysis
      */
-    private lazyPointers: Array<[ASTDefintion, ZodType]>;
+    private lazyPointers: Array<[ASTDefinition, ZodType]>;
 
     /**
      * Warnings generated during the AST creation to aware user about bad practices
@@ -130,10 +133,38 @@ export class Zod2Ast {
     private _getTranspilerableFile(
         itemName: string,
         metadata?: IZod2xMetadata
-    ): { parentFile?: string; parentNamespace?: string; aliasOf?: string } {
+    ): {
+        parentFile?: string;
+        parentNamespace?: string;
+        aliasOf?: string;
+        templatesTranslation?: {
+            parentFile?: string;
+            parentNamespace?: string;
+            aliasOf?: string;
+        }[];
+        isGenericChild?: boolean;
+    } {
         let layer: IZod2xLayerMetadata;
 
         if (this.opt.layer !== undefined && metadata?.layer !== undefined) {
+            if (Array.isArray(metadata.genericTypes)) {
+                // Check that all templates used with a generic type follows the layering rules
+                if (metadata.genericTypes.some((i) => this.opt.layer!.index < i.layer.index)) {
+                    throw new BadLayerDefinitionError(
+                        `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
+                            `from the same or lower layer. Review templates used for generic ` +
+                            `type ${metadata.typeName}.`
+                    );
+                }
+            }
+
+            const templatesTranslation = metadata?.genericTypes?.map((i) => ({
+                parentFile: this.opt.layer?.file !== i.layer.file ? i.layer.file : undefined,
+                parentNamespace:
+                    this.opt.layer?.file !== i.layer.file ? i.layer.namespace : undefined,
+                aliasOf: i.typeName,
+            }));
+
             if (metadata.layer.file === this.opt.layer.file) {
                 // Case 1: Only layer exists and belongs to the same file
                 // Case 2: Layer (belongs to same file) and parentLayer exist
@@ -152,10 +183,14 @@ export class Zod2Ast {
                         parentFile: layer.file,
                         parentNamespace: layer.namespace,
                         aliasOf: metadata?.aliasOf,
+                        templatesTranslation,
+                        isGenericChild: metadata?.isGenericChild,
                     };
                 } else {
                     return {
                         aliasOf: metadata?.aliasOf,
+                        templatesTranslation,
+                        isGenericChild: metadata?.isGenericChild,
                     };
                 }
             } else {
@@ -175,6 +210,8 @@ export class Zod2Ast {
                     parentFile: layer.file,
                     parentNamespace: layer.namespace,
                     aliasOf: undefined,
+                    templatesTranslation,
+                    isGenericChild: metadata?.isGenericChild,
                 };
             }
         }
@@ -188,13 +225,18 @@ export class Zod2Ast {
      * @param constraints - Constraints to be added to the definition
      * @returns
      */
-    private _createDefinition(node: ASTNode, constraints = {}): ASTDefintion {
-        return new ASTDefintion({
+    private _createDefinition(
+        node: ASTNode,
+        constraints = {},
+        templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[] = []
+    ): ASTDefinition {
+        return new ASTDefinition({
             name: node.name!,
             instanceType: node.constructor.name,
             parentFile: node.parentFile,
             parentNamespace: node.parentNamespace,
             aliasOf: node.aliasOf,
+            templatesTranslation,
             constraints:
                 "constraints" in node
                     ? { ...(node.constraints as Record<string, any>), ...constraints }
@@ -226,8 +268,8 @@ export class Zod2Ast {
      * @returns An object containing the combined properties of the left and right AST nodes.
      */
     private _intersectAstNodes(
-        left: ASTDefintion,
-        right: ASTDefintion
+        left: ASTDefinition,
+        right: ASTDefinition
     ): Pick<ASTObject, "properties"> {
         const leftData = this.nodes.get(left.name) as ASTObject;
         const rightData = this.nodes.get(right.name) as ASTObject;
@@ -252,7 +294,7 @@ export class Zod2Ast {
      * @returns An object containing the merged properties.
      * @throws AstNodeError - If properties with different types or array dimensions are encountered.
      */
-    private _unionAstNodes(options: ASTDefintion[]): Pick<ASTObject, "properties"> {
+    private _unionAstNodes(options: ASTDefinition[]): Pick<ASTObject, "properties"> {
         let typeA, typeB;
         const data = options.map((i) => this.nodes.get(i.name) as ASTObject);
         return {
@@ -363,7 +405,7 @@ export class Zod2Ast {
      *
      * @returns The AST definition for the provided enum schema.
      */
-    private _getEnumAst(schema: ZodEnum, opt?: ISchemasMetadata): ASTDefintion {
+    private _getEnumAst(schema: ZodEnum, opt?: ISchemasMetadata): ASTDefinition {
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item = new ASTEnum({
@@ -392,8 +434,9 @@ export class Zod2Ast {
      *
      * @returns The AST definition for the provided Zod object schema.
      */
-    private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefintion {
-        const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
+    private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefinition {
+        const { name, parentFile, parentNamespace, aliasOf, templatesTranslation, isGenericChild } =
+            this._getNames(schema);
 
         let discriminantValue: string | undefined = undefined;
 
@@ -401,12 +444,27 @@ export class Zod2Ast {
 
         if (!this.nodes.has(name)) {
             const properties: Record<string, ASTType> = {};
+            const templates = new Set<string>();
             for (const key in shape) {
-                properties[key] = this._zodToAST(shape[key]);
+                if (
+                    ZodHelpers.isZodPromise<ZodLiteral>(shape[key]) &&
+                    ZodHelpers.isZod2XGeneric(shape[key])
+                ) {
+                    const templateKey = shape[key].unwrap().def.values[0] as string;
+                    properties[key] = new ASTGenericType(templateKey);
+                    if (templates.has(templateKey)) {
+                        throw new AstTypeNameDefinitionError(
+                            `Duplicate template key found for model ${name}: ${templateKey}`
+                        );
+                    }
+                    templates.add(templateKey);
+                } else {
+                    properties[key] = this._zodToAST(shape[key]);
+                }
             }
 
             if (opt?.skipLayerClass) {
-                return {} as ASTDefintion; // Layer classes are not transpilerable
+                return {} as ASTDefinition; // Layer classes are not transpilerable
             }
 
             this.nodes.set(
@@ -418,6 +476,8 @@ export class Zod2Ast {
                     parentFile,
                     parentNamespace,
                     aliasOf,
+                    templates,
+                    templatesTranslation: templatesTranslation || [],
                 })
             );
         }
@@ -437,7 +497,11 @@ export class Zod2Ast {
             }
         }
 
-        return this._createDefinition(this.nodes.get(name) as ASTObject, { discriminantValue });
+        return this._createDefinition(
+            this.nodes.get(name) as ASTObject,
+            { discriminantValue },
+            isGenericChild ? undefined : templatesTranslation
+        );
     }
 
     /**
@@ -454,10 +518,10 @@ export class Zod2Ast {
      *
      * @returns The AST definition for the given Zod union schema.
      */
-    private _getUnionAst(schema: ZodAnyUnionType): ASTDefintion {
+    private _getUnionAst(schema: ZodAnyUnionType): ASTDefinition {
         const def = schema.def;
         const discriminator = ZodHelpers.isZodDiscriminatedUnion(schema)
-            ? schema.def.discriminator
+            ? schema._zod.def.discriminator
             : undefined;
 
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
@@ -491,13 +555,21 @@ export class Zod2Ast {
                 );
             }
 
+            const unifiedProperties = this._unionAstNodes(item.options as ASTDefinition[]);
+
             item.newObject = new ASTObject({
                 name,
-                properties: this._unionAstNodes(item.options as ASTDefintion[]).properties,
+                properties: unifiedProperties.properties,
                 description:
                     (schema.meta()?.description ? `${schema.meta()?.description} - ` : "") +
                     `Built from union of ` +
-                    `${item.options.map((i) => (i as ASTDefintion).name).join(", ")}`,
+                    `${item.options.map((i) => (i as ASTDefinition).name).join(", ")}`,
+                templates: new Set<string>(
+                    Object.values(unifiedProperties.properties)
+                        .filter((i) => i instanceof ASTGenericType)
+                        .map((i) => i.name)
+                ),
+                templatesTranslation: [],
             });
         }
 
@@ -515,7 +587,7 @@ export class Zod2Ast {
      *
      * @returns An ASTDefinition representing the intersection of the two Zod types.
      */
-    private _getIntersectionAst(schema: ZodIntersection<ZodType, ZodType>): ASTDefintion {
+    private _getIntersectionAst(schema: ZodIntersection<ZodType, ZodType>): ASTDefinition {
         const def = schema.def;
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
@@ -541,17 +613,24 @@ export class Zod2Ast {
                 );
             }
         } else {
+            const intersectedProperties = this._intersectAstNodes(
+                item.left as ASTDefinition,
+                item.right as ASTDefinition
+            );
             item.newObject = new ASTObject({
                 name,
-                properties: this._intersectAstNodes(
-                    item.left as ASTDefintion,
-                    item.right as ASTDefintion
-                ).properties,
+                properties: intersectedProperties.properties,
                 description:
                     (schema.meta()?.description ? `${schema.meta()?.description} - ` : "") +
                     `Built from intersection of ` +
-                    `${(item.left as ASTDefintion).name} and ` +
-                    `${(item.right as ASTDefintion).name}`,
+                    `${(item.left as ASTDefinition).name} and ` +
+                    `${(item.right as ASTDefinition).name}`,
+                templates: new Set<string>(
+                    Object.values(intersectedProperties.properties)
+                        .filter((i) => i instanceof ASTGenericType)
+                        .map((i) => i.name)
+                ),
+                templatesTranslation: [],
             });
         }
 
@@ -569,7 +648,7 @@ export class Zod2Ast {
      * @param innerSchema - The AST type representing the inner schema of the array.
      * @returns The AST definition for the array schema.
      */
-    private _getArrayAst(schema: ZodArray<any>, innerSchema: ASTType): ASTDefintion {
+    private _getArrayAst(schema: ZodArray<any>, innerSchema: ASTType): ASTDefinition {
         const { name, parentFile, parentNamespace, aliasOf } = this._getNames(schema);
 
         const item = new ASTArray({
@@ -588,7 +667,7 @@ export class Zod2Ast {
         return this._createDefinition(item);
     }
 
-    private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefintion | ASTAliasedTypes {
+    private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefinition | ASTAliasedTypes {
         if (schema._zod2x?.typeName === undefined) {
             return item;
         }
@@ -677,7 +756,7 @@ export class Zod2Ast {
                 })
             );
         } else if (ZodHelpers.isZodLiteral(schema)) {
-            let parentEnum: ASTDefintion | undefined = undefined;
+            let parentEnum: ASTDefinition | undefined = undefined;
             let parentEnumKey: string | undefined = undefined;
 
             // TODO: Support multiple values
@@ -687,7 +766,7 @@ export class Zod2Ast {
                 )?.[0];
                 parentEnum = this._zodToAST(schema._zod2x?.parentEnum as ZodEnum, {
                     isInjectedEnum: true,
-                }) as ASTDefintion;
+                }) as ASTDefinition;
             }
 
             return new ASTLiteral({
@@ -710,7 +789,7 @@ export class Zod2Ast {
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
             const lazySchema = schema.def.getter();
-            const lazyPointer: ASTDefintion = this._createDefinition({ name: "pending" });
+            const lazyPointer: ASTDefinition = this._createDefinition({ name: "pending" });
 
             this.lazyPointers.push([lazyPointer, lazySchema as ZodType]);
 

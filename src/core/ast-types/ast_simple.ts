@@ -1,4 +1,4 @@
-import { ASTCommon, ASTDefintion } from "./ast_common";
+import { ASTCommon, ASTDefinition } from "./ast_common";
 
 /**
  * Handle ZodString
@@ -43,8 +43,8 @@ export class ASTNumber extends ASTCommon {
  */
 export class ASTLiteral extends ASTCommon {
     name?: string; // Only exists for type aliases.
-    value: any;
-    parentEnum?: ASTDefintion;
+    value: string | number | boolean;
+    parentEnum?: ASTDefinition;
     parentEnumKey?: string;
 
     constructor(data: ASTLiteral & ASTCommon) {
