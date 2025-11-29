@@ -3,7 +3,7 @@ import Case from "case";
 import {
     ASTAliasedTypes,
     ASTArray,
-    ASTDefintion,
+    ASTDefinition,
     ASTEnum,
     ASTIntersection,
     ASTNode,
@@ -69,20 +69,52 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "alias"; isInternal?: boolean }
+        opt?: { type?: "union" | "alias"; isInternal?: boolean; templates?: string }
     ) {
         const extendedType = opt?.isInternal
             ? aliasOf
             : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
+        const templates = opt?.templates ?? "";
+
         if (opt?.type === "union" || opt?.type === "alias") {
-            this.push0(`using ${name} = ${extendedType};\n`);
+            this.push0(`using ${name} = ${extendedType}${templates};\n`);
         } else {
             if (this.opt.outType === "class") {
-                this.push0(`class ${name} : public ${extendedType} {};\n`);
+                this.push0(`class ${name} : public ${extendedType}${templates} {};\n`);
             } else {
-                this.push0(`struct ${name} : public ${extendedType} {};\n`);
+                this.push0(`struct ${name} : public ${extendedType}${templates} {};\n`);
             }
+        }
+
+        if (opt?.type !== "alias" && parentNamespace !== undefined) {
+            this._addExtendedTypeSerializer(name, parentNamespace);
+            this._addExtendedTypeDeserializer(name, parentNamespace);
+        }
+    }
+
+    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
+        if (
+            (data instanceof ASTObject || data instanceof ASTDefinition) &&
+            data.templatesTranslation.length > 0
+        ) {
+            return (
+                "<" +
+                data.templatesTranslation
+                    .map((t) => {
+                        if (this.isExternalTypeImport(t)) {
+                            this.addExternalTypeImport(t);
+                            return this.getTypeFromExternalNamespace(
+                                t.parentNamespace!,
+                                t.aliasOf!
+                            );
+                        } else {
+                            return t.aliasOf!;
+                        }
+                    })
+                    .join(", ") +
+                ">"
+            );
         }
     }
 
@@ -91,6 +123,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             if (data.aliasOf) {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
+                    templates: this.getGenericTemplatesTranslation(data),
                 });
                 this.addExternalTypeImport(data);
             }
@@ -99,6 +132,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 type,
                 isInternal: true,
+                templates: this.getGenericTemplatesTranslation(data),
             });
             return true;
         }
@@ -210,17 +244,19 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     }
 
     protected override getLiteralStringType(
-        value: string | number,
+        value: string | number | boolean,
         parentEnumNameKey?: [string, string]
     ) {
         return (
             parentEnumNameKey?.[0] ??
-            (isNaN(Number(value))
-                ? this.getStringType()
-                : this.getNumberType(Number.isInteger(value), {
-                      min: value as number,
-                      max: value as number,
-                  }))
+            (typeof value === "boolean"
+                ? this.getBooleanType()
+                : isNaN(Number(value))
+                  ? this.getStringType()
+                  : this.getNumberType(Number.isInteger(value), {
+                        min: value as number,
+                        max: value as number,
+                    }))
         );
     }
 
@@ -237,6 +273,24 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
     protected _getOptional(type: string) {
         this.imports.add(this.lib.optional);
         return `boost::optional<${type}>`;
+    }
+
+    protected _addExtendedTypeSerializer(typeName: string, parentNamespace: string): void {
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${typeName}& x) {`
+        );
+        this._push1(this.serializers, `${parentNamespace}::to_json(j, x);`);
+        this._push0(this.serializers, "}\n");
+    }
+
+    protected _addExtendedTypeDeserializer(typeName: string, parentNamespace: string): void {
+        this._push0(
+            this.serializers,
+            `inline void from_json(const ${NLOHMANN}& j, ${typeName}& x) {`
+        );
+        this._push1(this.serializers, `${parentNamespace}::from_json(j, x);`);
+        this._push0(this.serializers, "}\n");
     }
 
     protected transpileAliasedType(data: ASTAliasedTypes): void {
@@ -350,7 +404,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         const attributesData = data.options.map((i) => {
             return {
                 type: this.getAttributeType(i),
-                discriminantValue: (i as ASTDefintion).constraints?.discriminantValue,
+                discriminantValue: (i as ASTDefinition).constraints?.discriminantValue,
+                templates: this.getGenericTemplatesTranslation(i),
             };
         });
 
@@ -376,6 +431,16 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
     }
 
+    private _getTemplates(templates: Set<string>) {
+        return {
+            templateDefinition:
+                templates.size > 0
+                    ? `template<${[...templates].map((i) => "typename " + i).join(", ")}>`
+                    : "",
+            templateList: templates.size > 0 ? `<${[...templates].join(", ")}>` : "",
+        };
+    }
+
     /** Ex:
      *  struct MyStruct {
      *      TypeA attribute1;
@@ -383,6 +448,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     private _transpileStructAsStruct(data: ASTObject) {
+        const { templateDefinition } = this._getTemplates(data.templates);
+
+        if (templateDefinition) {
+            this.push0(templateDefinition);
+        }
+
         this.push0(`struct ${data.name} {`);
 
         const serializeData: IStructAttributeSerialData[] = [];
@@ -400,8 +471,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this.push0("};\n");
 
-        this._createStructSerializer(data.name, serializeData);
-        this._createStructDeserializer(data.name, serializeData);
+        this._createStructSerializer(data.name, serializeData, data.templates);
+        this._createStructDeserializer(data.name, serializeData, data.templates);
     }
 
     /** Ex:
@@ -421,6 +492,12 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *  }
      */
     private _transpileStructAsClass(data: ASTObject) {
+        const { templateDefinition } = this._getTemplates(data.templates);
+
+        if (templateDefinition) {
+            this.push0(templateDefinition);
+        }
+
         this.push0(`class ${data.name} {`);
         this.push0(`private:`);
 
@@ -454,8 +531,8 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
 
         this.push0("};\n");
 
-        this._createClassSerializer(data.name, serializeData);
-        this._createClassDeserializer(data.name, serializeData);
+        this._createClassSerializer(data.name, serializeData, data.templates);
+        this._createClassDeserializer(data.name, serializeData, data.templates);
     }
 
     /**
@@ -539,10 +616,24 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      }
      * @param parent - Name of the serialized structure
      * @param childs - Structure attributes data.
+     * @param templates - Generic templates string (if any)
      */
-    private _createStructSerializer(parent: string, childs: IStructAttributeSerialData[]) {
+    private _createStructSerializer(
+        parent: string,
+        childs: IStructAttributeSerialData[],
+        templates: Set<string>
+    ) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void to_json(${NLOHMANN}& j, const ${parent}& x) {`);
+        const { templateDefinition, templateList } = this._getTemplates(templates);
+
+        if (templateDefinition) {
+            this._push0(this.serializers, templateDefinition);
+        }
+
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${parent}${templateList}& x) {`
+        );
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.${i.snakeName};`);
@@ -566,12 +657,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      }
      * @param parent - Name of the deserialized structure
      * @param childs - Structure attributes data.
+     * @param templates - Generic templates string (if any)
      */
-    private _createStructDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
+    private _createStructDeserializer(
+        parent: string,
+        childs: IStructAttributeSerialData[],
+        templates: Set<string>
+    ) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
+        const { templateDefinition, templateList } = this._getTemplates(templates);
+
+        if (templateDefinition) {
+            this._push0(this.serializers, templateDefinition);
+        }
+
         this._push0(
             this.serializers,
-            `inline void from_json(const ${NLOHMANN}& j, ${parent}& x) {`
+            `inline void from_json(const ${NLOHMANN}& j, ${parent}${templateList}& x) {`
         );
         childs.forEach((i) => {
             if (i.required) {
@@ -602,10 +704,24 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      }
      * @param parent - Name of the serialized structure
      * @param childs - Structure attributes data.
+     * @param templates - Generic templates string (if any)
      */
-    private _createClassSerializer(parent: string, childs: IStructAttributeSerialData[]) {
+    private _createClassSerializer(
+        parent: string,
+        childs: IStructAttributeSerialData[],
+        templates: Set<string>
+    ) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
-        this._push0(this.serializers, `inline void to_json(${NLOHMANN}& j, const ${parent}& x) {`);
+        const { templateDefinition, templateList } = this._getTemplates(templates);
+
+        if (templateDefinition) {
+            this._push0(this.serializers, templateDefinition);
+        }
+
+        this._push0(
+            this.serializers,
+            `inline void to_json(${NLOHMANN}& j, const ${parent}${templateList}& x) {`
+        );
         childs.forEach((i) => {
             if (i.required) {
                 this._push1(this.serializers, `j["${i.origName}"] = x.get_${i.snakeName}();`);
@@ -629,12 +745,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      *      }
      * @param parent - Name of the deserialized structure
      * @param childs - Structure attributes data.
+     * @param templates - Generic templates string (if any)
      */
-    private _createClassDeserializer(parent: string, childs: IStructAttributeSerialData[]) {
+    private _createClassDeserializer(
+        parent: string,
+        childs: IStructAttributeSerialData[],
+        templates: Set<string>
+    ) {
         const prefix = this.opt.namespace ? `${this.opt.namespace}::` : "";
+        const { templateDefinition, templateList } = this._getTemplates(templates);
+
+        if (templateDefinition) {
+            this._push0(this.serializers, templateDefinition);
+        }
+
         this._push0(
             this.serializers,
-            `inline void from_json(const ${NLOHMANN}& j, ${parent}& x) {`
+            `inline void from_json(const ${NLOHMANN}& j, ${parent}${templateList}& x) {`
         );
         childs.forEach((i) => {
             if (i.required) {

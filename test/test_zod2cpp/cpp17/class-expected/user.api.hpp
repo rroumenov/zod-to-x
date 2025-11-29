@@ -58,6 +58,22 @@ namespace USER_API {
 }
 
 namespace USER_API {
+    inline void to_json(nlohmann::json& j, const ReqUpdateUser& x) {
+        USER_DTOS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, ReqUpdateUser& x) {
+        USER_DTOS::from_json(j, x);
+    }
+
+    inline void to_json(nlohmann::json& j, const ResUpdateUser& x) {
+        USER_DTOS::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, ResUpdateUser& x) {
+        USER_DTOS::from_json(j, x);
+    }
+
     inline void to_json(nlohmann::json& j, const ResUpdateUserMulti& x) {
         j["amount"] = x.get_amount();
         j["data"] = x.get_data();

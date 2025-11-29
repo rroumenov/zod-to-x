@@ -9,6 +9,30 @@
       "program": "${file}",
       "preLaunchTask": "build:debug",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Current TS (ts-node)",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": ["-r", "ts-node/register/transpile-only"],
+      "env": { "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.dev.json" },
+      "preLaunchTask": "build:debug",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Vitest: Debug Current Test File",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}",
+      "autoAttachChildProcesses": true,
+      "env": { "NODE_OPTIONS": "--enable-source-maps" },
+      "preLaunchTask": "build:debug",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

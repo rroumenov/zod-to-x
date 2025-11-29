@@ -7,6 +7,7 @@ import * as fs from "fs";
 
 import { zCppSupportedSchemas } from "../cpp_supported_schemas";
 import { header } from "../../common/header";
+import { genericsApplication, genericsInfrastructure } from "../../common/layered_generics";
 import { userApi, userDtos, userModels } from "../../common/layered_schemas";
 import { testOutput } from "../../common/utils";
 import { getSchemas, modelBuilder } from "../../common/zod_schemas";
@@ -1111,6 +1112,78 @@ describe("Zod2Cpp17", () => {
             output,
             expectedOutput,
             "./test/test_zod2cpp/cpp17/class-expected/err-cpp_supported_schemas.app.hpp"
+        );
+    });
+
+    test("C++ layered modeling generics - application", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Cpp17,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/struct-expected/layered_generics.app.hpp")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp17/struct-expected/err-layered_generics.app.hpp"
+        );
+    });
+
+    test("C++ layered modeling generics - infrastructure", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Cpp17,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/struct-expected/layered_generics.infra.hpp")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp17/struct-expected/err-layered_generics.infra.hpp"
+        );
+    });
+
+    test("C++ layered modeling generics - application as class", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Cpp17,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/class-expected/layered_generics.app.hpp")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp17/class-expected/err-layered_generics.app.hpp"
+        );
+    });
+
+    test("C++ layered modeling generics - infrastructure as class", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Cpp17,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2cpp/cpp17/class-expected/layered_generics.infra.hpp")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2cpp/cpp17/class-expected/err-layered_generics.infra.hpp"
         );
     });
 });

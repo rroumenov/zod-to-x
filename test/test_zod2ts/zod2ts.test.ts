@@ -8,6 +8,7 @@ import * as fs from "fs";
 import { header } from "../common/header";
 import { testOutput } from "../common/utils";
 import { getSchemas, modelBuilder } from "../common/zod_schemas";
+import { genericsApplication, genericsInfrastructure } from "../common/layered_generics";
 import { zTsSupportedSchemas } from "./ts_supported_schemas";
 import {
     tsSupportedSchemasApplicationModel,
@@ -435,6 +436,78 @@ describe("Zod2Ts", () => {
             output,
             expectedOutput,
             "./test/test_zod2ts/class-expected/err-ts_supported_schemas.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - application", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/layered_generics.app.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-layered_generics.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - infrastructure", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/interface-expected/layered_generics.infra.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/interface-expected/err-layered_generics.infra.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - application as class", () => {
+        const output = genericsApplication.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/layered_generics.app.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-layered_generics.app.ts"
+        );
+    });
+
+    test("Typescript layered modeling generics - infrastructure as class", () => {
+        const output = genericsInfrastructure.transpile(
+            Zod2XTranspilers.Zod2Ts,
+            { header, outType: "class" },
+            { strict: false }
+        );
+
+        const expectedOutput = fs
+            .readFileSync("./test/test_zod2ts/class-expected/layered_generics.infra.ts")
+            .toString();
+
+        testOutput(
+            output,
+            expectedOutput,
+            "./test/test_zod2ts/class-expected/err-layered_generics.infra.ts"
         );
     });
 });

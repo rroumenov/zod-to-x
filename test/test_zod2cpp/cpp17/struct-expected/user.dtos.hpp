@@ -95,6 +95,14 @@ namespace USER_DTOS {
         x.updated_at = j.at("updatedAt").get<std::string>();
     }
 
+    inline void to_json(nlohmann::json& j, const UpdateUserUseCaseResultDto& x) {
+        USER::to_json(j, x);
+    }
+
+    inline void from_json(const nlohmann::json& j, UpdateUserUseCaseResultDto& x) {
+        USER::from_json(j, x);
+    }
+
     inline void to_json(nlohmann::json& j, const UserDtos& x) {
         j["createUserUseCaseDto"] = x.create_user_use_case_dto;
         j["createUserUseCaseResultDto"] = x.create_user_use_case_result_dto;
