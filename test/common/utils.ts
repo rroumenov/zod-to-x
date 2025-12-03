@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { diffLines } from "diff";
-import { expect } from "vitest";
+import { expect, describe, test } from "vitest";
 
 export const testOutput = (output: string, expectedOutput: string, outputPath?: string) => {
     try {
@@ -16,4 +16,52 @@ export const testOutput = (output: string, expectedOutput: string, outputPath?: 
         }
         throw error;
     }
+};
+
+/**
+ * Used for testing github issues.
+ */
+export const createGenericTestSuite = (
+    suiteName: string,
+    model: any,
+    transpiler: any,
+    basePath: string
+) => {
+    const fileNamePrefix = suiteName.toLowerCase().replace(/\s+/g, "_");
+
+    return () => {
+        describe(suiteName, () => {
+            test("Output as Typescript Struct", () => {
+                const output = model.transpile(transpiler);
+                const expectedOutput = fs
+                    .readFileSync(
+                        `${basePath}/struct-expected/${fileNamePrefix}.expected_typescript.ts`
+                    )
+                    .toString();
+
+                testOutput(
+                    output,
+                    expectedOutput,
+                    `${basePath}/struct-expected/err-${fileNamePrefix}.expected_typescript.ts`
+                );
+            });
+
+            test("Output as Typescript Class", () => {
+                const output = model.transpile(transpiler, {
+                    outType: "class",
+                });
+                const expectedOutput = fs
+                    .readFileSync(
+                        `${basePath}/class-expected/${fileNamePrefix}.expected_typescript.ts`
+                    )
+                    .toString();
+
+                testOutput(
+                    output,
+                    expectedOutput,
+                    `${basePath}/class-expected/err-${fileNamePrefix}.expected_typescript.ts`
+                );
+            });
+        });
+    };
 };

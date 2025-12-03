@@ -63,6 +63,8 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected imports: Set<string>;
     protected postImports: Set<string>;
 
+    protected abstract readonly commentKey: string;
+
     protected opt: Partial<T>;
 
     protected constructor(opt: Partial<T>) {
@@ -114,11 +116,6 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         parentNamespace: string,
         aliasOf: string
     ): void;
-
-    /**
-     * Returns a comment.
-     */
-    protected abstract getComment(data: string, indent?: string): string;
 
     /**
      * Returns the keyword representing a string type in the target language.
@@ -239,6 +236,16 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      * @param data - The AST node representing the aliased type.
      */
     protected abstract transpileAliasedType(data: ASTAliasedTypes): void;
+
+    /**
+     * Returns a comment.
+     */
+    protected getComment = (data: string, indent = ""): string => {
+        return data
+            .split("\n")
+            .map((line) => `${indent}${this.commentKey} ${line}`)
+            .join("\n");
+    };
 
     /**
      * Determines if the given type token can be transpiled into the target language.
@@ -431,7 +438,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         const header = [];
 
         if (this.opt.header) {
-            header.push(...this.opt.header.split("\n").map((i) => this.getComment(i)));
+            header.push(this.getComment(this.opt.header));
             header.push("");
         }
 

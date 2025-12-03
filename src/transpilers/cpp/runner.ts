@@ -36,6 +36,7 @@ interface IEnumItemSerialData {
  * @description Transpiler for Zod schemas to C++11 code.
  */
 export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
+    protected readonly commentKey = "//";
     protected serializers: string[];
 
     protected useBoost: boolean;
@@ -170,7 +171,6 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
     }
 
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getDateType = () => this.getStringType(); // Representing ISO date as a string
     protected getBooleanType = () => "bool";
 

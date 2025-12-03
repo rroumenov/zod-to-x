@@ -35,6 +35,8 @@ const allowedKeyTypes = [
 ];
 
 class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
+    protected readonly commentKey = "//";
+
     constructor(opt: IZod2ProtoV3Opt = {}) {
         super({ ...defaultOpts, ...opt });
     }
@@ -69,7 +71,6 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
         return;
     }
 
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getBooleanType = (): string => "bool";
     protected getStringType = (): string => "string";
 
