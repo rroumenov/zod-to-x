@@ -18,6 +18,12 @@ export interface IZod2ProtoV3Opt extends IZodToXOpt {
      * output will be more compact. Default is false.
      */
     encodeDoubleAsInt?: boolean;
+
+    /**
+     * ProtoV3 fields are optional by default, but this setting makes the "optional" keyword
+     * explicit improving compatibility with ProtoV2. Default is false.
+     */
+    useExplicitOptional?: boolean;
 }
 
 export const defaultOpts: IZod2ProtoV3Opt = {
@@ -25,6 +31,7 @@ export const defaultOpts: IZod2ProtoV3Opt = {
     indent: 4,
     keepKeys: false,
     encodeDoubleAsInt: false,
+    useExplicitOptional: false,
 
     useImports: false, // Not required for protobuf files
 };

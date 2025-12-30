@@ -110,7 +110,7 @@ message Proto3SupportedSchemas {
     DiscriminatedUnionItem discriminated_union_item = 19;
 
     // An optional string
-    string optional_item = 20;
+    optional string optional_item = 20;
 
     // Any type
     google.protobuf.Any any_item = 21;
