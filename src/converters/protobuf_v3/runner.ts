@@ -220,7 +220,11 @@ class Zod2ProtoV3 extends Zod2X<IZod2ProtoV3Opt> {
                 this.addComment(value.description, `\n${this.indent[1]}`);
             }
 
-            this.push1(`${this.getAttributeType(value)} ${this._adaptField(key)} = ${index + 1};`);
+            const fieldType =
+                value.isOptional && this.opt.useExplicitOptional
+                    ? `optional ${this.getAttributeType(value)}`
+                    : this.getAttributeType(value);
+            this.push1(`${fieldType} ${this._adaptField(key)} = ${index + 1};`);
         });
 
         this.push0("}\n");
@@ -327,6 +331,7 @@ export function zod2ProtoV3(
             | "indent"
             | "includeComments"
             | "encodeDoubleAsInt"
+            | "useExplicitOptional"
         > = {}
 ): string {
     const astNode = new Zod2Ast({ strict: opt.strict }).build(schema as any);

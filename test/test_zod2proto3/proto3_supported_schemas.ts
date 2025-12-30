@@ -34,6 +34,7 @@ export const getProto3SupportedSchemas = () => {
         unionItem: zs.zUnion,
         discriminatedUnionItem: zs.zDiscriminantUnion,
 
+        optionalItem: zs.zOptional,
         anyItem: zs.zAny,
     };
 };
