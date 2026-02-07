@@ -1,7 +1,7 @@
-import { z } from "zod/v4";
+import { z } from "zod";
 import { getSchemas } from "../common/zod_schemas";
 
-export const getProto3SupportedSchemas = () => {
+export const getPySupportedSchemas = () => {
     const zs = getSchemas();
 
     return {
@@ -24,21 +24,22 @@ export const getProto3SupportedSchemas = () => {
 
         dateItem: zs.zDate,
 
-        arrayItem: zs.zArray1D,
+        arrayItem: zs.zArray2D,
 
         recordItem: zs.zRecord,
         mapItem: zs.zMap,
         setItem: zs.zSet,
-        tupleItem: zs.zTuple,
+        tupleItem: zs.zTupleMulti,
 
         unionItem: zs.zUnion,
         discriminatedUnionItem: zs.zDiscriminantUnion,
 
-        optionalItem: zs.zOptional,
+        intersectionItem: zs.zIntersection,
+
         anyItem: zs.zAny,
+        optionalItem: zs.zOptional,
+        nullableItem: zs.zNullable,
     };
 };
 
-export const zProto3SupportedSchemas = z
-    .object(getProto3SupportedSchemas())
-    .zod2x("Proto3SupportedSchemas");
+export const zPySupportedSchemas = z.object(getPySupportedSchemas()).zod2x("PySupportedSchemas");

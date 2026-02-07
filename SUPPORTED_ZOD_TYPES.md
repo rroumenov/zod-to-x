@@ -7,6 +7,7 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 
 ## Index of Languages
 - [TypeScript](#typescript)
+- [Python](#python)
 - [C++](#c-1)
 - [Others](#others)
     - [Protobuf](#protobuf)
@@ -35,6 +36,32 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.any()`                 | `any`                          |
 | `z.optional()`            | `T \| undefined`               |
 | `z.nullable()`            | `T \| null`                    |
+
+
+
+## Python
+| Zod Type                  | Python (Pydantic) Representation |
+|---------------------------|----------------------------------|
+| `z.string()`              | `str`                          |
+| `z.number()`              | `float` or `int`               |
+| `z.bigint()`              | `int`                          |
+| `z.boolean()`             | `bool`                         |
+| `z.date()`                | `datetime`                     |
+| `z.literal()`             | `Literal["value"]` or `Literal[1]` |
+| `z.enum()`                | `class MyEnum(str, Enum)`      |
+| `z.nativeEnum()`          | `class MyEnum(Enum)` (mixed types) |
+| `z.array()`               | `List[T]`                      |
+| `z.set()`                 | `Set[T]`                       |
+| `z.tuple()`               | `Tuple[T1, T2, T3]`            |
+| `z.object()`              | Pydantic `BaseModel` class     |
+| `z.record()`              | `Dict[str, T]`                 |
+| `z.map()`                 | `Dict[str, T]`                 |
+| `z.union()` <sup>(2)</sup>               | `Union[T1, T2]`                |
+| `z.discriminatedUnion()`  | `Annotated[Union[T1, T2], Field(discriminator='...')]` |
+| `z.intersection()` <sup>(1)</sup>        | `class` with multiple inheritance |
+| `z.any()`                 | `Any`                          |
+| `z.optional()`            | `Optional[T]`                  |
+| `z.nullable()`            | `Optional[T]`                  |
 
 
 
