@@ -15,6 +15,8 @@ import {
 import { defaultOpts, IZod2TsOpt } from "./options";
 
 export class Zod2Ts extends Zod2X<IZod2TsOpt> {
+    protected readonly commentKey = "//";
+
     constructor(opt: IZod2TsOpt = {}) {
         super({ ...defaultOpts, ...opt });
     }
@@ -108,7 +110,6 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         return false;
     }
 
-    protected getComment = (data: string, indent = ""): string => `${indent}// ${data}`;
     protected getAnyType = (): string => "any";
     protected getBooleanType = (): string => "boolean";
     protected getDateType = (): string => "Date";

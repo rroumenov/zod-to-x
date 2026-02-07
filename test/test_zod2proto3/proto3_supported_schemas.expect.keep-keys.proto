@@ -109,6 +109,9 @@ message Proto3SupportedSchemas {
     UnionItem unionItem = 18;
     DiscriminatedUnionItem discriminatedUnionItem = 19;
 
+    // An optional string
+    string optionalItem = 20;
+
     // Any type
-    google.protobuf.Any anyItem = 20;
+    google.protobuf.Any anyItem = 21;
 }

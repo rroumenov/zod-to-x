@@ -3,7 +3,10 @@
   <em style="font-size: smaller;">Image generated using Canvas AI.</em>
 </p>
 <p align="center">
-  <a href="https://github.com/rroumenov/zod-to-x/releases" target="_blank">
+  <a href="https://www.npmjs.com/package/zod-to-x" target="_blank">
+    <img src="https://img.shields.io/badge/npm%20-red?style=for-the-badge&logo=npm" alt="npm">
+  </a>
+  <a href="https://github.com/rroumenov/zod-to-x/releases" target="_blank" style="margin-left: 10px;">
     <img src="https://img.shields.io/badge/View%20Changelog-brightgreen?style=for-the-badge" alt="View Changelog">
   </a>
   <a href="https://playcode.io/2277071" target="_blank" style="margin-left: 10px;">
@@ -18,6 +21,14 @@
 
 [`@zod-to-x`](https://github.com/rroumenov/zod-to-x) is a Zod-based library designed to establish a centralized methodology for defining data structures. It allows you to transpile these definitions into various programming languages in a clear and straightforward way. This tool addresses a fundamental requirement of any software: having a clear understanding of the data it handles.
 
+<p align="center">
+  <strong>Supported Languages:</strong><br><br>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++">
+  <img src="https://img.shields.io/badge/Protobuf-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Protobuf">
+</p>
+
 
 
 ## Table of contents
@@ -30,10 +41,11 @@
 - [Layered modeling](#layered-modeling)
   - [Usage example](#usage-example)
   - [Custom layers](#custom-layers)
-  - [Generic types](#generic-types) <sup>*(new)*</sup>
+  - [Generic types](#generic-types)
 - [Currently supported output languages](#currently-supported-output-languages)
   - [Typescript](#1-typescript)
-  - [C++](#2-c)
+  - [Python](#2-python) <sup>*(new)*</sup>
+  - [C++](#3-c)
 - [Additional utils](#additional-utils)
   - [JSON Schema definitions](#1-zod2jsonschemadefinitions)
   - [Protobuf V3 generation](#2-zod2protov3)
@@ -49,7 +61,7 @@ Managing data consistency across multiple layers and languages is a common chall
 Define your data structures in one place using the powerful [`@zod`](https://github.com/colinhacks/zod) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`](https://github.com/colinhacks/zod) ecosystem like [`@zod-to-json-schema`](https://github.com/StefanTerdell/zod-to-json-schema)
 
 2. **Multi-Language Compatibility**  
-Generate data models for TypeScript, Protobuf V3 and C++ (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
+Generate data models for TypeScript, Python (Pydantic), C++, and Protobuf V3 (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
 
 3. **Enhanced Productivity**  
 Automate the transpilation of data models to save time, reduce errors, and let your team focus on business logic instead of boilerplate code.
@@ -619,7 +631,13 @@ Common options:
   - **keepKeys**: Specifies whether property names should follow the TypeScript naming convention (false) or remain as originally defined (true). The default is `false`.
 - [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2ts)
 
-### 2) C++
+### 2) Python
+`Pydantic` is used for data validation and serialization/deserialization. Generates Pydantic BaseModel classes with full type hints.
+- Options:
+  - **keepKeys**: Specifies whether property names should follow the Python naming convention (false) or remain as originally defined (true). The default is `false`.
+- [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2py)
+
+### 3) C++
 `Nlohmann` dependency is used for data serialization/deserialization. For *C++11*, `Boost` dependency is used. For *C++17* or newer, standard libraries are used.
 - Options:
   - **includeNulls**: When serializing, include all values even if `null`. Defaults to `false`.
