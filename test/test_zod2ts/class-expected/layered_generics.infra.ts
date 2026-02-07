@@ -79,16 +79,16 @@ export type DiscriminantDataRetrieve =
     | HttpUnsuccessfulResponse;
 
 // Built from intersection of HttpSuccessfulResponse and GenericUserEntity
-export class IntersectedDataRetrieve<T> {
+export class IntersectedDataRetrieve {
     success: true;
-    data: T;
+    data: SomeDtoResult;
     id: string;
     name: string;
     email: string;
     age?: number;
     metadata: OtherDtoResult;
 
-    constructor(data: IntersectedDataRetrieve<T>) {
+    constructor(data: IntersectedDataRetrieve) {
         this.success = data.success;
         this.data = data.data;
         this.id = data.id;
