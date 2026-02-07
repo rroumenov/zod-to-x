@@ -268,25 +268,32 @@ export class Zod2Ast {
     }
 
     /**
-     * Intersects the properties of two AST nodes and returns the combined properties.
+     * Intersects the properties of two Zod object schemas and returns the combined properties.
+     * Processes the Zod shapes directly instead of looking up cached AST nodes, ensuring that
+     * instantiated generic types (from useGenericType) are correctly resolved.
      *
-     * @param left - The left AST definition to intersect.
-     * @param right - The right AST definition to intersect.
-     * @returns An object containing the combined properties of the left and right AST nodes.
+     * @param left - The left Zod object schema.
+     * @param right - The right Zod object schema.
+     * @returns An object containing the combined properties of the left and right schemas.
      */
     private _intersectAstNodes(
-        left: ASTDefinition,
-        right: ASTDefinition
+        left: ZodObject<any>,
+        right: ZodObject<any>
     ): Pick<ASTObject, "properties"> {
-        const leftData = this.nodes.get(left.name) as ASTObject;
-        const rightData = this.nodes.get(right.name) as ASTObject;
+        const properties: Record<string, ASTType> = {};
 
-        return {
-            properties: {
-                ...leftData.properties,
-                ...rightData.properties,
-            },
-        };
+        for (const schema of [left, right]) {
+            const shape = schema._def.shape();
+            for (const key in shape) {
+                if (ZodHelpers.isZodPromise(shape[key]) && ZodHelpers.isZod2XGeneric(shape[key])) {
+                    properties[key] = new ASTGenericType(shape[key]._def.type.value);
+                } else {
+                    properties[key] = this._zodToAST(shape[key]);
+                }
+            }
+        }
+
+        return { properties };
     }
 
     /**
@@ -614,9 +621,10 @@ export class Zod2Ast {
             }
         } else {
             const intersectedProperties = this._intersectAstNodes(
-                item.left as ASTDefinition,
-                item.right as ASTDefinition
+                def.left as ZodObject<any>,
+                def.right as ZodObject<any>
             );
+
             item.newObject = new ASTObject({
                 name,
                 properties: intersectedProperties.properties,
