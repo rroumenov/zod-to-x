@@ -335,6 +335,6 @@ export function zod2ProtoV3(
             | "useExplicitOptional"
         > = {}
 ): string {
-    const astNode = new Zod2Ast({ strict: opt.strict }).build(schema as any);
+    const astNode = new Zod2Ast({ strict: opt.strict, skipBasicTypes: true }).build(schema as any);
     return new Zod2ProtoV3(opt).transpile(astNode);
 }
