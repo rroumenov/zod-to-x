@@ -48,6 +48,14 @@ export interface IZod2AstOpt {
      * the schema.
      */
     layer?: IZod2xLayerMetadata;
+
+    /**
+     * If true, aliased basic types (string, number, boolean, etc.) from layered modeling
+     * will not be extracted as named AST nodes. Instead, they will be inlined as their
+     * underlying type. Useful for targets like Protobuf that don't support type aliases.
+     * Default is false.
+     */
+    skipBasicTypes?: boolean;
 }
 
 interface ISchemasMetadata {
@@ -680,7 +688,7 @@ export class Zod2Ast {
     }
 
     private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefinition | ASTAliasedTypes {
-        if (schema._zod2x?.typeName === undefined) {
+        if (schema._zod2x?.typeName === undefined || this.opt.skipBasicTypes === true) {
             return item;
         }
 
