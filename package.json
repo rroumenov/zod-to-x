@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "2.2.1-dev.0",
+  "version": "2.2.1-dev.1",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [
@@ -59,7 +59,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
     "prettier": "^3.4.2",
-    "protobufjs": "7.4.0",
+    "protobufjs": "7.5.5",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "4.2.0",
