@@ -102,7 +102,10 @@ export function Layer(opt: IZod2xLayerMetadata) {
                             layer: opt,
                             typeName: name,
                             // Generics associated to parent, but related to current type.
-                            genericTypes: metadata.genericTypes,
+                            genericTypes:
+                                metadata.isGenericChild === false
+                                    ? metadata.genericTypes
+                                    : undefined,
                             isGenericChild: true,
                         };
                     }

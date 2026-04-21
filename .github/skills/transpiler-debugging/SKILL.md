@@ -125,3 +125,17 @@ Tests import from `dist/` — if you changed source but didn't rebuild, tests us
 | Cross-layer issue | `src/layered-modeling/layer.ts` (decorator logic) |
 | Generic resolution | `src/lib/zod_helpers.ts` (`useGenericType`) |
 | Number precision | `src/utils/number_limits.ts` |
+
+## Cross-Transpiler Impact Analysis
+
+After finding the root cause, **always** perform this analysis:
+
+1. **Core fix (`src/core/`, `src/lib/`, `src/layered-modeling/`):** The bug affects ALL transpilers. Test TypeScript, Python, AND C++ output. Create regression tests for all three.
+
+2. **Transpiler-specific fix (`src/transpilers/<lang>/`):** Check if the same method in other transpilers has the same flaw. Common patterns that are implemented independently in each runner:
+   - `checkExtendedTypeInclusion()` — cross-layer alias handling
+   - `_transpileMember()` — property rendering with optional/nullable
+   - `transpileStruct()` / `transpileEnum()` / `transpileUnion()` — type declaration rendering
+   - `getGenericTemplatesTranslation()` — generic parameter syntax
+
+3. **Document the scope** in your fix: which transpilers were affected and which were checked.

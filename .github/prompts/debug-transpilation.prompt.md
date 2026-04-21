@@ -24,7 +24,11 @@ The user will describe:
 3. Inspect the AST output from `Zod2Ast.build()` to determine if the problem is in Phase 1 (AST build) or Phase 2 (transpile)
 4. If AST is correct → the bug is in `src/transpilers/<lang>/runner.ts`
 5. If AST is wrong → the bug is in `src/core/ast_node.ts` or `src/lib/`
-6. Identify the specific method causing the issue
-7. Implement the fix
-8. Create a regression test following `.github/skills/add-issue-test/SKILL.md`
-9. Run `npm run build && npm test` to verify all tests pass
+6. **Cross-transpiler impact analysis (MANDATORY):**
+   - If the fix is in core: check TypeScript, Python, AND C++ output for the same issue
+   - If the fix is in a specific transpiler: check the equivalent method in other transpilers
+   - Document which transpilers are affected
+7. Identify the specific method causing the issue
+8. Implement the fix in ALL affected transpilers
+9. Create regression tests following `.github/skills/add-issue-test/SKILL.md` — covering ALL affected languages
+10. Run `npm run build && npm test` to verify all tests pass

@@ -38,14 +38,20 @@ Structure per case:
 ```
 test/test_issues/no_id/N/
 ├── case_N.ts                 # Schema reproducing the bug
-├── case_N.test-suite.ts      # Uses createGenericTestSuite()
+├── case_N.test-suite.ts      # Uses createGenericTestSuite() — one per affected language
 ├── struct-expected/
-│   └── case_N.expected_typescript.ts
+│   ├── case_N.expected_typescript.ts
+│   ├── case_N.expected_python.py      # If Python is affected
+│   └── case_N.expected_cpp.h          # If C++ is affected
 └── class-expected/
-    └── case_N.expected_typescript.ts
+    ├── case_N.expected_typescript.ts
+    ├── case_N.expected_python.py
+    └── case_N.expected_cpp.h
 ```
 
-Facade: `test/test_issues/no_id/test_noid_issues.test.ts` imports and calls all `runCaseNSuite()`.
+**Rule:** Every issue test must cover ALL transpilers where the bug applies. Core bugs (`src/core/`, `src/lib/`, `src/layered-modeling/`) affect all languages.
+
+Facade: `test/test_issues/no_id/test_noid_issues.test.ts` imports and calls all suite functions for all languages.
 
 ### 3. Converter Tests
 
