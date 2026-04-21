@@ -109,10 +109,11 @@ Each `test/test_zod2<lang>/` contains:
 Each issue in `test/test_issues/no_id/N/` contains:
 - `case_N.ts` — schema definition reproducing the bug
 - `case_N.test-suite.ts` — calls `createGenericTestSuite()`, exports `runCaseNSuite`
-- `struct-expected/case_N.expected_typescript.ts` — expected struct/interface output
-- `class-expected/case_N.expected_typescript.ts` — expected class output
+- `struct-expected/` and `class-expected/` — expected output files per language
 
 The facade `test_noid_issues.test.ts` imports and calls all `runCaseNSuite()`.
+
+**Cross-language coverage rule:** Every issue test MUST include expected output files for ALL supported transpilers where the bug or its fix applies. Currently: TypeScript (`.expected_typescript.ts`), Python (`.expected_python.py`), C++ (`.expected_cpp.h`). If a bug is in `src/core/` (AST or base transpiler), it likely affects all languages. If a bug is in a specific transpiler, check whether other transpilers have the same problem.
 
 ### Test Utilities
 
@@ -132,6 +133,15 @@ See `.github/skills/` for detailed guidance on:
 
 See `.github/prompts/` for reusable task prompts.
 
+## Cross-Transpiler Impact Analysis
+
+When investigating or fixing a bug:
+
+1. **Determine the scope:** Is the fix in `src/core/` (affects all languages) or `src/transpilers/<lang>/` (language-specific)?
+2. **Core fixes propagate:** A change in `ast_node.ts`, `transpiler.ts`, or `zod_helpers.ts` can affect TypeScript, Python, AND C++ output. Test all.
+3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `checkExtendedTypeInclusion` are implemented independently in each runner.
+4. **New language = backfill issue tests:** When adding a new transpiler, review ALL existing issue test cases and add expected output files for the new language where the bug scenario applies.
+
 ## Common Pitfalls
 
 1. **Forgetting to build** — `npm run build` before `npm test`, always
@@ -140,3 +150,4 @@ See `.github/prompts/` for reusable task prompts.
 4. **Cross-layer references** — The `@Layer` decorator clones schemas for cross-layer refs, setting `aliasOf` + `parentLayer`
 5. **Decorator singleton** — Each decorated class is cached on `constructor.instance`; don't instantiate twice
 6. **err-* files** — Generated on test failure, gitignored, cleaned by `npm test`
+7. **Single-language issue tests** — Never test only one language. If a bug can manifest in multiple transpilers, cover all of them.

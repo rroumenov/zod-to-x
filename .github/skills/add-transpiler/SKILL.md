@@ -168,7 +168,22 @@ Fix failures one at a time. Common issues:
 - Missing imports in `libs.ts`
 - Cross-layer reference handling in `addExtendedType`
 
-### 6. Native Language Tests
+### 6. Backfill Existing Issue Tests
+
+**This step is mandatory.** When a new transpiler is added:
+
+1. Review ALL existing issue test cases in `test/test_issues/no_id/` (and `id/` if exists)
+2. For each case, determine if the bug scenario applies to the new language
+3. If it applies, add expected output files:
+   - `struct-expected/case_N.expected_<lang>.<ext>` (if the language supports struct/interface mode)
+   - `class-expected/case_N.expected_<lang>.<ext>`
+4. Update each `case_N.test-suite.ts` to include a `createGenericTestSuite` call for the new transpiler
+5. Update the facade `test_noid_issues.test.ts` to import and call the new suite functions
+6. Run `npm run build && npm test` to verify
+
+Most core bugs (AST, metadata, cross-layer) affect ALL languages, so expect to add expected output for most issue tests.
+
+### 7. Native Language Tests
 
 Create a test script `test/test_zod2<lang>/test_<lang>.sh` that:
 1. Transpiles schemas to target language files

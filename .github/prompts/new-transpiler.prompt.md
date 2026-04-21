@@ -27,3 +27,4 @@ The user will specify:
 7. Create the transpiler: options.ts, runner.ts, optional libs.ts
 8. Register in `src/transpilers/index.ts` and `src/index.ts`
 9. Iterate: `npm run build && npm test` until all green
+10. **Backfill issue tests:** Review ALL existing cases in `test/test_issues/` and add expected output files for the new language where the bug scenario applies. Update test suites and facade.
