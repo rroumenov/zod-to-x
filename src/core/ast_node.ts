@@ -286,6 +286,8 @@ export class Zod2Ast {
         for (const schema of [left, right]) {
             const shape = schema.def.shape;
             for (const key in shape) {
+                const prevWasRequired =
+                    properties[key] !== undefined && !properties[key].isOptional;
                 if (
                     ZodHelpers.isZodPromise<ZodLiteral>(shape[key]) &&
                     ZodHelpers.isZod2XGeneric(shape[key])
@@ -295,6 +297,11 @@ export class Zod2Ast {
                 } else {
                     properties[key] = this._zodToAST(shape[key]);
                 }
+                if (prevWasRequired && properties[key].isOptional) {
+                    // In intersection, if a property is required in one schema and optional in
+                    // another, it should be considered required.
+                    properties[key].isOptional = false;
+                }
             }
         }
 
@@ -303,7 +310,7 @@ export class Zod2Ast {
 
     /**
      * Merges multiple AST definitions into a single AST object containing combined properties.
-     * - Equal properties mush have the same type and array dimension.
+     * - Equal properties must have the same type and array dimension.
      * - If a property is optional in one definition and required in another, it will be considered
      *      optional in the merged object.
      * - If a property is nullable in one definition and non-nullable in another, it will be
@@ -316,18 +323,21 @@ export class Zod2Ast {
     private _unionAstNodes(options: ASTDefinition[]): Pick<ASTObject, "properties"> {
         let typeA, typeB;
         const data = options.map((i) => this.nodes.get(i.name) as ASTObject);
-        return {
-            properties: data.reduce((acc: Record<string, ASTType>, i, j) => {
+        const properties: Record<string, ASTType> = data.reduce(
+            (acc: Record<string, ASTType>, i, j) => {
                 for (const key in i.properties) {
                     if (acc[key]) {
-                        acc[key] = structuredClone(acc[key]);
+                        acc[key] = Object.assign(
+                            Object.create(Object.getPrototypeOf(acc[key])),
+                            acc[key]
+                        );
                         typeA = acc[key].constructor.name;
                         typeB = i.properties[key].constructor.name;
 
                         if (typeA !== typeB) {
                             this.warnings.push(
                                 `Merging properties with different types: ${typeA} ` +
-                                    `(from ${data[j - 1]?.name}) and ${typeB} ` +
+                                    `(from a previous variant) and ${typeB} ` +
                                     `(from ${i.name})`
                             );
                         }
@@ -335,7 +345,7 @@ export class Zod2Ast {
                         if (acc[key].arrayDimension !== i.properties[key].arrayDimension) {
                             this.warnings.push(
                                 `Merging properties with different array dimensions: ` +
-                                    `${acc[key].arrayDimension} (from ${data[j - 1]?.name}) and ` +
+                                    `${acc[key].arrayDimension} (from a previous variant) and ` +
                                     `${i.properties[key].arrayDimension} (from ${i.name})`
                             );
 
@@ -357,13 +367,29 @@ export class Zod2Ast {
                             acc[key].description = i.properties[key].description;
                         }
                     } else {
-                        acc[key] = i.properties[key];
+                        acc[key] = i.properties[key]; // New property, just add it
                     }
                 }
 
                 return acc;
-            }, {}),
-        };
+            },
+            {}
+        );
+
+        for (const key in properties) {
+            if (!data.every((variant) => key in variant.properties)) {
+                // In Union, if a property is not present in all variants, it should be considered
+                // optional. Shallow-clone preserving prototype before mutating, to avoid corrupting
+                // the original cached AST node.
+                properties[key] = Object.assign(
+                    Object.create(Object.getPrototypeOf(properties[key])),
+                    properties[key]
+                );
+                properties[key].isOptional = true;
+            }
+        }
+
+        return { properties };
     }
 
     /**
