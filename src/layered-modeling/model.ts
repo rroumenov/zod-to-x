@@ -96,6 +96,7 @@ export class Zod2XModel {
     ): string;
     public transpile(target: Target<"Zod2Ts">, opt?: TargetOpt<"Zod2Ts">, astOpt?: AstOpt): string;
     public transpile(target: Target<"Zod2Py">, opt?: TargetOpt<"Zod2Py">, astOpt?: AstOpt): string;
+    public transpile(target: Target<"Zod2Go">, opt?: TargetOpt<"Zod2Go">, astOpt?: AstOpt): string;
 
     public transpile(
         target: Target<TargetKeys>,

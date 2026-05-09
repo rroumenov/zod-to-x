@@ -15,6 +15,9 @@ fi
 # Change to test directory
 cd "$SCRIPT_DIR"
 
+# Temporary fixing imports
+sed -i 's/import layered_generics.app/import layered_generics_app/' "$SCRIPT_DIR/class-expected/layered_generics_infra.py"
+
 for file in $(find . -type f -name "*_test.py"); do
     echo "Running $file..."
     python "$file"
@@ -23,5 +26,8 @@ for file in $(find . -type f -name "*_test.py"); do
         exit 1
     fi
 done
+
+# Revert the import change
+sed -i 's/import layered_generics_app/import layered_generics.app/' "$SCRIPT_DIR/class-expected/layered_generics_infra.py"
 
 echo "All Python tests passed!"

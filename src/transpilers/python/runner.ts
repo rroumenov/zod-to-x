@@ -21,6 +21,7 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
     protected lib;
     private baseSchemaAdded = false;
     private typeVars = new Set<string>();
+    private pendingTypeVars = new Set<string>();
 
     constructor(opt: IZod2PyOpt = {}) {
         super({ ...defaultOpts, ...opt });
@@ -29,6 +30,9 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
     }
 
     protected runAfter(): void {
+        if (!this.baseSchemaAdded) {
+            this._flushPendingTypeVars(true);
+        }
         this._consolidateImports();
     }
 
@@ -59,6 +63,26 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         this.push2("use_enum_values=True");
         this.push1(")");
         this.push0("");
+
+        this._flushPendingTypeVars(false);
+    }
+
+    private _flushPendingTypeVars(prepend: boolean): void {
+        if (this.pendingTypeVars.size === 0) return;
+
+        const pending = Array.from(this.pendingTypeVars);
+        const lines = pending.map((typeVar) => `${typeVar} = TypeVar('${typeVar}')`);
+
+        if (prepend) {
+            this.output = [...lines, "", ...this.output];
+        } else {
+            lines.forEach((line) => this.push0(line));
+            this.push0("");
+        }
+
+        pending.forEach((typeVar) => this.typeVars.add(typeVar));
+
+        this.pendingTypeVars.clear();
     }
 
     /**
@@ -67,11 +91,19 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
      * Ex: T = TypeVar('T')
      */
     private _declareNewTypeVars(templates: Set<string>): void {
-        const newTypeVars = Array.from(templates).filter((t) => !this.typeVars.has(t));
+        const newTypeVars = Array.from(templates).filter(
+            (t) => !this.typeVars.has(t) && !this.pendingTypeVars.has(t)
+        );
 
         if (newTypeVars.length === 0) return;
 
         this.imports.add(this.lib.typeVarType);
+
+        if (!this.baseSchemaAdded) {
+            newTypeVars.forEach((typeVar) => this.pendingTypeVars.add(typeVar));
+            return;
+        }
+
         newTypeVars.forEach((typeVar) => {
             this.push0(`${typeVar} = TypeVar('${typeVar}')`);
             this.typeVars.add(typeVar);
@@ -194,17 +226,33 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         }
     }
 
+    /**
+     * Emits an alias/extension declaration early for layered references.
+     * It keeps concrete template translations and falls back to declared templates (e.g. [T])
+     * for aliases of generic templates.
+     */
     protected checkExtendedTypeInclusion(data: ASTNode, type?: "alias" | "union" | "d-union") {
         // Determine if the aliased type is a class (ASTObject or ASTIntersection with newObject)
         const isClass =
             data instanceof ASTObject ||
             (data instanceof ASTIntersection && data.newObject !== undefined);
 
+        const declaredTemplatesFallback =
+            data instanceof ASTObject && data.templates.size > 0 && this.isExternalTypeImport(data)
+                ? `[${[...data.templates].join(", ")}]`
+                : undefined;
+        const translatedTemplates = this.getGenericTemplatesTranslation(data);
+        const templates = translatedTemplates || declaredTemplatesFallback;
+
+        if (!translatedTemplates && data instanceof ASTObject && data.templates.size > 0) {
+            this._declareNewTypeVars(data.templates);
+        }
+
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
-                    templates: this.getGenericTemplatesTranslation(data),
+                    templates,
                     isClass,
                 });
                 this.addExternalTypeImport(data);
@@ -214,7 +262,7 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 type,
                 isInternal: true,
-                templates: this.getGenericTemplatesTranslation(data),
+                templates,
                 isClass,
             });
             return true;
