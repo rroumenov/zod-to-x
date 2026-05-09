@@ -25,8 +25,17 @@ const runCase6CppSuite = createGenericTestSuite(
     "cpp"
 );
 
+const runCase6GoSuite = createGenericTestSuite(
+    "Case 6",
+    case6App,
+    Zod2XTranspilers.Zod2Go,
+    "./test/test_issues/no_id/6",
+    "golang"
+);
+
 export const runCase6Suite = () => {
     runCase6TsSuite();
     runCase6PySuite();
     runCase6CppSuite();
+    runCase6GoSuite();
 };

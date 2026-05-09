@@ -28,29 +28,35 @@
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++">
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/Protobuf-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Protobuf">
 </p>
 
 
 
 ## Table of contents
-- [Why use `@zod-to-x`](#why-use-zod-to-x)
+- [Table of contents](#table-of-contents)
+- [Why Use `@zod-to-x`?](#why-use-zod-to-x)
 - [Installation](#installation)
+  - [1) Install `@zod-to-x` and `@zod(*)` dependency.](#1-install-zod-to-x-and-zod-dependency)
+  - [2) Extend Zod using the `extendZod` method after the first `@zod` import:](#2-extend-zod-using-the-extendzod-method-after-the-first-zod-import)
 - [Quick start](#quick-start)
 - [Intersections and Unions](#intersections-and-unions)
   - [Expected outputs](#expected-outputs)
   - [Tips for discriminated unions](#tips-for-discriminated-unions)
 - [Layered modeling](#layered-modeling)
   - [Usage example](#usage-example)
-  - [Custom layers](#custom-layers)
+  - [Custom Layers](#custom-layers)
   - [Generic types](#generic-types)
 - [Currently supported output languages](#currently-supported-output-languages)
-  - [Typescript](#1-typescript)
-  - [Python](#2-python) <sup>*(new)*</sup>
-  - [C++](#3-c)
+  - [0) ASTNode](#0-astnode)
+  - [1) Typescript](#1-typescript)
+  - [2) Python](#2-python)
+  - [3) C++](#3-c)
+  - [4) Go](#4-go)
 - [Additional utils](#additional-utils)
-  - [Protobuf V3 generation](#2-zod2protov3)
-- [Mapping of supported Zod Types by Language](#mapping-of-supported-zod-types-by-langauge)
+  - [1) `zod2ProtoV3`](#1-zod2protov3)
+- [Mapping of supported Zod Types by Langauge](#mapping-of-supported-zod-types-by-langauge)
 - [Considerations](#considerations)
 
 
@@ -62,7 +68,7 @@ Managing data consistency across multiple layers and languages is a common chall
 Define your data structures in one place using the powerful [`@zod`](https://github.com/colinhacks/zod) library. This eliminates redundancy, reduces inconsistencies, and simplifies maintenance across your entire codebase, all while allowing you to continue leveraging any npm package in the [`@zod`](https://github.com/colinhacks/zod) ecosystem.
 
 2. **Multi-Language Compatibility**  
-Generate data models for TypeScript, Python (Pydantic), C++, and Protobuf V3 (with languages like Golang on the roadmap). No more manually rewriting models for different platforms.
+Generate data models for TypeScript, Python (Pydantic), C++, Go, and Protobuf V3. No more manually rewriting models for different platforms.
 
 3. **Enhanced Productivity**  
 Automate the transpilation of data models to save time, reduce errors, and let your team focus on business logic instead of boilerplate code.
@@ -628,7 +634,13 @@ Common options:
   - **keepKeys**: Specifies whether property names should follow the C++ naming convention (false) or remain as originally defined (true). The default is `false`.
 - [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2cpp)
 
-
+### 4) Go
+Generates idiomatic Go structs with `encoding/json` struct tags. Requires Go 1.18+ for generic type support.
+- Options:
+  - **packageName**: The Go package name for the generated file. Defaults to `"models"`.
+  - **keepKeys**: Specifies whether field names should remain as originally defined (true) or be converted to exported PascalCase with the original name used in the JSON tag (false). The default is `false`.
+  - **useJsonTags**: Whether to emit `json:"fieldName"` struct tags. Defaults to `true`.
+- [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2go)
 
 ## Additional utils
 Additional useful tools to convert Zod Schemas into different formats.

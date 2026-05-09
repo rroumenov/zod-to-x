@@ -6,10 +6,13 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 <sup>(2)</sup> Consider to use ZodDiscriminatedUnion when possible. In languages like C++, deserialization is O(1) against the O(n) of the ZodUnion.
 
 ## Index of Languages
-- [TypeScript](#typescript)
-- [Python](#python)
-- [C++](#c-1)
-- [Others](#others)
+- [Mapping of Supported Zod Types by Language](#mapping-of-supported-zod-types-by-language)
+  - [Index of Languages](#index-of-languages)
+  - [TypeScript](#typescript)
+  - [Python](#python)
+  - [C++](#c)
+  - [Go](#go)
+  - [Others](#others)
     - [Protobuf](#protobuf)
 
 
@@ -87,6 +90,32 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.any()`                 | `nlohmann::json`               |
 | `z.optional()`            | `std::optional<T>` (`boost::optional<T>` for C++11) |
 | `z.nullable()`            | `std::optional<T>` (`boost::optional<T>` for C++11) |
+
+
+
+## Go
+| Zod Type                  | Go Representation              |
+|---------------------------|--------------------------------|
+| `z.string()`              | `string`                       |
+| `z.number()`              | `float64`, `int32`, `int64`    |
+| `z.bigint()`              | `int64`                        |
+| `z.boolean()`             | `bool`                         |
+| `z.date()`                | `time.Time`                    |
+| `z.literal()`             | As typed constant              |
+| `z.enum()`                | `type T string` + `const` block |
+| `z.nativeEnum()`          | `type T = any` + untyped constants (mixed types) |
+| `z.array()`               | `[]T`                          |
+| `z.set()`                 | `map[string]struct{}`          |
+| `z.tuple()`               | `[]any`                        |
+| `z.object()`              | `struct`                       |
+| `z.record()`              | `map[string]T`                 |
+| `z.map()`                 | `map[string]T`                 |
+| `z.union()` <sup>(2)</sup>               | `any` (type alias)             |
+| `z.discriminatedUnion()`  | Marker `interface` + `UnmarshalXxx` dispatch helper |
+| `z.intersection()` <sup>(1)</sup>        | `struct` with embedded types or flat merged struct |
+| `z.any()`                 | `any`                          |
+| `z.optional()`            | `*T` with `omitempty` tag      |
+| `z.nullable()`            | `*T`                           |
 
 
 

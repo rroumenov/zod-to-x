@@ -155,6 +155,7 @@ export function getLibs() {
 
 Update `src/transpilers/index.ts` to export the new transpiler.
 Update `src/index.ts` to include it in the `Zod2XTranspilers` namespace.
+Update `src/layered-modeling/model.ts` to include the new type definition in `transpile` method.
 
 ### 5. Iterate Until Green
 
