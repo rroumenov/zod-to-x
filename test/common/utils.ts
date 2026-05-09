@@ -26,7 +26,7 @@ export const createGenericTestSuite = (
     model: any,
     transpiler: any,
     basePath: string,
-    language: "typescript" | "python" | "cpp" = "typescript"
+    language: "typescript" | "python" | "cpp" | "golang" = "typescript"
 ) => {
     const fileNamePrefix = suiteName.toLowerCase().replace(/\s+/g, "_");
 
@@ -73,6 +73,21 @@ export const createGenericTestSuite = (
                         output,
                         expectedOutput,
                         `${basePath}/class-expected/err-${fileNamePrefix}.expected_cpp.h`
+                    );
+                });
+            } else if (language === "golang") {
+                test("Output as Go Struct", () => {
+                    const output = model.transpile(transpiler);
+                    const expectedOutput = fs
+                        .readFileSync(
+                            `${basePath}/struct-expected/${fileNamePrefix}.expected_go.go`
+                        )
+                        .toString();
+
+                    testOutput(
+                        output,
+                        expectedOutput,
+                        `${basePath}/struct-expected/err-${fileNamePrefix}.expected_go.go`
                     );
                 });
             } else {
