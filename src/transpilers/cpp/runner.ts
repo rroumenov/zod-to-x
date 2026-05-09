@@ -70,13 +70,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "alias"; isInternal?: boolean; templates?: string }
+        opt?: {
+            type?: "union" | "alias";
+            isInternal?: boolean;
+            templates?: string;
+            templateDefinition?: string;
+            templateList?: string;
+        }
     ) {
         const extendedType = opt?.isInternal
             ? aliasOf
             : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
         const templates = opt?.templates ?? "";
+
+        if (opt?.templateDefinition) {
+            this.push0(opt.templateDefinition);
+        }
 
         if (opt?.type === "union" || opt?.type === "alias") {
             this.push0(`using ${name} = ${extendedType}${templates};\n`);
@@ -89,8 +99,14 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
 
         if (opt?.type !== "alias" && parentNamespace !== undefined) {
-            this._addExtendedTypeSerializer(name, parentNamespace);
-            this._addExtendedTypeDeserializer(name, parentNamespace);
+            this._addExtendedTypeSerializer(name, parentNamespace, {
+                templateDefinition: opt?.templateDefinition,
+                templateList: opt?.templateList,
+            });
+            this._addExtendedTypeDeserializer(name, parentNamespace, {
+                templateDefinition: opt?.templateDefinition,
+                templateList: opt?.templateList,
+            });
         }
     }
 
@@ -119,12 +135,31 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
     }
 
+    /**
+     * Emits an alias/extension declaration early for layered references.
+     * It keeps concrete template translations and falls back to declared templates (e.g. <T>)
+     * for aliases of generic templates.
+     */
     protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias") {
+        const templatesMeta =
+            data instanceof ASTObject && data.templates.size > 0
+                ? this._getTemplates(data.templates)
+                : undefined;
+
+        const translatedTemplates = this.getGenericTemplatesTranslation(data);
+        const templates = translatedTemplates || templatesMeta?.templateList;
+        const templateList = translatedTemplates ? undefined : templatesMeta?.templateList;
+        const templateDefinition = translatedTemplates
+            ? undefined
+            : templatesMeta?.templateDefinition;
+
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
-                    templates: this.getGenericTemplatesTranslation(data),
+                    templates,
+                    templateDefinition,
+                    templateList,
                 });
                 this.addExternalTypeImport(data);
             }
@@ -133,7 +168,9 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 type,
                 isInternal: true,
-                templates: this.getGenericTemplatesTranslation(data),
+                templates,
+                templateDefinition,
+                templateList,
             });
             return true;
         }
@@ -275,19 +312,39 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         return `boost::optional<${type}>`;
     }
 
-    protected _addExtendedTypeSerializer(typeName: string, parentNamespace: string): void {
+    protected _addExtendedTypeSerializer(
+        typeName: string,
+        parentNamespace: string,
+        opt?: { templateDefinition?: string; templateList?: string }
+    ): void {
+        if (opt?.templateDefinition) {
+            this._push0(this.serializers, opt.templateDefinition);
+        }
+
+        const typeNameWithTemplates = `${typeName}${opt?.templateList ?? ""}`;
+
         this._push0(
             this.serializers,
-            `inline void to_json(${NLOHMANN}& j, const ${typeName}& x) {`
+            `inline void to_json(${NLOHMANN}& j, const ${typeNameWithTemplates}& x) {`
         );
         this._push1(this.serializers, `${parentNamespace}::to_json(j, x);`);
         this._push0(this.serializers, "}\n");
     }
 
-    protected _addExtendedTypeDeserializer(typeName: string, parentNamespace: string): void {
+    protected _addExtendedTypeDeserializer(
+        typeName: string,
+        parentNamespace: string,
+        opt?: { templateDefinition?: string; templateList?: string }
+    ): void {
+        if (opt?.templateDefinition) {
+            this._push0(this.serializers, opt.templateDefinition);
+        }
+
+        const typeNameWithTemplates = `${typeName}${opt?.templateList ?? ""}`;
+
         this._push0(
             this.serializers,
-            `inline void from_json(const ${NLOHMANN}& j, ${typeName}& x) {`
+            `inline void from_json(const ${NLOHMANN}& j, ${typeNameWithTemplates}& x) {`
         );
         this._push1(this.serializers, `${parentNamespace}::from_json(j, x);`);
         this._push0(this.serializers, "}\n");

@@ -39,27 +39,35 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         name: string,
         parentNamespace: string,
         aliasOf: string,
-        opt?: { type?: "union" | "d-union" | "alias"; isInternal?: boolean; templates?: string }
+        opt?: {
+            type?: "union" | "d-union" | "alias";
+            isInternal?: boolean;
+            templates?: string;
+            declaredTemplates?: string;
+        }
     ) {
         const extendedType = opt?.isInternal
             ? aliasOf
             : this.getTypeFromExternalNamespace(parentNamespace, aliasOf);
 
         const templates = opt?.templates ?? "";
+        const declaredName = `${name}${opt?.declaredTemplates ?? ""}`;
 
         if (opt?.type === "alias") {
-            this.push0(`export type ${name} = ${extendedType}${templates};\n`);
+            this.push0(`export type ${declaredName} = ${extendedType}${templates};\n`);
         } else if (this.opt.outType === "class") {
             if (opt?.type === "d-union") {
-                this.push0(`export type ${name} = ${extendedType}${templates};\n`);
+                this.push0(`export type ${declaredName} = ${extendedType}${templates};\n`);
             } else {
-                this.push0(`export class ${name} extends ${extendedType}${templates} {}\n`);
+                this.push0(`export class ${declaredName} extends ${extendedType}${templates} {}\n`);
             }
         } else {
             if (opt?.type === "union" || opt?.type === "d-union") {
-                this.push0(`export type ${name} = ${extendedType}${templates};\n`);
+                this.push0(`export type ${declaredName} = ${extendedType}${templates};\n`);
             } else {
-                this.push0(`export interface ${name} extends ${extendedType}${templates} {}\n`);
+                this.push0(
+                    `export interface ${declaredName} extends ${extendedType}${templates} {}\n`
+                );
             }
         }
     }
@@ -89,12 +97,26 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         }
     }
 
+    /**
+     * Emits an alias/extension declaration early when a node references another layered type.
+     * It preserves concrete template translations and falls back to declared templates (e.g. <T>)
+     * for aliases of generic templates.
+     */
     protected checkExtendedTypeInclusion(data: ASTNode, type?: "alias" | "union" | "d-union") {
+        const declaredTemplatesFallback =
+            data instanceof ASTObject && data.templates.size > 0
+                ? `<${[...data.templates].join(", ")}>`
+                : undefined;
+        const translatedTemplates = this.getGenericTemplatesTranslation(data);
+        const templates = translatedTemplates || declaredTemplatesFallback;
+        const declaredTemplates = translatedTemplates ? undefined : declaredTemplatesFallback;
+
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
                     type,
-                    templates: this.getGenericTemplatesTranslation(data),
+                    templates,
+                    declaredTemplates,
                 });
                 this.addExternalTypeImport(data);
             }
@@ -103,7 +125,8 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 type,
                 isInternal: true,
-                templates: this.getGenericTemplatesTranslation(data),
+                templates,
+                declaredTemplates,
             });
             return true;
         }

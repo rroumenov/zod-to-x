@@ -94,8 +94,8 @@ export type TupleItem = [number, string, boolean];
 
 // Union Item - Built from union of ObjectItem, OtherObjectItem
 export class UnionItem {
-    key: string;
-    otherKey: string;
+    key?: string;
+    otherKey?: string;
 
     constructor(data: UnionItem) {
         this.key = data.key;
