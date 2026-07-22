@@ -12,6 +12,7 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
   - [Python](#python)
   - [C++](#c)
   - [Go](#go)
+  - [Dart](#dart)
   - [Others](#others)
     - [Protobuf](#protobuf)
 
@@ -118,6 +119,32 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 | `z.any()`                 | `any`                          |
 | `z.optional()`            | `*T` with `omitempty` tag      |
 | `z.nullable()`            | `*T`                           |
+
+
+
+## Dart
+| Zod Type                  | Dart Representation            |
+|---------------------------|--------------------------------|
+| `z.string()`              | `String`                       |
+| `z.number()`              | `double` or `int`              |
+| `z.bigint()`              | `int`                          |
+| `z.boolean()`             | `bool`                         |
+| `z.date()`                | `DateTime`                     |
+| `z.literal()`             | Typed constant value           |
+| `z.enum()`                | `enum`                         |
+| `z.nativeEnum()`          | `enum`                         |
+| `z.array()`               | `List<T>`                      |
+| `z.set()`                 | `Set<T>`                       |
+| `z.tuple()`               | `(T1, T2, T3)` (Dart record)   |
+| `z.object()`              | `class` with `json_serializable` |
+| `z.record()`              | `Map<String, T>`               |
+| `z.map()`                 | `Map<String, T>`               |
+| `z.union()` <sup>(2)</sup>               | `Object` (type alias)          |
+| `z.discriminatedUnion()`  | `sealed class` + dispatcher function |
+| `z.intersection()` <sup>(1)</sup>        | `class` with inheritance       |
+| `z.any()`                 | `dynamic`                      |
+| `z.optional()`            | `T?`                           |
+| `z.nullable()`            | `T?`                           |
 
 
 

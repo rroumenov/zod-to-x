@@ -26,7 +26,7 @@ export const createGenericTestSuite = (
     model: any,
     transpiler: any,
     basePath: string,
-    language: "typescript" | "python" | "cpp" | "golang" = "typescript"
+    language: "typescript" | "python" | "cpp" | "golang" | "dart" = "typescript"
 ) => {
     const fileNamePrefix = suiteName.toLowerCase().replace(/\s+/g, "_");
 
@@ -88,6 +88,21 @@ export const createGenericTestSuite = (
                         output,
                         expectedOutput,
                         `${basePath}/struct-expected/err-${fileNamePrefix}.expected_go.go`
+                    );
+                });
+            } else if (language === "dart") {
+                test("Output as Dart Class", () => {
+                    const output = model.transpile(transpiler);
+                    const expectedOutput = fs
+                        .readFileSync(
+                            `${basePath}/class-expected/${fileNamePrefix}.expected_dart.dart`
+                        )
+                        .toString();
+
+                    testOutput(
+                        output,
+                        expectedOutput,
+                        `${basePath}/class-expected/err-${fileNamePrefix}.expected_dart.dart`
                     );
                 });
             } else {

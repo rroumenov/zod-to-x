@@ -1,6 +1,6 @@
 {
   "name": "zod-to-x",
-  "version": "1.7.0-dev.0",
+  "version": "1.8.0-dev.0",
   "description": "Multi language types generation from Zod schemas.",
   "main": "dist/index.js",
   "files": [
@@ -16,7 +16,8 @@
     "test:cpp": "bash ./test/test_zod2cpp/test_cpp.sh",
     "test:py": "bash ./test/test_zod2py/test_py.sh",
     "test:go": "bash ./test/test_zod2go/test_go.sh",
-    "test:all": "npm run test:cpp && npm run test:py && npm run test:go",
+    "test:dart": "bash ./test/test_zod2dart/test_dart.sh",
+    "test:all": "npm run test:cpp && npm run test:py && npm run test:go && npm run test:dart",
     "ts-run": "ts-node -r tsconfig-paths/register",
     "prepare": "husky"
   },
@@ -61,7 +62,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
     "prettier": "^3.4.2",
-    "protobufjs": "7.5.5",
+    "protobufjs": "7.6.5",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "4.2.0",
