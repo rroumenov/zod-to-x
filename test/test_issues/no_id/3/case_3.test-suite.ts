@@ -17,7 +17,16 @@ const runCase3GoSuite = createGenericTestSuite(
     "golang"
 );
 
+const runCase3DartSuite = createGenericTestSuite(
+    "Case 3",
+    weatherServiceApi,
+    Zod2XTranspilers.Zod2Dart,
+    "./test/test_issues/no_id/3",
+    "dart"
+);
+
 export const runCase3Suite = () => {
     runCase3TsSuite();
     runCase3GoSuite();
+    runCase3DartSuite();
 };

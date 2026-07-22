@@ -29,6 +29,7 @@
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++">
   <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart">
   <img src="https://img.shields.io/badge/Protobuf-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Protobuf">
 </p>
 
@@ -54,6 +55,7 @@
   - [2) Python](#2-python)
   - [3) C++](#3-c)
   - [4) Go](#4-go)
+  - [5) Dart](#5-dart)
 - [Additional utils](#additional-utils)
   - [1) `zod2ProtoV3`](#1-zod2protov3)
 - [Mapping of supported Zod Types by Langauge](#mapping-of-supported-zod-types-by-langauge)
@@ -641,6 +643,16 @@ Generates idiomatic Go structs with `encoding/json` struct tags. Requires Go 1.1
   - **keepKeys**: Specifies whether field names should remain as originally defined (true) or be converted to exported PascalCase with the original name used in the JSON tag (false). The default is `false`.
   - **useJsonTags**: Whether to emit `json:"fieldName"` struct tags. Defaults to `true`.
 - [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2go)
+
+### 5) Dart
+`json_annotation` + `json_serializable` are used for JSON serialization/deserialization. The `.g.dart` part file is generated externally by `dart run build_runner build`.
+- Options:
+  - **keepKeys**: Specifies whether property names should follow the Dart naming convention (false) or remain as originally defined (true). The default is `false`.
+  - **useJsonSerialization**: When true (default), emits `@JsonSerializable()`, `@JsonEnum`, `@JsonKey` annotations and `fromJson`/`toJson` stubs. Requires `package:json_annotation`.
+  - **partFile**: Filename (without extension) for the `part '${partFile}.g.dart'` directive. Automatically set when using layered modeling. If omitted, no `part` directive is emitted.
+- [Examples](https://github.com/rroumenov/zod-to-x/blob/main/test/test_zod2dart)
+
+
 
 ## Additional utils
 Additional useful tools to convert Zod Schemas into different formats.

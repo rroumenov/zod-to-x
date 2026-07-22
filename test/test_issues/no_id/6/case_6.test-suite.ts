@@ -33,9 +33,18 @@ const runCase6GoSuite = createGenericTestSuite(
     "golang"
 );
 
+const runCase6DartSuite = createGenericTestSuite(
+    "Case 6",
+    case6App,
+    Zod2XTranspilers.Zod2Dart,
+    "./test/test_issues/no_id/6",
+    "dart"
+);
+
 export const runCase6Suite = () => {
     runCase6TsSuite();
     runCase6PySuite();
     runCase6CppSuite();
     runCase6GoSuite();
+    runCase6DartSuite();
 };

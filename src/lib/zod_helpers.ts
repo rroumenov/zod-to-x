@@ -274,6 +274,11 @@ export function useGenericType(
 ): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
     const builder = () => {
         let extended = genObj;
+        // Zod 4's extend() doesn't copy meta() (unlike Zod 3 which spread _def).
+        // Capture it once so it can be restored after each extend call.
+        // The description (e.g. "GenericUserEntity") is used by transpilers to
+        // identify the base generic class for cross-layer type aliases.
+        const genObjMeta = genObj.meta();
         for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
             if (ZodHelpers.isZod2XGeneric(property)) {
                 const childType = childrens[key];
@@ -284,6 +289,9 @@ export function useGenericType(
                 }
                 const zod2xMeta = structuredClone(extended._zod2x);
                 extended = extended.extend({ [key]: childType });
+                if (genObjMeta && Object.keys(genObjMeta).length > 0) {
+                    extended = extended.meta({ ...genObjMeta }) as ZodObject<any>;
+                }
                 extended._zod2x = zod2xMeta;
                 extended._zod2x!.isGenericChild = false;
 
