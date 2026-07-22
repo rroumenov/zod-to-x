@@ -97,6 +97,11 @@ export class Zod2XModel {
     public transpile(target: Target<"Zod2Ts">, opt?: TargetOpt<"Zod2Ts">, astOpt?: AstOpt): string;
     public transpile(target: Target<"Zod2Py">, opt?: TargetOpt<"Zod2Py">, astOpt?: AstOpt): string;
     public transpile(target: Target<"Zod2Go">, opt?: TargetOpt<"Zod2Go">, astOpt?: AstOpt): string;
+    public transpile(
+        target: Target<"Zod2Dart">,
+        opt?: TargetOpt<"Zod2Dart">,
+        astOpt?: AstOpt
+    ): string;
 
     public transpile(
         target: Target<TargetKeys>,
@@ -106,6 +111,7 @@ export class Zod2XModel {
         const transpilerInstance = new target({
             ...opt,
             namespace: this.getLayerMetadata().namespace,
+            partFile: this.getLayerMetadata().file,
         } as any);
         return transpilerInstance.transpile(this.getAstNode(astOpt));
     }
