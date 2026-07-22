@@ -2,7 +2,7 @@
 
 ## Overview
 
-npm package that transpiles Zod schema-based data models into typed code for multiple languages (TypeScript, Python/Pydantic, C++11/C++17) and data formats (Protobuf v3, JSON Schema). Uses a layered modeling architecture inspired by Clean Architecture (DDD).
+npm package that transpiles Zod schema-based data models into typed code for multiple languages (TypeScript, Python/Pydantic, C++11/C++17, Dart/json_serializable) and data formats (Protobuf v3, JSON Schema). Uses a layered modeling architecture inspired by Clean Architecture (DDD).
 
 ## Quick Reference
 
@@ -14,6 +14,8 @@ npm test                 # Delete err-* files → vitest --run
 npm run test:cpp         # Native C++ compilation tests
 npm run test:py          # Native Python tests (needs venv activated)
 npm run test:all         # C++ + Python native tests
+npm run test:dart        # Native Dart tests (dart + build_runner required)
+npm run test:go          # Native Go tests (Go toolchain required)
 npm run format:check     # Prettier check
 ```
 
@@ -37,7 +39,7 @@ Zod Schema → Zod2Ast.build() → AST Nodes → Zod2X.transpile() → string ou
 |---|---|
 | `src/core/` | AST types, `Zod2Ast` builder, abstract `Zod2X` base transpiler |
 | `src/core/ast-types/` | AST node interfaces: simple (string/number/bool/literal/date/any), complex (object/enum/union/intersection/map/set/tuple/array) |
-| `src/transpilers/` | Concrete transpilers: `typescript/`, `python/`, `cpp/` |
+| `src/transpilers/` | Concrete transpilers: `typescript/`, `python/`, `cpp/`, `dart/`, `go/` |
 | `src/converters/` | Data format converters: `protobuf_v3/`, `json_schema_definitions.ts` |
 | `src/layered-modeling/` | DDD decorators (`@Domain`, `@Application`, etc.), `Zod2XModel`, `Zod2XMixin` |
 | `src/lib/` | Zod extension (`zod_ext.ts`) and helpers (`zod_helpers.ts`) |
@@ -113,7 +115,7 @@ Each issue in `test/test_issues/no_id/N/` contains:
 
 The facade `test_noid_issues.test.ts` imports and calls all `runCaseNSuite()`.
 
-**Cross-language coverage rule:** Every issue test MUST include expected output files for ALL supported transpilers where the bug or its fix applies. Currently: TypeScript (`.expected_typescript.ts`), Python (`.expected_python.py`), C++ (`.expected_cpp.h`). If a bug is in `src/core/` (AST or base transpiler), it likely affects all languages. If a bug is in a specific transpiler, check whether other transpilers have the same problem.
+**Cross-language coverage rule:** Every issue test MUST include expected output files for ALL supported transpilers where the bug or its fix applies. Currently: TypeScript (`.expected_typescript.ts`), Python (`.expected_python.py`), C++ (`.expected_cpp.h`), Dart (`.expected_dart.dart`), Go (`.expected_go.go`). If a bug is in `src/core/` (AST or base transpiler), it likely affects all languages. If a bug is in a specific transpiler, check whether other transpilers have the same problem.
 
 ### Test Utilities
 
@@ -151,3 +153,17 @@ When investigating or fixing a bug:
 5. **Decorator singleton** — Each decorated class is cached on `constructor.instance`; don't instantiate twice
 6. **err-* files** — Generated on test failure, gitignored, cleaned by `npm test`
 7. **Single-language issue tests** — Never test only one language. If a bug can manifest in multiple transpilers, cover all of them.
+
+## Dart Transpiler Notes
+
+The Dart transpiler (`src/transpilers/dart/`) emits `json_annotation` + `json_serializable` code.
+
+### Key Dart-specific behaviors
+
+- **`@JsonSerializable(genericArgumentFactories: true)`** is emitted for generic classes; their `fromJson` takes extra `fromJsonT` function parameters.
+- **`@JsonKey(fromJson: fn, toJson: fn)`** is emitted for class-typed fields to prevent `json_serializable` from following typedef chains to transitively-imported types.
+- **`instanceType` string check** (not `instanceof`) is used to detect ASTObject vs ASTEnum for cross-file references, because cross-file refs are `ASTDefinition` nodes.
+- **Cross-file generic typedefs** (e.g. `AdminUserEntity = GenericUserEntity<AdminUserMetadata>`) are detected in the `transpile()` pre-scan: top-level nodes with `parentFile + description (base type name) + non-empty templatesTranslation` populate `_typedefToExtendedType` so `runAfter()` generates 2-arg factory helpers.
+- **Discriminated unions** emit an abstract sealed class with a dispatcher function. Typedef aliases of disc unions delegate to the entity-level dispatcher via `_discriminatedUnionDelegateFromJson`.
+- **Dart test package** lives at `test/test_zod2dart/dart_test_pkg/`. The `test_dart.sh` script copies files, runs `dart run build_runner build`, then `dart analyze lib/`.
+- **Regenerate expected files** with `npx vite-node test_dev/generate_dart_expected.ts` after any runner change.

@@ -5,3 +5,4 @@ dist
 venv
 /**/*/__pycache__/
 .vscode/settings.json
+/**/*/.dart_tool/
