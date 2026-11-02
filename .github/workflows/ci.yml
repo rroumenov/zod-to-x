@@ -1,0 +1,31 @@
+name: CI
+
+on:
+    pull_request:
+        branches:
+            - main
+            - main_v1
+        types: [opened, edited, synchronize, reopened]
+
+jobs:
+    pr_title:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check Conventional Commit title
+              env:
+                  TITLE: ${{ github.event.pull_request.title }}
+              run: |
+                  echo "$TITLE" | grep -Eq '^(feat|fix|chore|docs|test|ci|refactor|perf|build|style)(\([^)]+\))?!?: .+' \
+                    || { echo "PR title must look like 'fix: ...' or 'feat(scope): ...'"; exit 1; }
+
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - run: npm ci
+            - run: npm run format:check
+            - run: npm run build
+            - run: npm test

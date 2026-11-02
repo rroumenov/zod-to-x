@@ -1,0 +1,45 @@
+name: Release
+
+on:
+    push:
+        branches:
+            - main
+            - main_v1
+
+concurrency:
+    group: release-${{ github.ref_name }}
+    cancel-in-progress: false
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  registry-url: https://registry.npmjs.org/
+            - run: npm ci
+            - run: npm run build
+            - run: npm test
+
+            # Derive changesets from fix/feat commits since the last release. Files stay
+            # uncommitted; changesets/action consumes them to build the release PR.
+            - run: node scripts/commits-to-changesets.mjs
+
+            - uses: changesets/action@v1
+              with:
+                  version: npm run version
+                  publish: ${{ github.ref_name == 'main_v1' && 'npm run release:v1' || 'npm run release' }}
+                  commit: "chore(release): version packages"
+                  title: "chore(release): version packages"
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

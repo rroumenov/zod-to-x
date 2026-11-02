@@ -93,8 +93,17 @@ Uses `_def.typeName` strings (not `instanceof`) for Bun compatibility.
 
 ### Branches
 
-- `main` / `dev` — Zod 4
-- `main_v1` / `dev_v1` — Zod 3
+- `main` — Zod 4 (npm `latest`)
+- `main_v1` — Zod 3 (npm `latestV1`)
+
+Work on short-lived branches and PR (or push) to these. No `dev` branches.
+
+### Commits & releases
+
+Commit subjects (PR title when squash-merging) use Conventional Commits: `fix:` → patch,
+`feat:` → minor, `type!:` / `BREAKING CHANGE:` → major; `chore/docs/test/ci/refactor/...` → no release.
+On push, `.github/workflows/release.yml` runs `scripts/commits-to-changesets.mjs` and
+`changesets/action`, which opens a "Version Packages" PR; merging it publishes to npm.
 
 ## Test Patterns
 
