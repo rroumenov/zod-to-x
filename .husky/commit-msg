@@ -1,0 +1,8 @@
+subject=$(head -n1 "$1")
+case "$subject" in
+  Merge*|Revert*|fixup!*|squash!*) exit 0 ;;
+esac
+echo "$subject" | grep -Eq '^(feat|fix|chore|docs|test|ci|refactor|perf|build|style)(\([^)]+\))?!?: .+' || {
+  echo "Commit subject must start with feat:, fix:, chore:, docs:, test:, ci:, refactor:, perf:, build: or style: (add ! for breaking)."
+  exit 1
+}
