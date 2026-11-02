@@ -315,7 +315,7 @@ function getZod2XConstructor() {
         value?: IZod2xMetadata[K]
     ) {
         if (typeof opt === "string" && value !== undefined) {
-            this._zod2x[opt] = value;
+            this._zod2x = { ...(this._zod2x ?? {}), [opt]: value };
             return this;
         }
 

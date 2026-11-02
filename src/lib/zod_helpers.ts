@@ -42,6 +42,24 @@ export enum ZodFirstPartyTypeKind {
     ZodNullable = "nullable",
     ZodDefault = "default",
     ZodPromise = "promise",
+    ZodUnknown = "unknown",
+    ZodPrefault = "prefault",
+    ZodCatch = "catch",
+    ZodReadonly = "readonly",
+    ZodNonOptional = "nonoptional",
+    ZodPipe = "pipe",
+    ZodTransform = "transform",
+    ZodNull = "null",
+    ZodUndefined = "undefined",
+    ZodVoid = "void",
+    ZodNever = "never",
+    ZodNaN = "nan",
+    ZodSymbol = "symbol",
+    ZodCustom = "custom",
+    ZodFunction = "function",
+    ZodFile = "file",
+    ZodTemplateLiteral = "template_literal",
+    ZodSuccess = "success",
 }
 
 /**
@@ -50,6 +68,65 @@ export enum ZodFirstPartyTypeKind {
 export class ZodHelpers {
     static isZodType(i: ZodType): boolean {
         return Object.values(ZodFirstPartyTypeKind).includes(i?.def?.type as ZodFirstPartyTypeKind);
+    }
+
+    static isZodUnknown(i: ZodType): i is z.ZodUnknown {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodUnknown;
+    }
+
+    static isZodNonOptional(i: ZodType): i is z.ZodNonOptional<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNonOptional;
+    }
+
+    static isZodPipe(i: ZodType): i is z.ZodPipe<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodPipe;
+    }
+
+    static isZodTransform(i: ZodType): i is z.ZodTransform {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodTransform;
+    }
+
+    /**
+     * Wrappers that do not change the output type of their inner schema: `.default()`,
+     * `.prefault()`, `.catch()` and `.readonly()`.
+     */
+    static isZodTransparentWrapper(
+        i: ZodType
+    ): i is z.ZodDefault<any> | z.ZodPrefault<any> | z.ZodCatch<any> | z.ZodReadonly<any> {
+        const type = i?.def?.type;
+        return (
+            type === ZodFirstPartyTypeKind.ZodDefault ||
+            type === ZodFirstPartyTypeKind.ZodPrefault ||
+            type === ZodFirstPartyTypeKind.ZodCatch ||
+            type === ZodFirstPartyTypeKind.ZodReadonly
+        );
+    }
+
+    /**
+     * Returns the schema that represents the data model of a pipe. The output side is used
+     * (e.g. `z.string().pipe(z.coerce.number())` or codecs), unless it is a transformation whose
+     * output type cannot be known, in which case the input side is used.
+     */
+    static getPipeModelSchema(i: z.ZodPipe<any, any>): ZodType {
+        const out = i.def.out as ZodType;
+        return this.isZodTransform(out) ? (i.def.in as ZodType) : out;
+    }
+
+    /**
+     * Returns a short structural signature of a schema, used to tell apart two different schemas
+     * that share the same type name.
+     */
+    static getShallowSignature(i: ZodType, depth = 0): string {
+        const typeName = i?._zod2x?.typeName;
+        if (typeName) {
+            return `#${typeName}`;
+        }
+
+        const def = i?.def as any;
+        const inner: ZodType | undefined = def?.innerType ?? def?.element;
+        return inner && depth < 5
+            ? `${def.type}<${this.getShallowSignature(inner, depth + 1)}>`
+            : `${def?.type}`;
     }
 
     static isZodAny(i: ZodType): i is z.ZodAny {

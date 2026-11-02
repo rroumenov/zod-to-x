@@ -94,9 +94,15 @@ export class Zod2Ast {
     private nodes: Map<string, ASTNode>;
 
     /**
+     * Source schema of each transpilerable node. Used to detect different schemas sharing the
+     * same type name.
+     */
+    private nodeSchemas: Map<string, ZodType>;
+
+    /**
      * Lazy schemas for further analysis
      */
-    private lazyPointers: Array<[ASTDefinition, ZodType]>;
+    private lazyPointers: Array<[ASTDefinition, ZodType, ISchemasMetadata | undefined]>;
 
     /**
      * Warnings generated during the AST creation to aware user about bad practices
@@ -107,6 +113,7 @@ export class Zod2Ast {
 
     constructor(opt: IZod2AstOpt = {}) {
         this.nodes = new Map<string, ASTNode>();
+        this.nodeSchemas = new Map<string, ZodType>();
         this.lazyPointers = [];
         this.warnings = [];
 
@@ -128,6 +135,96 @@ export class Zod2Ast {
             parentFile === undefined ||
             this.opt.layer?.file === parentFile
         );
+    }
+
+    /**
+     * Returns the key used to store a transpilerable node. Types imported from other files are
+     * namespaced by their file, so they do not clash with local types that share the same name.
+     * Aliases of external types are local definitions.
+     */
+    private _getNodeKey(item: Pick<ASTCommon, "parentFile" | "aliasOf"> & { name?: string }) {
+        return item.parentFile !== undefined && item.aliasOf === undefined
+            ? `${item.parentFile}::${item.name}`
+            : item.name!;
+    }
+
+    /**
+     * Determines if two schemas that share the same type name represent the same definition.
+     * Schemas created from the same definition (`.zod2x()`, `.describe()`, `.meta()`, layer
+     * aliases) and instances of the same generic type are considered equal. Otherwise, a shallow
+     * structural comparison is performed.
+     */
+    private _isSameDefinition(a: ZodType, b: ZodType): boolean {
+        if (a === b || a.def === b.def) {
+            return true;
+        }
+
+        if (Array.isArray(a._zod2x?.genericTypes) || Array.isArray(b._zod2x?.genericTypes)) {
+            return true;
+        }
+
+        if (a.def.type !== b.def.type) {
+            return false;
+        }
+
+        const sameSignatures = (x: ZodType[], y: ZodType[]) =>
+            x.length === y.length &&
+            x.every(
+                (i, j) => ZodHelpers.getShallowSignature(i) === ZodHelpers.getShallowSignature(y[j])
+            );
+
+        if (ZodHelpers.isZodObject(a) && ZodHelpers.isZodObject(b)) {
+            const keysA = Object.keys(a.def.shape);
+            const keysB = Object.keys(b.def.shape);
+            return (
+                keysA.length === keysB.length &&
+                keysA.every((key) => key in b.def.shape) &&
+                sameSignatures(
+                    keysA.map((key) => a.def.shape[key]),
+                    keysA.map((key) => b.def.shape[key])
+                )
+            );
+        } else if (ZodHelpers.isZodEnum(a) && ZodHelpers.isZodEnum(b)) {
+            return JSON.stringify(a.enum) === JSON.stringify(b.enum);
+        } else if (ZodHelpers.isZodAnyUnionType(a) && ZodHelpers.isZodAnyUnionType(b)) {
+            return sameSignatures(a.def.options as ZodType[], b.def.options as ZodType[]);
+        } else if (ZodHelpers.isZodIntersection(a) && ZodHelpers.isZodIntersection(b)) {
+            return sameSignatures(
+                [a.def.left, a.def.right] as ZodType[],
+                [b.def.left, b.def.right] as ZodType[]
+            );
+        } else if (ZodHelpers.isZodArray(a) && ZodHelpers.isZodArray(b)) {
+            return sameSignatures([a.element], [b.element]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a transpilerable node is already registered.
+     *
+     * @throws AstTypeNameDefinitionError - If the node key is used by a different schema.
+     */
+    private _hasNode(key: string, schema: ZodType): boolean {
+        const registered = this.nodeSchemas.get(key);
+
+        if (registered === undefined) {
+            return false;
+        }
+
+        if (!this._isSameDefinition(registered, schema)) {
+            throw new AstTypeNameDefinitionError(
+                `Type name '${key}' is used by different schemas. Each transpilerable type ` +
+                    `must have a unique name.`
+            );
+        }
+
+        return true;
+    }
+
+    private _setNode(key: string, schema: ZodType, node: ASTNode) {
+        this.nodes.set(key, node);
+        this.nodeSchemas.set(key, schema);
     }
 
     /**
@@ -322,7 +419,7 @@ export class Zod2Ast {
      */
     private _unionAstNodes(options: ASTDefinition[]): Pick<ASTObject, "properties"> {
         let typeA, typeB;
-        const data = options.map((i) => this.nodes.get(i.name) as ASTObject);
+        const data = options.map((i) => this.nodes.get(this._getNodeKey(i)) as ASTObject);
         const properties: Record<string, ASTType> = data.reduce(
             (acc: Record<string, ASTType>, i, j) => {
                 for (const key in i.properties) {
@@ -463,8 +560,9 @@ export class Zod2Ast {
             isFromDiscriminatedUnion: opt?.isInjectedEnum,
         });
 
-        if (!this.nodes.has(name)) {
-            this.nodes.set(name, item);
+        const key = this._getNodeKey(item);
+        if (!this._hasNode(key, schema)) {
+            this._setNode(key, schema, item);
         }
 
         return this._createDefinition(item);
@@ -486,8 +584,9 @@ export class Zod2Ast {
         let discriminantValue: string | undefined = undefined;
 
         const shape = schema.def.shape;
+        const key = this._getNodeKey({ name, parentFile, aliasOf });
 
-        if (!this.nodes.has(name)) {
+        if (!this._hasNode(key, schema)) {
             const properties: Record<string, ASTType> = {};
             const templates = new Set<string>();
             for (const key in shape) {
@@ -512,8 +611,9 @@ export class Zod2Ast {
                 return {} as ASTDefinition; // Layer classes are not transpilerable
             }
 
-            this.nodes.set(
-                name,
+            this._setNode(
+                key,
+                schema,
                 new ASTObject({
                     name,
                     properties,
@@ -527,7 +627,7 @@ export class Zod2Ast {
             );
         }
 
-        const item = this.nodes.get(name) as ASTObject;
+        const item = this.nodes.get(key) as ASTObject;
 
         if (opt?.discriminantKey) {
             if (Object.keys(item.properties).includes(opt.discriminantKey)) {
@@ -543,7 +643,7 @@ export class Zod2Ast {
         }
 
         return this._createDefinition(
-            this.nodes.get(name) as ASTObject,
+            item,
             { discriminantValue },
             isGenericChild ? undefined : templatesTranslation
         );
@@ -618,8 +718,9 @@ export class Zod2Ast {
             });
         }
 
-        if (name && !this.nodes.has(name)) {
-            this.nodes.set(name, item);
+        const key = this._getNodeKey(item);
+        if (!this._hasNode(key, schema)) {
+            this._setNode(key, schema, item);
         }
 
         return this._createDefinition(item);
@@ -680,8 +781,9 @@ export class Zod2Ast {
             });
         }
 
-        if (name && !this.nodes.has(name)) {
-            this.nodes.set(name, item);
+        const key = this._getNodeKey(item);
+        if (!this._hasNode(key, schema)) {
+            this._setNode(key, schema, item);
         }
 
         return this._createDefinition(item);
@@ -706,8 +808,9 @@ export class Zod2Ast {
             aliasOf,
         });
 
-        if (!this.nodes.has(name)) {
-            this.nodes.set(name, item);
+        const key = this._getNodeKey(item);
+        if (!this._hasNode(key, schema)) {
+            this._setNode(key, schema, item);
         }
 
         return this._createDefinition(item);
@@ -725,8 +828,9 @@ export class Zod2Ast {
         item.parentNamespace = parentNamespace;
         item.aliasOf = aliasOf;
 
-        if (!this.nodes.has(name)) {
-            this.nodes.set(name, item);
+        const key = this._getNodeKey(item);
+        if (!this._hasNode(key, schema)) {
+            this._setNode(key, schema, item);
         }
 
         return this._createDefinition(item);
@@ -776,10 +880,21 @@ export class Zod2Ast {
             subSchema.isOptional = true;
             subSchema.description = schema.meta()?.description || subSchema.description;
             return subSchema;
-        } else if (ZodHelpers.isZodDefault(schema)) {
-            const subSchema = this._zodToAST(schema.def.defaultValue());
+        } else if (ZodHelpers.isZodNonOptional(schema)) {
+            const subSchema = this._zodToAST(schema.def.innerType as ZodType, opt);
+            subSchema.isOptional = false;
             subSchema.description = schema.meta()?.description || subSchema.description;
             return subSchema;
+        } else if (ZodHelpers.isZodTransparentWrapper(schema)) {
+            const subSchema = this._zodToAST(schema.def.innerType as ZodType, opt);
+            subSchema.description = schema.meta()?.description || subSchema.description;
+            return subSchema;
+        } else if (ZodHelpers.isZodPipe(schema)) {
+            const subSchema = this._zodToAST(ZodHelpers.getPipeModelSchema(schema), opt);
+            subSchema.description = schema.meta()?.description || subSchema.description;
+            return subSchema;
+        } else if (ZodHelpers.isZodUnknown(schema)) {
+            return new ASTAny({ description: schema.meta()?.description });
         } else if (ZodHelpers.isZodArray(schema)) {
             const isParentArray = opt?.calledFromArray !== true;
             const subSchema = this._zodToAST(schema.element, { calledFromArray: true });
@@ -834,10 +949,19 @@ export class Zod2Ast {
         } else if (ZodHelpers.isZodLazy(schema)) {
             /** Lazy items use to be recursive schemas of its own, so the are trated as another
              *  definition */
-            const lazySchema = schema.def.getter();
+            let lazySchema: ZodType = schema;
+            while (ZodHelpers.isZodLazy(lazySchema)) {
+                // innerType is cached by Zod, so the getter is evaluated only once per instance.
+                lazySchema = lazySchema._zod.innerType as ZodType;
+            }
+
             const lazyPointer: ASTDefinition = this._createDefinition({ name: "pending" });
 
-            this.lazyPointers.push([lazyPointer, lazySchema as ZodType]);
+            this.lazyPointers.push([
+                lazyPointer,
+                lazySchema,
+                opt?.discriminantKey ? { discriminantKey: opt.discriminantKey } : undefined,
+            ]);
 
             return lazyPointer;
         } else if (ZodHelpers.isZodTuple(schema)) {
@@ -864,7 +988,11 @@ export class Zod2Ast {
         } else if (ZodHelpers.isZodIntersection(schema)) {
             return this._getIntersectionAst(schema);
         } else {
-            log.warn(`Unsupported Zod type: ${JSON.stringify(schema)}`);
+            log.warn(`Unsupported Zod type: ${schema.def.type}`);
+            this.warnings.push(
+                `Unsupported Zod type '${schema.def.type}' is transpiled as an any type. Avoid ` +
+                    "it, or disable strict mode if not possible."
+            );
             return new ASTAny({
                 description: `Unsupported Zod type: ${schema.def.type}`,
             });
@@ -883,17 +1011,28 @@ export class Zod2Ast {
         });
 
         while (this.lazyPointers.length > 0) {
-            const [pointer, schema] = this.lazyPointers.shift()!;
-            const lazyResolve = this._zodToAST(schema);
+            const [pointer, schema, opt] = this.lazyPointers.shift()!;
+            const lazyResolve = this._zodToAST(schema, opt);
+
+            // Modifiers applied by wrappers of the lazy schema (optional, nullable, array, ...)
+            // were set on the pointer and shall be kept.
+            const { arrayDimension, isOptional, isNullable, description } = pointer;
 
             /** Pointer to the pending AST node is updated with the lazy resolve */
             Object.keys(pointer).forEach((key) => {
                 delete (pointer as any)[key];
             });
 
-            Object.entries(lazyResolve).forEach(([key, value]: [string, any]) => {
-                (pointer as any)[key] = value;
-            });
+            Object.setPrototypeOf(pointer, Object.getPrototypeOf(lazyResolve));
+            Object.assign(pointer, lazyResolve);
+
+            const resolved = pointer as ASTType;
+            if (arrayDimension) {
+                resolved.arrayDimension = (resolved.arrayDimension ?? 0) + arrayDimension;
+            }
+            resolved.isOptional = isOptional ?? resolved.isOptional;
+            resolved.isNullable = isNullable ?? resolved.isNullable;
+            resolved.description = description || resolved.description;
         }
 
         if (this.opt.strict !== false && this.warnings.length > 0) {

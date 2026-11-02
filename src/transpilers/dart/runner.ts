@@ -10,6 +10,7 @@ import {
     ASTNodes,
     ASTObject,
     ASTUnion,
+    NotTranspilerableTypeError,
     Zod2X,
 } from "@/core";
 
@@ -97,6 +98,8 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         this._discriminatedUnionDelegateFromJson.clear();
         this._typedefToExtendedType.clear();
 
+        this._checkImportedNamesClash(transpilerQueue);
+
         transpilerQueue.nodes.forEach((node: ASTNode) => {
             if (node instanceof ASTUnion && node.discriminantKey) {
                 // Track the union name for @JsonKey emission
@@ -145,6 +148,35 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         });
 
         return super.transpile(transpilerQueue);
+    }
+
+    /**
+     * Dart imports are not prefixed, so a local type cannot share its name with an imported one.
+     */
+    private _checkImportedNamesClash(transpilerQueue: ASTNodes) {
+        const localNames = new Set<string>();
+        const importedNames = new Set<string>();
+
+        transpilerQueue.nodes.forEach((node: ASTNode) => {
+            const name = (node as any).name as string | undefined;
+            if (name === undefined) {
+                return;
+            }
+
+            if (node.parentFile !== undefined && node.aliasOf === undefined) {
+                importedNames.add(name);
+            } else {
+                localNames.add(name);
+            }
+        });
+
+        const clashes = [...localNames].filter((name) => importedNames.has(name));
+        if (clashes.length > 0) {
+            throw new NotTranspilerableTypeError(
+                `Dart imports are not prefixed. Local types cannot share their name with ` +
+                    `imported types: ${clashes.join(", ")}`
+            );
+        }
     }
 
     protected runBefore(): void {
