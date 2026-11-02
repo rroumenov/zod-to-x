@@ -1,7 +1,7 @@
 import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
-import { getZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
-import { Extended, IZod2xMetadata } from "./zod_ext";
+import { resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
+import { Extended } from "./zod_ext";
 
 export type {
     ZodArray,
@@ -118,7 +118,7 @@ export class ZodHelpers {
      * that share the same type name.
      */
     static getShallowSignature(i: ZodType, depth = 0): string {
-        const typeName = getZod2xMetadata(i)?.typeName;
+        const typeName = resolveZod2xMetadata(i)?.typeName;
         if (typeName) {
             return `#${typeName}`;
         }
@@ -333,8 +333,8 @@ export function createGenericType(name: string) {
 
 /**
  * Use generic types defined in a generic ZodObject by replacing them with the actual child types.
- * It preserves the zod2x metadata including the genericTypes array which will be moved to the
- * new type during layer modeling metadata assignment.
+ * The new type references the generic type and the child types used for each template, so its
+ * type name, layer and templates translation are resolved from them when transpiled.
  * @param genObj ZodObject with generic types.
  * @param childrens Record of child types to replace generics.
  * @returns The extended ZodObject with replaced generic types.
@@ -356,16 +356,11 @@ export function useGenericType(
 ): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
     const builder = () => {
         let extended = genObj;
-        let isGenericInstance = false;
-        const genObjZod2x = getZod2xMetadata(genObj);
-        const genericTypes: NonNullable<IZod2xMetadata["genericTypes"]> = [
-            ...(genObjZod2x?.genericTypes ?? []),
-        ];
+        const templates: [string, ZodType][] = [];
 
         // Zod 4's extend() doesn't copy meta() (unlike Zod 3 which spread _def).
-        // Capture it once so it can be restored after each extend call.
-        // The description (e.g. "GenericUserEntity") is used by transpilers to
-        // identify the base generic class for cross-layer type aliases.
+        // Capture it once so it can be restored after each extend call, keeping the
+        // description of the generic type.
         // The id is not restored because it must be unique in Zod's global registry.
         const { id: _id, ...genObjMeta } = genObj.meta() ?? {};
         for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
@@ -373,31 +368,21 @@ export function useGenericType(
                 const childType = childrens[key];
                 if (!childType) {
                     throw new Error(
-                        `Missing child type for generic property ${key} in ${genObjZod2x?.typeName}.`
+                        `Missing child type for generic property ${key} in ` +
+                            `${resolveZod2xMetadata(genObj)?.typeName}.`
                     );
                 }
                 extended = extended.extend({ [key]: childType });
                 if (Object.keys(genObjMeta).length > 0) {
                     extended = extended.meta({ ...genObjMeta }) as ZodObject<any>;
                 }
-                isGenericInstance = true;
-
-                const childZod2x = getZod2xMetadata(childType);
-                if (childZod2x !== undefined) {
-                    genericTypes.push({
-                        typeName: childZod2x.typeName,
-                        layer: childZod2x.layer!,
-                    });
-                }
+                templates.push([key, childType]);
             }
         }
 
-        if (isGenericInstance) {
-            setZod2xMetadata(extended, {
-                ...genObjZod2x!,
-                isGenericChild: false,
-                genericTypes,
-            });
+        if (templates.length > 0) {
+            // Type name and layer are taken from the generic type when resolved.
+            setZod2xMetadata(extended, { genericOf: { generic: genObj, templates } });
         }
 
         return extended;

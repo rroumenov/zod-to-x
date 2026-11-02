@@ -99,9 +99,33 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected abstract getTypeFromExternalNamespace(namespace: string, typeName: string): string;
 
     /**
+     * Opening and closing brackets of generic templates in the target language.
+     */
+    protected readonly genericTemplatesBrackets: [string, string] = ["<", ">"];
+
+    /**
      * Returns the translation of generic templates for a given AST node.
      */
-    protected abstract getGenericTemplatesTranslation(data: ASTNode): string | undefined;
+    protected getGenericTemplatesTranslation(data: ASTNode | ASTDefinition): string | undefined {
+        if (
+            (data instanceof ASTObject || data instanceof ASTDefinition) &&
+            data.templatesTranslation.length > 0
+        ) {
+            const [open, close] = this.genericTemplatesBrackets;
+            const templates = data.templatesTranslation.map((t) => {
+                if (t.type !== undefined) {
+                    return this.getAttributeType(t.type);
+                } else if (this.isExternalTypeImport(t)) {
+                    this.addExternalTypeImport(t);
+                    return this.getTypeFromExternalNamespace(t.parentNamespace!, t.aliasOf!);
+                } else {
+                    return t.aliasOf!;
+                }
+            });
+
+            return `${open}${templates.join(", ")}${close}`;
+        }
+    }
 
     /**
      * For Layered Modeling.
@@ -377,7 +401,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *               properties of the type to evaluate.
      * @returns `true` if the type is an external type import; otherwise, `false`.
      */
-    protected isExternalTypeImport(item: ASTNode): boolean {
+    protected isExternalTypeImport(item: Pick<ASTNode, "parentFile" | "parentNamespace">): boolean {
         return (
             item.parentFile !== undefined &&
             item.parentNamespace !== undefined &&
@@ -393,7 +417,9 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *                  about the type to be imported, including its parent file and namespace.
      * @returns `true` if the import was successfully added, otherwise `false`.
      */
-    protected addExternalTypeImport(item: ASTNode): boolean {
+    protected addExternalTypeImport(
+        item: Pick<ASTNode, "parentFile" | "parentNamespace">
+    ): boolean {
         if (this.isExternalTypeImport(item)) {
             this.imports.add(this.addImportFromFile(item.parentFile!, item.parentNamespace!));
             return true;

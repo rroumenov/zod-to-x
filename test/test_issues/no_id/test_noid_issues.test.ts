@@ -13,6 +13,9 @@ import { runCase7Suite } from "./7/case_7.test-suite";
 import { runCase8Suite } from "./8/case_8.test-suite";
 import { runCase9Suite } from "./9/case_9.test-suite";
 import { runCase10Suite } from "./10/case_10.test-suite";
+import { runCase11Suite } from "./11/case_11.test-suite";
+import { runCase12Suite } from "./12/case_12.test-suite";
+import { runCase13Suite } from "./13/case_13.test-suite";
 
 describe("Test issues - No id", () => {
     runCase1Suite();
@@ -25,4 +28,7 @@ describe("Test issues - No id", () => {
     runCase8Suite();
     runCase9Suite();
     runCase10Suite();
+    runCase11Suite();
+    runCase12Suite();
+    runCase13Suite();
 });

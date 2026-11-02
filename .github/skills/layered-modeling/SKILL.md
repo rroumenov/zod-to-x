@@ -45,12 +45,12 @@ Defined in `src/layered-modeling/layer.ts`:
 1. **Enforces singleton** — caches instance on `constructor.instance`
 2. **Sets `modelName`** and **`layerMetadata`** on the instance
 3. **Iterates own properties** — for each Zod schema property:
-   - Calls `setMetadata(PascalCase(propertyName), zodSchema, layerOpt)`
-   - Sets `typeName` and `layer` zod2x metadata (`setZod2xMetadata`)
-4. **Cross-layer detection** — if a property's existing zod2x metadata has a different `file` or different `typeName`:
+   - Calls `setMetadata(propertyName, zodSchema)`
+   - First use of a type: sets `typeName` (a name set with `.zod2x()` is kept) and `layer` zod2x metadata (`setZod2xMetadata`)
+   - Type used before by a higher layer: it is moved to this layer, and the higher layer property becomes an alias of it
+4. **Cross-layer detection** — if a property's resolved zod2x metadata has a different `file` or different `typeName`:
    - **Clones** the Zod object
-   - Sets `aliasOf` = original type name
-   - Sets `parentLayer` = original layer metadata
+   - Sets `aliasOf` = original schema (a reference: its type name and layer are resolved by `resolveZod2xMetadata`)
    - This creates an import + extends relationship in output
 5. **Second pass** — processes `z.lazy()` properties
 

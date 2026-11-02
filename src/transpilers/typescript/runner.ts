@@ -3,7 +3,6 @@ import Case from "case";
 import {
     ASTAliasedTypes,
     ASTArray,
-    ASTDefinition,
     ASTEnum,
     ASTIntersection,
     ASTNode,
@@ -69,31 +68,6 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
                     `export interface ${declaredName} extends ${extendedType}${templates} {}\n`
                 );
             }
-        }
-    }
-
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "<" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                ">"
-            );
         }
     }
 

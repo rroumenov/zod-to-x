@@ -17,12 +17,13 @@ import {
     ASTObject,
     ASTSet,
     ASTString,
+    ASTTemplateTranslation,
     ASTTuple,
     ASTType,
     ASTUnion,
 } from "@/core";
-import { getZod2xMetadata } from "@/lib/zod2x_metadata";
-import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
+import { IZod2xResolvedMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
+import { IZod2xLayerMetadata } from "@/lib/zod_ext";
 import {
     ZodArray,
     ZodEnum,
@@ -161,8 +162,8 @@ export class Zod2Ast {
         }
 
         if (
-            Array.isArray(getZod2xMetadata(a)?.genericTypes) ||
-            Array.isArray(getZod2xMetadata(b)?.genericTypes)
+            resolveZod2xMetadata(a)?.genericTypes !== undefined ||
+            resolveZod2xMetadata(b)?.genericTypes !== undefined
         ) {
             return true;
         }
@@ -241,16 +242,12 @@ export class Zod2Ast {
      */
     private _getTranspilerableFile(
         itemName: string,
-        metadata?: IZod2xMetadata
+        metadata?: IZod2xResolvedMetadata
     ): {
         parentFile?: string;
         parentNamespace?: string;
         aliasOf?: string;
-        templatesTranslation?: {
-            parentFile?: string;
-            parentNamespace?: string;
-            aliasOf?: string;
-        }[];
+        templatesTranslation?: ASTTemplateTranslation[];
         isGenericChild?: boolean;
     } {
         let layer: IZod2xLayerMetadata;
@@ -258,7 +255,11 @@ export class Zod2Ast {
         if (this.opt.layer !== undefined && metadata?.layer !== undefined) {
             if (Array.isArray(metadata.genericTypes)) {
                 // Check that all templates used with a generic type follows the layering rules
-                if (metadata.genericTypes.some((i) => this.opt.layer!.index < i.layer.index)) {
+                if (
+                    metadata.genericTypes.some(
+                        (i) => i.layer !== undefined && this.opt.layer!.index < i.layer.index
+                    )
+                ) {
                     throw new BadLayerDefinitionError(
                         `${itemName}: Layer with number ${this.opt.layer.index} can only use models` +
                             `from the same or lower layer. Review templates used for generic ` +
@@ -267,12 +268,19 @@ export class Zod2Ast {
                 }
             }
 
-            const templatesTranslation = metadata?.genericTypes?.map((i) => ({
-                parentFile: this.opt.layer?.file !== i.layer.file ? i.layer.file : undefined,
-                parentNamespace:
-                    this.opt.layer?.file !== i.layer.file ? i.layer.namespace : undefined,
-                aliasOf: i.typeName,
-            }));
+            const templatesTranslation = metadata.genericTypes?.map((i): ASTTemplateTranslation => {
+                if (i.typeName === undefined) {
+                    // Not named types (basic types, arrays, ...) are used directly.
+                    return { type: this._zodToAST(i.schema) };
+                }
+
+                const isExternal = i.layer !== undefined && this.opt.layer?.file !== i.layer.file;
+                return {
+                    parentFile: isExternal ? i.layer!.file : undefined,
+                    parentNamespace: isExternal ? i.layer!.namespace : undefined,
+                    aliasOf: i.typeName,
+                };
+            });
 
             if (metadata.layer.file === this.opt.layer.file) {
                 // Case 1: Only layer exists and belongs to the same file
@@ -337,7 +345,7 @@ export class Zod2Ast {
     private _createDefinition(
         node: ASTNode,
         constraints = {},
-        templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[] = []
+        templatesTranslation: ASTTemplateTranslation[] = []
     ): ASTDefinition {
         return new ASTDefinition({
             name: node.name!,
@@ -507,7 +515,7 @@ export class Zod2Ast {
      * affected type properties.
      */
     private _getNames(schema: ZodType) {
-        const name = getZod2xMetadata(schema)?.typeName;
+        const name = resolveZod2xMetadata(schema)?.typeName;
 
         if (!name) {
             let itemProperties: string[] = ["Unknown type"];
@@ -516,14 +524,14 @@ export class Zod2Ast {
                 itemProperties = Object.keys(schema.def.shape);
             } else if (ZodHelpers.isZodAnyUnionType(schema)) {
                 itemProperties = schema.def.options.map((i) => {
-                    return getZod2xMetadata(i as ZodType)?.typeName || (i as ZodType).def.type;
+                    return resolveZod2xMetadata(i as ZodType)?.typeName || (i as ZodType).def.type;
                 });
             } else if (ZodHelpers.isZodIntersection(schema)) {
                 const left = schema.def.left as ZodType;
                 const right = schema.def.right as ZodType;
                 itemProperties = [
-                    getZod2xMetadata(left)?.typeName || left.def.type,
-                    getZod2xMetadata(right)?.typeName || right.def.type,
+                    resolveZod2xMetadata(left)?.typeName || left.def.type,
+                    resolveZod2xMetadata(right)?.typeName || right.def.type,
                 ];
             } else if (ZodHelpers.isZodEnum(schema)) {
                 itemProperties = this._getEnumValues(schema).map((i) => i[0]);
@@ -536,9 +544,12 @@ export class Zod2Ast {
             );
         }
 
+        const metadata = resolveZod2xMetadata(schema);
+
         return {
             name,
-            ...this._getTranspilerableFile(name, getZod2xMetadata(schema)),
+            genericOf: metadata?.genericOf,
+            ...this._getTranspilerableFile(name, metadata),
         };
     }
 
@@ -582,8 +593,15 @@ export class Zod2Ast {
      * @returns The AST definition for the provided Zod object schema.
      */
     private _getObjectAst(schema: ZodObject<any>, opt?: ISchemasMetadata): ASTDefinition {
-        const { name, parentFile, parentNamespace, aliasOf, templatesTranslation, isGenericChild } =
-            this._getNames(schema);
+        const {
+            name,
+            parentFile,
+            parentNamespace,
+            aliasOf,
+            templatesTranslation,
+            isGenericChild,
+            genericOf,
+        } = this._getNames(schema);
 
         let discriminantValue: string | undefined = undefined;
 
@@ -627,6 +645,7 @@ export class Zod2Ast {
                     aliasOf,
                     templates,
                     templatesTranslation: templatesTranslation || [],
+                    genericOf,
                 })
             );
         }
@@ -821,7 +840,10 @@ export class Zod2Ast {
     }
 
     private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefinition | ASTAliasedTypes {
-        if (getZod2xMetadata(schema)?.typeName === undefined || this.opt.skipBasicTypes === true) {
+        if (
+            resolveZod2xMetadata(schema)?.typeName === undefined ||
+            this.opt.skipBasicTypes === true
+        ) {
             return item;
         }
 
@@ -907,7 +929,7 @@ export class Zod2Ast {
                 ? ++subSchema.arrayDimension!
                 : 1;
 
-            if (isParentArray && getZod2xMetadata(schema)?.typeName) {
+            if (isParentArray && resolveZod2xMetadata(schema)?.typeName) {
                 return this._getArrayAst(schema, subSchema);
             } else {
                 return subSchema;
@@ -925,11 +947,11 @@ export class Zod2Ast {
             let parentEnumKey: string | undefined = undefined;
 
             // TODO: Support multiple values
-            if (getZod2xMetadata(schema)?.parentEnum) {
+            if (resolveZod2xMetadata(schema)?.parentEnum) {
                 parentEnumKey = this._getEnumValues(
-                    getZod2xMetadata(schema)?.parentEnum as ZodEnum
+                    resolveZod2xMetadata(schema)?.parentEnum as ZodEnum
                 ).find((i) => i[1] === schema.def.values.at(0))?.[0];
-                parentEnum = this._zodToAST(getZod2xMetadata(schema)?.parentEnum as ZodEnum, {
+                parentEnum = this._zodToAST(resolveZod2xMetadata(schema)?.parentEnum as ZodEnum, {
                     isInjectedEnum: true,
                 }) as ASTDefinition;
             }

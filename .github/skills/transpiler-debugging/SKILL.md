@@ -36,8 +36,8 @@ console.log(JSON.stringify(astNodes, null, 2));
 Check:
 - Is the node the correct AST type? (e.g., `ASTObject` vs `ASTDefinition`)
 - Are `isOptional` / `isNullable` correctly set?
-- Is `aliasOf` / `parentLayer` set for cross-layer refs?
-- Are `genericTypes` and `templatesTranslation` populated for generics?
+- Is `aliasOf` / `parentLayer` set for cross-layer refs? (see `resolveZod2xMetadata(schema)`)
+- Are `genericTypes` (resolved metadata) and `templatesTranslation` populated for generics?
 - Is `arrayDimension` correct for nested arrays?
 - Does the `name` match what `.zod2x("Name")` set?
 
@@ -81,7 +81,7 @@ console.log(`getAttributeType: ${token.constructor.name}`, token);
 - Check `addExtendedType()` emits the correct syntax
 
 #### Generic type not resolving
-- Check `genericTypes` array on the definition
+- Check `genericTypes` array of `resolveZod2xMetadata(schema)`
 - Check `templatesTranslation` on the object
 - Verify `useGenericType()` was called correctly (check `skipLazy` if in discriminatedUnion)
 

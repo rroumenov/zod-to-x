@@ -3,7 +3,6 @@ import Case from "case";
 import {
     ASTAliasedTypes,
     ASTArray,
-    ASTDefinition,
     ASTEnum,
     ASTIntersection,
     ASTNode,
@@ -201,30 +200,7 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         }
     }
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "[" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                "]"
-            );
-        }
-    }
+    protected readonly genericTemplatesBrackets: [string, string] = ["[", "]"];
 
     /**
      * Emits an alias/extension declaration early for layered references.

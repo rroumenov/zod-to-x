@@ -70,6 +70,17 @@ export type ASTAliasedTypes =
     | Complex.ASTArray;
 
 /**
+ * Translation of a generic template of a generic type instance. Named types are referenced by
+ * name (and file, if external), and the rest of types (basic types, arrays, ...) by their AST.
+ */
+export type ASTTemplateTranslation = Pick<
+    ASTCommon,
+    "parentFile" | "parentNamespace" | "aliasOf"
+> & {
+    type?: ASTType;
+};
+
+/**
  * Represents a usage of any existing ASTNode. Used to reduce node size.
  */
 export class ASTDefinition extends ASTCommon {
@@ -79,7 +90,7 @@ export class ASTDefinition extends ASTCommon {
 
     // In case of model definition that uses a generic template. Shall follow the same order as
     // templates definition.
-    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
+    templatesTranslation: ASTTemplateTranslation[];
 
     constructor(data: ASTDefinition & ASTCommon) {
         super(data);

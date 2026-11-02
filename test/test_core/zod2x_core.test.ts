@@ -93,6 +93,35 @@ describe("Zod2X core", () => {
         });
     });
 
+    describe("Layer ownership", () => {
+        test("Shared types belong to the lowest layer, regardless of the creation order", () => {
+            const shared = z.object({ street: z.string() });
+
+            @Domain({ namespace: "CORE_OWN_DOMAIN", file: "core_own_domain" })
+            class CoreOwnDomain extends Zod2XModel {
+                readonly Address = shared;
+            }
+
+            @Application({ namespace: "CORE_OWN_APP", file: "core_own_app" })
+            class CoreOwnApp extends Zod2XModel {
+                readonly Address = shared;
+            }
+
+            const coreOwnApp = new CoreOwnApp();
+            const coreOwnDomain = new CoreOwnDomain();
+
+            expect(coreOwnDomain.transpile(Zod2XTranspilers.Zod2Ts)).toContain(
+                "export interface Address {"
+            );
+            expect(coreOwnApp.transpile(Zod2XTranspilers.Zod2Ts)).toContain(
+                "export interface Address extends CORE_OWN_DOMAIN.Address {}"
+            );
+            expect(() => coreOwnApp.transpile(Zod2XTranspilers.Zod2Dart)).toThrow(
+                /Local types cannot share their name with imported types: Address/
+            );
+        });
+    });
+
     describe("Unsupported types", () => {
         const root = () => z.object({ a: z.null() }).zod2x("Root");
 

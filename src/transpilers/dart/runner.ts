@@ -125,24 +125,22 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             }
 
             // Detect cross-file nodes that are generic type instantiations:
-            // e.g. AdminUserEntity (parentFile=app, description="GenericUserEntity",
+            // e.g. AdminUserEntity (parentFile=app, genericOf="GenericUserEntity",
             // templatesTranslation=[{aliasOf:"AdminUserMetadata"}])
             // → store "AdminUserEntity" → "GenericUserEntity<AdminUserMetadata>" in
             //   _typedefToExtendedType so runAfter() can generate 2-arg fromJson helpers.
-            const n = node as any;
             if (
-                n.parentFile &&
-                typeof n.description === "string" &&
-                n.description.length > 0 &&
-                Array.isArray(n.templatesTranslation) &&
-                n.templatesTranslation.length > 0
+                node instanceof ASTObject &&
+                node.parentFile &&
+                node.genericOf &&
+                node.templatesTranslation.length > 0
             ) {
-                const typeArgs = (n.templatesTranslation as any[])
-                    .map((t) => t.aliasOf || t.name || "")
+                const typeArgs = node.templatesTranslation
+                    .map((t) => (t.type !== undefined ? this.getAttributeType(t.type) : t.aliasOf))
                     .filter(Boolean)
                     .join(", ");
-                if (typeArgs && n.name) {
-                    this._typedefToExtendedType.set(n.name, `${n.description}<${typeArgs}>`);
+                if (typeArgs && node.name) {
+                    this._typedefToExtendedType.set(node.name, `${node.genericOf}<${typeArgs}>`);
                 }
             }
         });
@@ -167,6 +165,11 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 importedNames.add(name);
             } else {
                 localNames.add(name);
+
+                if (node.parentFile !== undefined) {
+                    // Alias of an imported type.
+                    importedNames.add(node.aliasOf!);
+                }
             }
         });
 
@@ -270,31 +273,6 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
     }
 
     // ── Generics ────────────────────────────────────────────────────────────
-
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "<" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                ">"
-            );
-        }
-    }
 
     // ── Layered modeling ────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 import Case from "case";
 
-import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
-import { getZod2xMetadata, setZod2xMetadata } from "@/lib/zod2x_metadata";
+import { IZod2xLayerMetadata } from "@/lib/zod_ext";
+import { getZod2xMetadata, resolveZod2xMetadata, setZod2xMetadata } from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
@@ -9,6 +9,62 @@ enum EZod2XLayer {
     APPLICATION = 1,
     INFRASTRUCTURE = 2,
     PRESENTATION = 3,
+}
+
+/**
+ * Model property that defines a type of a layer.
+ */
+interface ITypeOwnership {
+    model: any;
+    prop: string;
+    name: string;
+    layer: IZod2xLayerMetadata;
+
+    /**
+     * Type name set with zod2x before the type was used by a layer, if any.
+     */
+    userTypeName?: string;
+}
+
+/**
+ * Model property where each type is defined. Used to move a type to a lower layer when it is used
+ * by a higher layer first.
+ */
+const ownerships = new WeakMap<ZodType, ITypeOwnership>();
+
+/**
+ * Creates a new type that extends an existing one, which is referenced.
+ */
+function createLayerAlias(original: ZodType, layer: IZod2xLayerMetadata, name: string): ZodType {
+    return setZod2xMetadata(ZodHelpers.cloneZod(original), {
+        typeName: name,
+        layer,
+        aliasOf: original,
+    });
+}
+
+/**
+ * Moves a type to a lower layer. The model of the higher layer that defined it uses an alias of
+ * the type instead, as it would have done if the lower layer had been created first.
+ */
+function transferOwnership(zodItem: ZodType, owner: ITypeOwnership) {
+    const previous = ownerships.get(zodItem);
+    const userTypeName = previous?.userTypeName;
+
+    setZod2xMetadata(zodItem, {
+        ...getZod2xMetadata(zodItem),
+        typeName: userTypeName || owner.name,
+        layer: owner.layer,
+    });
+    ownerships.set(zodItem, { ...owner, userTypeName });
+
+    if (
+        previous !== undefined &&
+        previous.model[previous.prop] === zodItem &&
+        previous.layer.externalInheritance !== false
+    ) {
+        previous.model[previous.prop] = createLayerAlias(zodItem, previous.layer, previous.name);
+    }
 }
 
 /**
@@ -63,45 +119,65 @@ export function Layer(opt: IZod2xLayerMetadata) {
                 super(...args);
                 (constructor as any).instance = this as unknown as T;
 
-                let metadata: IZod2xMetadata | undefined;
-
                 /**
                  * Set metadata for each transpilerable property of the class if not already set.
-                 * @param name
-                 * @param zodItem
-                 * @param opt
+                 * @param prop - Property name. Its pascal case is used as type name.
+                 * @param zodItem - Property schema.
+                 * @returns The schema to use as property value.
                  */
-                const setMetadata = (name: string, zodItem: ZodType, opt: IZod2xLayerMetadata) => {
-                    const inherited = getZod2xMetadata(zodItem);
+                const setMetadata = (prop: string, zodItem: ZodType): ZodType => {
+                    const name = Case.pascal(prop);
+                    const own = getZod2xMetadata(zodItem);
+                    const resolved = resolveZod2xMetadata(zodItem);
+                    const isDerivedType =
+                        own?.aliasOf !== undefined || own?.genericOf !== undefined;
 
-                    // Metadata is set independently because typeName could already exist if
-                    // zod2x was used before.
-                    const layer = inherited?.layer ?? opt;
-                    metadata = {
-                        ...(inherited ?? {}),
-                        typeName: inherited?.typeName || name,
-                        layer,
-                    };
-                    setZod2xMetadata(zodItem, metadata);
+                    if (!isDerivedType && resolved?.layer === undefined) {
+                        // First use of the type: it belongs to this layer. A type name set with
+                        // zod2x is kept.
+                        setZod2xMetadata(zodItem, {
+                            ...own,
+                            typeName: own?.typeName || name,
+                            layer: opt,
+                        });
+                        ownerships.set(zodItem, {
+                            model: this,
+                            prop,
+                            name,
+                            layer: opt,
+                            userTypeName: own?.typeName,
+                        });
+                        return zodItem;
+                    }
 
                     if (
+                        !isDerivedType &&
+                        resolved!.layer!.file !== opt.file &&
+                        resolved!.layer!.index > opt.index
+                    ) {
+                        // Type used before by a higher layer: it is moved to this layer, so the
+                        // result does not depend on the order in which models are created.
+                        transferOwnership(zodItem, { model: this, prop, name, layer: opt });
+                        return zodItem;
+                    }
+
+                    if (isDerivedType && resolved?.layer === undefined) {
+                        // Instance of a generic type that does not belong to any layer.
+                        setZod2xMetadata(zodItem, {
+                            ...own,
+                            layer: opt,
+                            ...(resolved?.typeName ? {} : { typeName: name }),
+                        });
+                    }
+
+                    const current = resolveZod2xMetadata(zodItem)!;
+                    if (
                         opt.externalInheritance !== false &&
-                        (layer.file !== opt.file || name !== metadata.typeName)
+                        (current.layer!.file !== opt.file || name !== current.typeName)
                     ) {
                         // Using an existing type. A new type is created that inherits from the
                         // original type.
-                        zodItem = setZod2xMetadata(ZodHelpers.cloneZod(zodItem), {
-                            parentLayer: layer,
-                            aliasOf: metadata.typeName,
-                            layer: opt,
-                            typeName: name,
-                            // Generics associated to parent, but related to current type.
-                            genericTypes:
-                                metadata.isGenericChild === false
-                                    ? metadata.genericTypes
-                                    : undefined,
-                            isGenericChild: true,
-                        });
+                        return createLayerAlias(zodItem, opt, name);
                     }
 
                     return zodItem;
@@ -115,7 +191,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         ZodHelpers.isTranspilerableZodType(item) ||
                         ZodHelpers.isTranspilerableAliasedZodType(item, opt.basicTypes === false)
                     ) {
-                        (this as any)[prop] = setMetadata(Case.pascal(prop), item, opt);
+                        (this as any)[prop] = setMetadata(prop, item);
                     } else if (ZodHelpers.isZodLazy(item)) {
                         lazyProperties.push(prop);
                     }
@@ -132,7 +208,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                             opt.basicTypes === false
                         )
                     ) {
-                        (this as any)[i] = setMetadata(Case.pascal(i), lazyItem, opt);
+                        (this as any)[i] = setMetadata(i, lazyItem);
                     }
                 });
             }

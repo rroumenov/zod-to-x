@@ -95,30 +95,7 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
         }
     }
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "[" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                "]"
-            );
-        }
-    }
+    protected readonly genericTemplatesBrackets: [string, string] = ["[", "]"];
 
     /**
      * Emits an alias/extension declaration early when a node references another layered type.

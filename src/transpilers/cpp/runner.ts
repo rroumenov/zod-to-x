@@ -110,31 +110,6 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
     }
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "<" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                ">"
-            );
-        }
-    }
-
     /**
      * Emits an alias/extension declaration early for layered references.
      * It keeps concrete template translations and falls back to declared templates (e.g. <T>)

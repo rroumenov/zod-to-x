@@ -1,0 +1,20 @@
+package models
+
+type Page[TCursor any, TContent any] struct {
+    Cursor TCursor `json:"cursor"`
+    Content TContent `json:"content"`
+    Total int64 `json:"total"`
+}
+
+type Item struct {
+    Id string `json:"id"`
+    Price float64 `json:"price"`
+}
+
+type PageOfItems struct {
+    Page[int64, Item]
+}
+
+type PageOfIds struct {
+    Page[string, []string]
+}

@@ -1,4 +1,4 @@
-import { ASTCommon, ASTType } from "./ast_common";
+import { ASTCommon, ASTTemplateTranslation, ASTType } from "./ast_common";
 
 /**
  * Handle ZodEnum
@@ -31,7 +31,10 @@ export class ASTObject extends ASTCommon {
 
     // In case of model definition that uses a generic template. Shall follow the same order as
     // templates definition.
-    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
+    templatesTranslation: ASTTemplateTranslation[];
+
+    // In case of generic type instance, the name of the generic type.
+    genericOf?: string;
 
     constructor(data: ASTObject & ASTCommon) {
         super(data);
@@ -40,6 +43,7 @@ export class ASTObject extends ASTCommon {
         this.properties = data.properties;
         this.templates = data.templates;
         this.templatesTranslation = data.templatesTranslation;
+        this.genericOf = data.genericOf;
     }
 }
 
