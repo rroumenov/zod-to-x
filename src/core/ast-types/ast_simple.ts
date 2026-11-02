@@ -4,6 +4,8 @@ import { ASTCommon, ASTDefinition } from "./ast_common";
  * Handle ZodString
  */
 export class ASTString extends ASTCommon {
+    static readonly kind = "ASTString";
+
     name?: string; // Only exists for type aliases.
     constraints?: {
         min?: number;
@@ -23,6 +25,8 @@ export class ASTString extends ASTCommon {
  * Handle ZodNumber and ZodBigInt
  */
 export class ASTNumber extends ASTCommon {
+    static readonly kind = "ASTNumber";
+
     name?: string; // Only exists for type aliases.
     constraints?: {
         min?: number;
@@ -42,6 +46,8 @@ export class ASTNumber extends ASTCommon {
  * Handle ZodLiteral
  */
 export class ASTLiteral extends ASTCommon {
+    static readonly kind = "ASTLiteral";
+
     name?: string; // Only exists for type aliases.
     value: string | number | boolean;
     parentEnum?: ASTDefinition;
@@ -61,6 +67,8 @@ export class ASTLiteral extends ASTCommon {
  * Handle ZodBoolean
  */
 export class ASTBoolean extends ASTCommon {
+    static readonly kind = "ASTBoolean";
+
     name?: string; // Only exists for type aliases.
 
     constructor(data: ASTBoolean & ASTCommon) {
@@ -74,6 +82,8 @@ export class ASTBoolean extends ASTCommon {
  * Handle ZodDate
  */
 export class ASTDate extends ASTCommon {
+    static readonly kind = "ASTDate";
+
     name?: string; // Only exists for type aliases.
 
     constructor(data: ASTDate & ASTCommon) {
@@ -87,6 +97,8 @@ export class ASTDate extends ASTCommon {
  * Handle ZodAny
  */
 export class ASTAny extends ASTCommon {
+    static readonly kind = "ASTAny";
+
     name?: string; // Only exists for type aliases.
 
     constructor(data: ASTAny & ASTCommon) {

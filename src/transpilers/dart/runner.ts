@@ -10,6 +10,8 @@ import {
     ASTNodes,
     ASTObject,
     ASTUnion,
+    NotTranspilerableTypeError,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 
@@ -97,6 +99,8 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         this._discriminatedUnionDelegateFromJson.clear();
         this._typedefToExtendedType.clear();
 
+        this._checkImportedNamesClash(transpilerQueue);
+
         transpilerQueue.nodes.forEach((node: ASTNode) => {
             if (node instanceof ASTUnion && node.discriminantKey) {
                 // Track the union name for @JsonKey emission
@@ -122,29 +126,61 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             }
 
             // Detect cross-file nodes that are generic type instantiations:
-            // e.g. AdminUserEntity (parentFile=app, description="GenericUserEntity",
+            // e.g. AdminUserEntity (parentFile=app, genericOf="GenericUserEntity",
             // templatesTranslation=[{aliasOf:"AdminUserMetadata"}])
             // → store "AdminUserEntity" → "GenericUserEntity<AdminUserMetadata>" in
             //   _typedefToExtendedType so runAfter() can generate 2-arg fromJson helpers.
-            const n = node as any;
             if (
-                n.parentFile &&
-                typeof n.description === "string" &&
-                n.description.length > 0 &&
-                Array.isArray(n.templatesTranslation) &&
-                n.templatesTranslation.length > 0
+                node instanceof ASTObject &&
+                node.parentFile &&
+                node.genericOf &&
+                node.templatesTranslation.length > 0
             ) {
-                const typeArgs = (n.templatesTranslation as any[])
-                    .map((t) => t.aliasOf || t.name || "")
+                const typeArgs = node.templatesTranslation
+                    .map((t) => (t.type !== undefined ? this.getAttributeType(t.type) : t.aliasOf))
                     .filter(Boolean)
                     .join(", ");
-                if (typeArgs && n.name) {
-                    this._typedefToExtendedType.set(n.name, `${n.description}<${typeArgs}>`);
+                if (typeArgs && node.name) {
+                    this._typedefToExtendedType.set(node.name, `${node.genericOf}<${typeArgs}>`);
                 }
             }
         });
 
         return super.transpile(transpilerQueue);
+    }
+
+    /**
+     * Dart imports are not prefixed, so a local type cannot share its name with an imported one.
+     */
+    private _checkImportedNamesClash(transpilerQueue: ASTNodes) {
+        const localNames = new Set<string>();
+        const importedNames = new Set<string>();
+
+        transpilerQueue.nodes.forEach((node: ASTNode) => {
+            const name = (node as any).name as string | undefined;
+            if (name === undefined) {
+                return;
+            }
+
+            if (node.parentFile !== undefined && node.aliasOf === undefined) {
+                importedNames.add(name);
+            } else {
+                localNames.add(name);
+
+                if (node.parentFile !== undefined) {
+                    // Alias of an imported type.
+                    importedNames.add(node.aliasOf!);
+                }
+            }
+        });
+
+        const clashes = [...localNames].filter((name) => importedNames.has(name));
+        if (clashes.length > 0) {
+            throw new NotTranspilerableTypeError(
+                `Dart imports are not prefixed. Local types cannot share their name with ` +
+                    `imported types: ${clashes.join(", ")}`
+            );
+        }
     }
 
     protected runBefore(): void {
@@ -239,69 +275,26 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
 
     // ── Generics ────────────────────────────────────────────────────────────
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "<" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                ">"
-            );
-        }
-    }
-
     // ── Layered modeling ────────────────────────────────────────────────────
 
     /**
-     * Emits an alias/extension declaration for cross-layer references.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias"): boolean {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         const isStruct =
             data instanceof ASTObject ||
             (data instanceof ASTIntersection && data.newObject !== undefined);
 
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || undefined;
 
-        const declaredTemplates =
-            !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
-                ? `<${[...data.templates].join(", ")}>`
-                : undefined;
-
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type: isStruct ? undefined : type,
-                    templates,
-                    declaredTemplates,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type: isStruct ? undefined : type,
-                isInternal: true,
-                templates,
-                declaredTemplates,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type: isStruct ? undefined : (type as "union" | "alias" | undefined),
+            templates: translatedTemplates || undefined,
+            declaredTemplates:
+                !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
+                    ? `<${[...data.templates].join(", ")}>`
+                    : undefined,
+        };
     }
 
     protected addExtendedType(
@@ -650,7 +643,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             // Primitives (String, int, double, bool, DateTime), collections (List, Map, Set,
             // Tuple), enums, and dynamic are all handled natively by json_serializable.
             const instanceType: string | undefined = (memberNode as any).instanceType;
-            const isClassLike = instanceType === "ASTObject";
+            const isClassLike = instanceType === ASTObject.kind;
 
             // Cross-file reference that is a class-like type: needs @JsonKey wrapper.
             const memberIsAlias = (memberNode as any).parentFile !== undefined && isClassLike;

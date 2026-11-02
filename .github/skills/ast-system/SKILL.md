@@ -69,7 +69,7 @@ ASTAliasedTypes = ASTString | ASTNumber | ASTBoolean | ASTLiteral | ASTDate | AS
 
 ## How `Zod2Ast.build()` Works
 
-1. Takes a named Zod schema (must have `_zod2x.typeName`)
+1. Takes a named Zod schema (must have a `typeName` in its zod2x metadata, see `getZod2xMetadata`)
 2. Recursively walks the schema tree
 3. Converts each Zod type to its AST equivalent
 4. Named sub-schemas become `ASTDefinition` references
@@ -102,8 +102,8 @@ Property types go through `getAttributeType()` which dispatches to the primitive
 
 1. `createGenericType("T")` → `z.promise(z.literal("T"))` marker
 2. `Zod2Ast.build()` recognizes the marker → creates `ASTGenericType { name: "T" }`
-3. Object with generics gets `templates: Set<string>` and `templatesTranslation: { name, instanceType }[]`
-4. Transpiler's `getGenericTemplatesTranslation()` renders `<T>` / `Generic[T]` / `template<typename T>`
+3. Object with generics gets `templates: Set<string>` and `templatesTranslation: { parentFile?, parentNamespace?, aliasOf?, type? }[]` (named templates by name, other templates by their AST in `type`)
+4. `Zod2X.getGenericTemplatesTranslation()` renders (brackets from `genericTemplatesBrackets`) `<T>` / `Generic[T]` / `template<typename T>`
 
 ### Discriminated Unions
 

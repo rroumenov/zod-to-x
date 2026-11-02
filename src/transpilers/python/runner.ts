@@ -3,12 +3,12 @@ import Case from "case";
 import {
     ASTAliasedTypes,
     ASTArray,
-    ASTDefinition,
     ASTEnum,
     ASTIntersection,
     ASTNode,
     ASTObject,
     ASTUnion,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 
@@ -201,37 +201,12 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         }
     }
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "[" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                "]"
-            );
-        }
-    }
+    protected readonly genericTemplatesBrackets: [string, string] = ["[", "]"];
 
     /**
-     * Emits an alias/extension declaration early for layered references.
-     * It keeps concrete template translations and falls back to declared templates (e.g. [T])
-     * for aliases of generic templates.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "alias" | "union" | "d-union") {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         // Determine if the aliased type is a class (ASTObject or ASTIntersection with newObject)
         const isClass =
             data instanceof ASTObject ||
@@ -242,32 +217,16 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
                 ? `[${[...data.templates].join(", ")}]`
                 : undefined;
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || declaredTemplatesFallback;
 
         if (!translatedTemplates && data instanceof ASTObject && data.templates.size > 0) {
             this._declareNewTypeVars(data.templates);
         }
 
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type,
-                    templates,
-                    isClass,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type,
-                isInternal: true,
-                templates,
-                isClass,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type,
+            templates: translatedTemplates || declaredTemplatesFallback,
+            isClass,
+        };
     }
 
     protected getAnyType = (): string => {

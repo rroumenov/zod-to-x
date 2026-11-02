@@ -61,8 +61,8 @@ Optional: **`libs.ts`** — Import/include definitions (Python, C++ use this).
 |---|---|
 | **Lifecycle** | `runBefore()`, `runAfter()` |
 | **Imports** | `addImportFromFile()`, `getTypeFromExternalNamespace()` |
-| **Generics** | `getGenericTemplatesTranslation()` |
-| **Layered** | `addExtendedType()` |
+| **Generics** | Optional: `genericTemplatesBrackets` (default `<`, `>`). `getGenericTemplatesTranslation()` is implemented in `Zod2X` |
+| **Layered** | `addExtendedType()`. Optional: `getExtendedTypeOptions()` (language options for `addExtendedType`). `checkExtendedTypeInclusion()` is implemented in `Zod2X` |
 | **Primitives** | `getStringType()`, `getBooleanType()`, `getNumberType()`, `getLiteralStringType()`, `getAnyType()`, `getDateType()` |
 | **Composites** | `getTupleType()`, `getSetType()`, `getMapType()`, `getRecordType()`, `getUnionType()`, `getIntersectionType()`, `getArrayType()` |
 | **Transpile** | `transpileEnum()`, `transpileStruct()`, `transpileUnion()`, `transpileIntersection()`, `transpileAliasedType()` |
@@ -85,7 +85,7 @@ Optional: **`libs.ts`** — Import/include definitions (Python, C++ use this).
 
 ### Metadata
 
-Metadata lives in `zodInstance._zod2x` with fields: `typeName`, `parentEnum`, `layer`, `aliasOf`, `parentLayer`, `genericTypes`, `isGenericChild`.
+Metadata is not injected into schemas: it lives in a `WeakMap` keyed by schema instance (`src/lib/zod2x_metadata.ts`), read with `getZod2xMetadata(schema)` and written with `setZod2xMetadata(schema, meta)`. Only source information is stored: `typeName`, `parentEnum`, `layer`, `aliasOf` (reference to the original schema of a layer alias) and `genericOf` (generic schema and template values set by `useGenericType`). Derived information (`parentLayer`, alias type name, `genericTypes`, `isGenericChild`, ...) is computed when needed by `resolveZod2xMetadata(schema)`, so it is always up to date. Schemas cloned by Zod without changing their definition (`.describe()`, `.meta()`, `.clone()`) inherit the metadata of their parent through `_zod.parent`, as a whole (it is not merged).
 
 ### ZodHelpers
 
@@ -153,7 +153,7 @@ When investigating or fixing a bug:
 
 1. **Determine the scope:** Is the fix in `src/core/` (affects all languages) or `src/transpilers/<lang>/` (language-specific)?
 2. **Core fixes propagate:** A change in `ast_node.ts`, `transpiler.ts`, or `zod_helpers.ts` can affect TypeScript, Python, C++ variants, Dart, and Go output. Test all affected languages and assess converters too.
-3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `checkExtendedTypeInclusion` are implemented independently in each runner.
+3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `getExtendedTypeOptions` and `_transpileMember` are implemented independently in each runner (`checkExtendedTypeInclusion` and `getGenericTemplatesTranslation` are shared in `Zod2X`).
 4. **New language = backfill issue tests:** When adding a new transpiler, review ALL existing issue test cases and add expected output files for the new language where the bug scenario applies.
 
 ## Common Pitfalls
@@ -161,7 +161,7 @@ When investigating or fixing a bug:
 1. **Forgetting to build** — `npm run build` before `npm test`, always
 2. **Metadata pollution** — Use `getSchemas()` factory in tests; never share schema instances
 3. **`z.lazy()` vs plain** — `z.discriminatedUnion` and `z.intersection` need plain `ZodObject`, use `useGenericType(obj, types, true)` with `skipLazy=true`
-4. **Cross-layer references** — The `@Layer` decorator clones schemas for cross-layer refs, setting `aliasOf` + `parentLayer`
+4. **Cross-layer references** — The `@Layer` decorator clones schemas for cross-layer refs, setting `aliasOf` to the original schema. A type used first by a higher layer is moved to the lowest layer that uses it, so the output does not depend on the order in which models are created
 5. **Decorator singleton** — Each decorated class is cached on `constructor.instance`; don't instantiate twice
 6. **err-* files** — Generated on test failure, gitignored, cleaned by `npm test`
 7. **Single-language issue tests** — Never test only one language. If a bug can manifest in multiple transpilers, cover all of them.
@@ -174,8 +174,8 @@ The Dart transpiler (`src/transpilers/dart/`) emits `json_annotation` + `json_se
 
 - **`@JsonSerializable(genericArgumentFactories: true)`** is emitted for generic classes; their `fromJson` takes extra `fromJsonT` function parameters.
 - **`@JsonKey(fromJson: fn, toJson: fn)`** is emitted for class-typed fields to prevent `json_serializable` from following typedef chains to transitively-imported types.
-- **`instanceType` string check** (not `instanceof`) is used to detect ASTObject vs ASTEnum for cross-file references, because cross-file refs are `ASTDefinition` nodes.
-- **Cross-file generic typedefs** (e.g. `AdminUserEntity = GenericUserEntity<AdminUserMetadata>`) are detected in the `transpile()` pre-scan: top-level nodes with `parentFile + description (base type name) + non-empty templatesTranslation` populate `_typedefToExtendedType` so `runAfter()` generates 2-arg factory helpers.
+- **`instanceType` check** (not `instanceof`) is used to detect ASTObject vs ASTEnum for cross-file references, because cross-file refs are `ASTDefinition` nodes. `instanceType` is the static `kind` of the AST class (e.g. `ASTObject.kind`, see `getASTKind`), never `constructor.name`, which is changed by minifiers.
+- **Cross-file generic typedefs** (e.g. `AdminUserEntity = GenericUserEntity<AdminUserMetadata>`) are detected in the `transpile()` pre-scan: top-level `ASTObject` nodes with `parentFile + genericOf (base generic type name) + non-empty templatesTranslation` populate `_typedefToExtendedType` so `runAfter()` generates 2-arg factory helpers.
 - **Discriminated unions** emit an abstract sealed class with a dispatcher function. Typedef aliases of disc unions delegate to the entity-level dispatcher via `_discriminatedUnionDelegateFromJson`.
 - **Dart test package** lives at `test/test_zod2dart/dart_test_pkg/`. The `test_dart.sh` script copies files, runs `dart run build_runner build`, then `dart analyze lib/`.
 - **Regenerate expected files** with `npx vite-node test_dev/generate_dart_expected.ts` after any runner change.

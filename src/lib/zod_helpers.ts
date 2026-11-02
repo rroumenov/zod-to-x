@@ -1,5 +1,6 @@
 import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
+import { resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
 import { Extended } from "./zod_ext";
 
 export type {
@@ -42,6 +43,24 @@ export enum ZodFirstPartyTypeKind {
     ZodNullable = "nullable",
     ZodDefault = "default",
     ZodPromise = "promise",
+    ZodUnknown = "unknown",
+    ZodPrefault = "prefault",
+    ZodCatch = "catch",
+    ZodReadonly = "readonly",
+    ZodNonOptional = "nonoptional",
+    ZodPipe = "pipe",
+    ZodTransform = "transform",
+    ZodNull = "null",
+    ZodUndefined = "undefined",
+    ZodVoid = "void",
+    ZodNever = "never",
+    ZodNaN = "nan",
+    ZodSymbol = "symbol",
+    ZodCustom = "custom",
+    ZodFunction = "function",
+    ZodFile = "file",
+    ZodTemplateLiteral = "template_literal",
+    ZodSuccess = "success",
 }
 
 /**
@@ -50,6 +69,65 @@ export enum ZodFirstPartyTypeKind {
 export class ZodHelpers {
     static isZodType(i: ZodType): boolean {
         return Object.values(ZodFirstPartyTypeKind).includes(i?.def?.type as ZodFirstPartyTypeKind);
+    }
+
+    static isZodUnknown(i: ZodType): i is z.ZodUnknown {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodUnknown;
+    }
+
+    static isZodNonOptional(i: ZodType): i is z.ZodNonOptional<any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodNonOptional;
+    }
+
+    static isZodPipe(i: ZodType): i is z.ZodPipe<any, any> {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodPipe;
+    }
+
+    static isZodTransform(i: ZodType): i is z.ZodTransform {
+        return i?.def?.type === ZodFirstPartyTypeKind.ZodTransform;
+    }
+
+    /**
+     * Wrappers that do not change the output type of their inner schema: `.default()`,
+     * `.prefault()`, `.catch()` and `.readonly()`.
+     */
+    static isZodTransparentWrapper(
+        i: ZodType
+    ): i is z.ZodDefault<any> | z.ZodPrefault<any> | z.ZodCatch<any> | z.ZodReadonly<any> {
+        const type = i?.def?.type;
+        return (
+            type === ZodFirstPartyTypeKind.ZodDefault ||
+            type === ZodFirstPartyTypeKind.ZodPrefault ||
+            type === ZodFirstPartyTypeKind.ZodCatch ||
+            type === ZodFirstPartyTypeKind.ZodReadonly
+        );
+    }
+
+    /**
+     * Returns the schema that represents the data model of a pipe. The output side is used
+     * (e.g. `z.string().pipe(z.coerce.number())` or codecs), unless it is a transformation whose
+     * output type cannot be known, in which case the input side is used.
+     */
+    static getPipeModelSchema(i: z.ZodPipe<any, any>): ZodType {
+        const out = i.def.out as ZodType;
+        return this.isZodTransform(out) ? (i.def.in as ZodType) : out;
+    }
+
+    /**
+     * Returns a short structural signature of a schema, used to tell apart two different schemas
+     * that share the same type name.
+     */
+    static getShallowSignature(i: ZodType, depth = 0): string {
+        const typeName = resolveZod2xMetadata(i)?.typeName;
+        if (typeName) {
+            return `#${typeName}`;
+        }
+
+        const def = i?.def as any;
+        const inner: ZodType | undefined = def?.innerType ?? def?.element;
+        return inner && depth < 5
+            ? `${def.type}<${this.getShallowSignature(inner, depth + 1)}>`
+            : `${def?.type}`;
     }
 
     static isZodAny(i: ZodType): i is z.ZodAny {
@@ -204,8 +282,12 @@ export class ZodHelpers {
         );
     }
 
+    /**
+     * Creates a new instance of the schema with the same definition. Zod metadata (description,
+     * ...) is inherited from the original schema.
+     */
     static cloneZod(i: ZodType) {
-        return i.meta({ ...(i.meta() || {}) });
+        return i.clone();
     }
 
     /**
@@ -251,8 +333,8 @@ export function createGenericType(name: string) {
 
 /**
  * Use generic types defined in a generic ZodObject by replacing them with the actual child types.
- * It preserves the zod2x metadata including the genericTypes array which will be moved to the
- * new type during layer modeling metadata assignment.
+ * The new type references the generic type and the child types used for each template, so its
+ * type name, layer and templates translation are resolved from them when transpiled.
  * @param genObj ZodObject with generic types.
  * @param childrens Record of child types to replace generics.
  * @returns The extended ZodObject with replaced generic types.
@@ -274,41 +356,37 @@ export function useGenericType(
 ): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
     const builder = () => {
         let extended = genObj;
+        const templates: [string, ZodType][] = [];
+
         // Zod 4's extend() doesn't copy meta() (unlike Zod 3 which spread _def).
-        // Capture it once so it can be restored after each extend call.
-        // The description (e.g. "GenericUserEntity") is used by transpilers to
-        // identify the base generic class for cross-layer type aliases.
-        const genObjMeta = genObj.meta();
+        // Capture it once so it can be restored after each extend call, keeping the
+        // description of the generic type.
+        // The id is not restored because it must be unique in Zod's global registry.
+        const { id: _id, ...genObjMeta } = genObj.meta() ?? {};
         for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
             if (ZodHelpers.isZod2XGeneric(property)) {
                 const childType = childrens[key];
                 if (!childType) {
                     throw new Error(
-                        `Missing child type for generic property ${key} in ${genObj._zod2x!.typeName}.`
+                        `Missing child type for generic property ${key} in ` +
+                            `${resolveZod2xMetadata(genObj)?.typeName}.`
                     );
                 }
-                const zod2xMeta = structuredClone(extended._zod2x);
                 extended = extended.extend({ [key]: childType });
-                if (genObjMeta && Object.keys(genObjMeta).length > 0) {
+                if (Object.keys(genObjMeta).length > 0) {
                     extended = extended.meta({ ...genObjMeta }) as ZodObject<any>;
                 }
-                extended._zod2x = zod2xMeta;
-                extended._zod2x!.isGenericChild = false;
-
-                if (!Array.isArray(extended._zod2x!.genericTypes)) {
-                    extended._zod2x!.genericTypes = [];
-                }
-
-                if (childType._zod2x !== undefined) {
-                    extended._zod2x!.genericTypes!.push({
-                        typeName: childType._zod2x.typeName,
-                        layer: childType._zod2x.layer!,
-                    });
-                }
+                templates.push([key, childType]);
             }
         }
+
+        if (templates.length > 0) {
+            // Type name and layer are taken from the generic type when resolved.
+            setZod2xMetadata(extended, { genericOf: { generic: genObj, templates } });
+        }
+
         return extended;
     };
 
-    return skipLazy ? builder() : z.lazy(builder);
+    return skipLazy ? builder() : Extended.getZ().lazy(builder);
 }

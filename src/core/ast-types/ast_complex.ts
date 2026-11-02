@@ -1,9 +1,11 @@
-import { ASTCommon, ASTType } from "./ast_common";
+import { ASTCommon, ASTTemplateTranslation, ASTType } from "./ast_common";
 
 /**
  * Handle ZodEnum
  */
 export class ASTEnum extends ASTCommon {
+    static readonly kind = "ASTEnum";
+
     name: string;
     values: [string, string | number][];
 
@@ -25,13 +27,18 @@ export class ASTEnum extends ASTCommon {
  * Handle ZodObject
  */
 export class ASTObject extends ASTCommon {
+    static readonly kind = "ASTObject";
+
     name: string;
     properties: Record<string, ASTType>;
     templates: Set<string>; // In case of generic template definition. Ex: "T", "K", "Data", ...
 
     // In case of model definition that uses a generic template. Shall follow the same order as
     // templates definition.
-    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
+    templatesTranslation: ASTTemplateTranslation[];
+
+    // In case of generic type instance, the name of the generic type.
+    genericOf?: string;
 
     constructor(data: ASTObject & ASTCommon) {
         super(data);
@@ -40,6 +47,7 @@ export class ASTObject extends ASTCommon {
         this.properties = data.properties;
         this.templates = data.templates;
         this.templatesTranslation = data.templatesTranslation;
+        this.genericOf = data.genericOf;
     }
 }
 
@@ -47,6 +55,8 @@ export class ASTObject extends ASTCommon {
  * Handle ZodUnion and ZodDiscriminatedUnion
  */
 export class ASTUnion extends ASTCommon {
+    static readonly kind = "ASTUnion";
+
     name: string;
     options: ASTType[];
     areAllObjects: boolean;
@@ -73,6 +83,8 @@ export class ASTUnion extends ASTCommon {
  * Handle ZodIntersection
  */
 export class ASTIntersection extends ASTCommon {
+    static readonly kind = "ASTIntersection";
+
     name: string;
     left: ASTType;
     right: ASTType;
@@ -99,6 +111,8 @@ export class ASTIntersection extends ASTCommon {
  * Handle ZodRecord and ZodMap
  */
 export class ASTMap extends ASTCommon {
+    static readonly kind = "ASTMap";
+
     name?: string; // Only exists for type aliases.
     key: ASTType;
     value: ASTType;
@@ -118,6 +132,8 @@ export class ASTMap extends ASTCommon {
  * Handle ZodSet
  */
 export class ASTSet extends ASTCommon {
+    static readonly kind = "ASTSet";
+
     name?: string; // Only exists for type aliases.
     value: ASTType;
 
@@ -133,6 +149,8 @@ export class ASTSet extends ASTCommon {
  * Handle ZodTuple
  */
 export class ASTTuple extends ASTCommon {
+    static readonly kind = "ASTTuple";
+
     name?: string; // Only exists for type aliases.
     items: ASTType[];
 
@@ -148,6 +166,8 @@ export class ASTTuple extends ASTCommon {
  * Handle ZodArray. Only used for type aliases.
  */
 export class ASTArray extends ASTCommon {
+    static readonly kind = "ASTArray";
+
     name: string;
     item: ASTType;
 
