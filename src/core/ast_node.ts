@@ -21,6 +21,7 @@ import {
     ASTTuple,
     ASTType,
     ASTUnion,
+    getASTKind,
 } from "@/core";
 import { IZod2xResolvedMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
@@ -349,7 +350,7 @@ export class Zod2Ast {
     ): ASTDefinition {
         return new ASTDefinition({
             name: node.name!,
-            instanceType: node.constructor.name,
+            instanceType: getASTKind(node)!,
             parentFile: node.parentFile,
             parentNamespace: node.parentNamespace,
             aliasOf: node.aliasOf,
@@ -440,8 +441,8 @@ export class Zod2Ast {
                             Object.create(Object.getPrototypeOf(acc[key])),
                             acc[key]
                         );
-                        typeA = acc[key].constructor.name;
-                        typeB = i.properties[key].constructor.name;
+                        typeA = getASTKind(acc[key]);
+                        typeB = getASTKind(i.properties[key]);
 
                         if (typeA !== typeB) {
                             this.warnings.push(

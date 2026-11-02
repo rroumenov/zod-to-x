@@ -9,6 +9,7 @@ import {
     ASTNode,
     ASTObject,
     ASTUnion,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 import { INT32_RANGES } from "@/utils/number_limits";
@@ -98,42 +99,24 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
     protected readonly genericTemplatesBrackets: [string, string] = ["[", "]"];
 
     /**
-     * Emits an alias/extension declaration early when a node references another layered type.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias"): boolean {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         const isStruct =
             data instanceof ASTObject ||
             (data instanceof ASTIntersection && data.newObject !== undefined);
 
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || undefined;
 
-        // For declared-template fallback on the declared (definition) side
-        const declaredTemplates =
-            !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
-                ? `[${[...data.templates].map((t) => `${t} any`).join(", ")}]`
-                : undefined;
-
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type: isStruct ? undefined : type,
-                    templates,
-                    declaredTemplates,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type: isStruct ? undefined : type,
-                isInternal: true,
-                templates,
-                declaredTemplates,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type: isStruct ? undefined : (type as "union" | "alias" | undefined),
+            templates: translatedTemplates || undefined,
+            // For declared-template fallback on the declared (definition) side
+            declaredTemplates:
+                !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
+                    ? `[${[...data.templates].map((t) => `${t} any`).join(", ")}]`
+                    : undefined,
+        };
     }
 
     // ── Primitive type methods ──────────────────────────────────────────────

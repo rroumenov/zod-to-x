@@ -1,6 +1,14 @@
 import { z } from "zod/v4";
 import { describe, expect, test } from "vitest";
-import { Application, Domain, extendZod, Zod2Ast, Zod2XModel, Zod2XTranspilers } from "../../dist";
+import {
+    Application,
+    Domain,
+    extendZod,
+    Zod2Ast,
+    Zod2XModel,
+    Zod2XTranspilers,
+    Zod2XTypes,
+} from "../../dist";
 extendZod(z);
 
 const buildTs = (schema: any, strict = true) =>
@@ -119,6 +127,56 @@ describe("Zod2X core", () => {
             expect(() => coreOwnApp.transpile(Zod2XTranspilers.Zod2Dart)).toThrow(
                 /Local types cannot share their name with imported types: Address/
             );
+        });
+    });
+
+    describe("Minification", () => {
+        test("Output does not depend on the class names of AST nodes", () => {
+            @Domain({ namespace: "CORE_MIN_DOMAIN", file: "core_min_domain" })
+            class CoreMinDomain extends Zod2XModel {
+                readonly Address = z.object({ street: z.string() });
+            }
+            const coreMinDomain = new CoreMinDomain();
+
+            @Application({ namespace: "CORE_MIN_APP", file: "core_min_app" })
+            class CoreMinApp extends Zod2XModel {
+                readonly ShippingAddress = coreMinDomain.Address;
+                readonly Order = z.object({
+                    destination: z.lazy(() => this.ShippingAddress),
+                });
+            }
+            const coreMinApp: any = new CoreMinApp();
+
+            // AST is built again on each call (models cache it), so it is affected by the class
+            // names of AST nodes.
+            const transpile = () =>
+                [Zod2XTranspilers.Zod2Dart, Zod2XTranspilers.Zod2Ts].map((Transpiler) =>
+                    new Transpiler().transpile(
+                        new Zod2Ast({ layer: coreMinApp.layerMetadata }).build(
+                            z
+                                .object({
+                                    shippingAddress: coreMinApp.ShippingAddress,
+                                    order: coreMinApp.Order,
+                                })
+                                .zod2x("CoreMinApp")
+                        )
+                    )
+                );
+            const expected = transpile();
+            expect(expected[0]).toContain("@JsonKey(fromJson: _shippingAddressFromJson");
+
+            // Simulate a minifier, which renames classes.
+            const classes = Object.values(Zod2XTypes).filter(
+                (i): i is Function => typeof i === "function" && /^AST[A-Z]/.test(i.name)
+            );
+            const names = classes.map((i) => i.name);
+            classes.forEach((i) => Object.defineProperty(i, "name", { value: "e" }));
+
+            try {
+                expect(transpile()).toEqual(expected);
+            } finally {
+                classes.forEach((i, j) => Object.defineProperty(i, "name", { value: names[j] }));
+            }
         });
     });
 

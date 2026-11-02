@@ -8,6 +8,7 @@ import {
     ASTNode,
     ASTObject,
     ASTUnion,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 
@@ -72,39 +73,20 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
     }
 
     /**
-     * Emits an alias/extension declaration early when a node references another layered type.
-     * It preserves concrete template translations and falls back to declared templates (e.g. <T>)
-     * for aliases of generic templates.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "alias" | "union" | "d-union") {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         const declaredTemplatesFallback =
             data instanceof ASTObject && data.templates.size > 0
                 ? `<${[...data.templates].join(", ")}>`
                 : undefined;
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || declaredTemplatesFallback;
-        const declaredTemplates = translatedTemplates ? undefined : declaredTemplatesFallback;
 
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type,
-                    templates,
-                    declaredTemplates,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type,
-                isInternal: true,
-                templates,
-                declaredTemplates,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type,
+            templates: translatedTemplates || declaredTemplatesFallback,
+            declaredTemplates: translatedTemplates ? undefined : declaredTemplatesFallback,
+        };
     }
 
     protected getAnyType = (): string => "any";

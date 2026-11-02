@@ -61,8 +61,8 @@ Optional: **`libs.ts`** — Import/include definitions (Python, C++ use this).
 |---|---|
 | **Lifecycle** | `runBefore()`, `runAfter()` |
 | **Imports** | `addImportFromFile()`, `getTypeFromExternalNamespace()` |
-| **Generics** | `getGenericTemplatesTranslation()` |
-| **Layered** | `addExtendedType()` |
+| **Generics** | Optional: `genericTemplatesBrackets` (default `<`, `>`). `getGenericTemplatesTranslation()` is implemented in `Zod2X` |
+| **Layered** | `addExtendedType()`. Optional: `getExtendedTypeOptions()` (language options for `addExtendedType`). `checkExtendedTypeInclusion()` is implemented in `Zod2X` |
 | **Primitives** | `getStringType()`, `getBooleanType()`, `getNumberType()`, `getLiteralStringType()`, `getAnyType()`, `getDateType()` |
 | **Composites** | `getTupleType()`, `getSetType()`, `getMapType()`, `getRecordType()`, `getUnionType()`, `getIntersectionType()`, `getArrayType()` |
 | **Transpile** | `transpileEnum()`, `transpileStruct()`, `transpileUnion()`, `transpileIntersection()`, `transpileAliasedType()` |
@@ -153,7 +153,7 @@ When investigating or fixing a bug:
 
 1. **Determine the scope:** Is the fix in `src/core/` (affects all languages) or `src/transpilers/<lang>/` (language-specific)?
 2. **Core fixes propagate:** A change in `ast_node.ts`, `transpiler.ts`, or `zod_helpers.ts` can affect TypeScript, Python, C++ variants, Dart, and Go output. Test all affected languages and assess converters too.
-3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `checkExtendedTypeInclusion` are implemented independently in each runner.
+3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `getExtendedTypeOptions` and `_transpileMember` are implemented independently in each runner (`checkExtendedTypeInclusion` and `getGenericTemplatesTranslation` are shared in `Zod2X`).
 4. **New language = backfill issue tests:** When adding a new transpiler, review ALL existing issue test cases and add expected output files for the new language where the bug scenario applies.
 
 ## Common Pitfalls
@@ -174,7 +174,7 @@ The Dart transpiler (`src/transpilers/dart/`) emits `json_annotation` + `json_se
 
 - **`@JsonSerializable(genericArgumentFactories: true)`** is emitted for generic classes; their `fromJson` takes extra `fromJsonT` function parameters.
 - **`@JsonKey(fromJson: fn, toJson: fn)`** is emitted for class-typed fields to prevent `json_serializable` from following typedef chains to transitively-imported types.
-- **`instanceType` string check** (not `instanceof`) is used to detect ASTObject vs ASTEnum for cross-file references, because cross-file refs are `ASTDefinition` nodes.
+- **`instanceType` check** (not `instanceof`) is used to detect ASTObject vs ASTEnum for cross-file references, because cross-file refs are `ASTDefinition` nodes. `instanceType` is the static `kind` of the AST class (e.g. `ASTObject.kind`, see `getASTKind`), never `constructor.name`, which is changed by minifiers.
 - **Cross-file generic typedefs** (e.g. `AdminUserEntity = GenericUserEntity<AdminUserMetadata>`) are detected in the `transpile()` pre-scan: top-level `ASTObject` nodes with `parentFile + genericOf (base generic type name) + non-empty templatesTranslation` populate `_typedefToExtendedType` so `runAfter()` generates 2-arg factory helpers.
 - **Discriminated unions** emit an abstract sealed class with a dispatcher function. Typedef aliases of disc unions delegate to the entity-level dispatcher via `_discriminatedUnionDelegateFromJson`.
 - **Dart test package** lives at `test/test_zod2dart/dart_test_pkg/`. The `test_dart.sh` script copies files, runs `dart run build_runner build`, then `dart analyze lib/`.

@@ -84,7 +84,13 @@ export type ASTTemplateTranslation = Pick<
  * Represents a usage of any existing ASTNode. Used to reduce node size.
  */
 export class ASTDefinition extends ASTCommon {
+    static readonly kind = "ASTDefinition";
+
     name: string;
+
+    /**
+     * Kind of the referenced AST node (e.g. "ASTObject"). See `getASTKind`.
+     */
     instanceType: string;
     constraints?: Record<string, any>;
 
@@ -104,12 +110,22 @@ export class ASTDefinition extends ASTCommon {
 
 export type ASTType = ASTNode | ASTDefinition;
 
+/**
+ * Returns the kind of an AST node, which is the name of its class (e.g. "ASTObject"). Unlike
+ * `constructor.name`, it is not modified by minifiers.
+ */
+export function getASTKind(node: unknown): string | undefined {
+    return (node as { constructor?: { kind?: string } })?.constructor?.kind;
+}
+
 export type ASTNodes = {
     nodes: Map<string, ASTNode>;
     warnings: string[];
 };
 
 export class ASTGenericType {
+    static readonly kind = "ASTGenericType";
+
     name: string;
 
     constructor(name: string) {

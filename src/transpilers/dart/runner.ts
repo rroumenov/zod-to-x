@@ -11,6 +11,7 @@ import {
     ASTObject,
     ASTUnion,
     NotTranspilerableTypeError,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 
@@ -277,41 +278,23 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
     // ── Layered modeling ────────────────────────────────────────────────────
 
     /**
-     * Emits an alias/extension declaration for cross-layer references.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias"): boolean {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         const isStruct =
             data instanceof ASTObject ||
             (data instanceof ASTIntersection && data.newObject !== undefined);
 
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || undefined;
 
-        const declaredTemplates =
-            !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
-                ? `<${[...data.templates].join(", ")}>`
-                : undefined;
-
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type: isStruct ? undefined : type,
-                    templates,
-                    declaredTemplates,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type: isStruct ? undefined : type,
-                isInternal: true,
-                templates,
-                declaredTemplates,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type: isStruct ? undefined : (type as "union" | "alias" | undefined),
+            templates: translatedTemplates || undefined,
+            declaredTemplates:
+                !translatedTemplates && data instanceof ASTObject && data.templates.size > 0
+                    ? `<${[...data.templates].join(", ")}>`
+                    : undefined,
+        };
     }
 
     protected addExtendedType(
@@ -660,7 +643,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             // Primitives (String, int, double, bool, DateTime), collections (List, Map, Set,
             // Tuple), enums, and dynamic are all handled natively by json_serializable.
             const instanceType: string | undefined = (memberNode as any).instanceType;
-            const isClassLike = instanceType === "ASTObject";
+            const isClassLike = instanceType === ASTObject.kind;
 
             // Cross-file reference that is a class-like type: needs @JsonKey wrapper.
             const memberIsAlias = (memberNode as any).parentFile !== undefined && isClassLike;

@@ -56,7 +56,7 @@ For property types, `getAttributeType()` is the central dispatcher. Add logging 
 
 ```typescript
 // Temporary debug in transpiler.ts getAttributeType()
-console.log(`getAttributeType: ${token.constructor.name}`, token);
+console.log(`getAttributeType: ${getASTKind(token)}`, token);
 ```
 
 ### 4. Common Issues and Fixes
@@ -141,10 +141,10 @@ After finding the root cause, **always** perform this analysis:
 1. **Core fix (`src/core/`, `src/lib/`, `src/layered-modeling/`):** Assess all transpilers: TypeScript, Python, C++ variants, Dart, and Go, plus applicable converters. Create regression tests for every affected output.
 
 2. **Transpiler-specific fix (`src/transpilers/<lang>/`):** Check if the same method in other transpilers has the same flaw. Common patterns that are implemented independently in each runner:
-   - `checkExtendedTypeInclusion()` — cross-layer alias handling
+   - `getExtendedTypeOptions()` — language options for cross-layer aliases (the alias handling itself, `checkExtendedTypeInclusion()`, is shared in `Zod2X`)
    - `_transpileMember()` — property rendering with optional/nullable
    - `transpileStruct()` / `transpileEnum()` / `transpileUnion()` — type declaration rendering
-   - `getGenericTemplatesTranslation()` — generic parameter syntax
+   - `genericTemplatesBrackets` — generic parameter brackets (`getGenericTemplatesTranslation()` is shared in `Zod2X`)
 
 3. **Document the scope** in your fix: which transpilers were affected and which were checked.
 
