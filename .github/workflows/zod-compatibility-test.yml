@@ -20,10 +20,10 @@ jobs:
         zod-version: ['3.22.3', '3.23.0', '3.24.0', '3.25.0', '^3.25.76']
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install Zod @ ${{ matrix.zod-version }}
         run: npm install zod@${{ matrix.zod-version }}
@@ -45,10 +45,10 @@ jobs:
         zod-version: ['4.0.0', '4.1.12', '^4.1.12']
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install Zod @ ${{ matrix.zod-version }}
         run: npm install zod@${{ matrix.zod-version }}
