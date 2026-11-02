@@ -132,24 +132,27 @@ The facade `test_noid_issues.test.ts` imports and calls all `runCaseNSuite()`.
 - `createGenericTestSuite(name, model, transpiler, basePath)` — generates struct + class test pair
 - `getSchemas()` — factory returning fresh Zod schemas (avoids metadata pollution)
 
-## Skills & Prompts
+## Skills & Agents
 
-See `.github/skills/` for detailed guidance on:
+Use repository skills for reusable task workflows and domain guidance:
 - [Adding a new transpiler](.github/skills/add-transpiler/SKILL.md)
 - [Adding an issue test](.github/skills/add-issue-test/SKILL.md)
 - [Debugging transpilation](.github/skills/transpiler-debugging/SKILL.md)
 - [Understanding the AST system](.github/skills/ast-system/SKILL.md)
 - [Layered modeling](.github/skills/layered-modeling/SKILL.md)
 - [Test patterns](.github/skills/test-patterns/SKILL.md)
+- [Adding Zod type support](.github/skills/add-zod-type/SKILL.md)
+- [Type mapping analysis](.github/skills/type-mapping/SKILL.md) (report-only; temporary execution allowed)
+- [Verifying changes](.github/skills/verify-change/SKILL.md) (full or build/test-only)
 
-See `.github/prompts/` for reusable task prompts.
+The existing [analyzer](.github/agents/analyzer.md) and [developer](.github/agents/developer.md) agents provide optional planning and implementation roles/tool boundaries. Skills do not require delegation to these agents and do not enforce tool restrictions themselves.
 
 ## Cross-Transpiler Impact Analysis
 
 When investigating or fixing a bug:
 
 1. **Determine the scope:** Is the fix in `src/core/` (affects all languages) or `src/transpilers/<lang>/` (language-specific)?
-2. **Core fixes propagate:** A change in `ast_node.ts`, `transpiler.ts`, or `zod_helpers.ts` can affect TypeScript, Python, AND C++ output. Test all.
+2. **Core fixes propagate:** A change in `ast_node.ts`, `transpiler.ts`, or `zod_helpers.ts` can affect TypeScript, Python, C++ variants, Dart, and Go output. Test all affected languages and assess converters too.
 3. **Transpiler-specific fixes may repeat:** If a transpiler has a bug in `transpileStruct()` or `_transpileMember()`, check if the equivalent method in other transpilers has the same flaw. Patterns like `checkExtendedTypeInclusion` are implemented independently in each runner.
 4. **New language = backfill issue tests:** When adding a new transpiler, review ALL existing issue test cases and add expected output files for the new language where the bug scenario applies.
 
