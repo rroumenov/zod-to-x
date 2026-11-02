@@ -1,6 +1,7 @@
 import Case from "case";
 
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
+import { getZod2xMetadata, setZod2xMetadata } from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
@@ -71,33 +72,26 @@ export function Layer(opt: IZod2xLayerMetadata) {
                  * @param opt
                  */
                 const setMetadata = (name: string, zodItem: ZodType, opt: IZod2xLayerMetadata) => {
-                    metadata = zodItem["_zod2x"];
+                    const inherited = getZod2xMetadata(zodItem);
 
-                    if (metadata === undefined) {
-                        metadata = {
-                            typeName: name,
-                        };
-
-                        zodItem["_zod2x"] = metadata;
-                    } else if (!metadata.typeName) {
-                        metadata.typeName = name;
-                    }
-
-                    if (metadata.layer === undefined) {
-                        // Metadata is set independently because typeName could already exist if
-                        // zod2x was used before.
-                        metadata.layer = opt;
-                    }
+                    // Metadata is set independently because typeName could already exist if
+                    // zod2x was used before.
+                    const layer = inherited?.layer ?? opt;
+                    metadata = {
+                        ...(inherited ?? {}),
+                        typeName: inherited?.typeName || name,
+                        layer,
+                    };
+                    setZod2xMetadata(zodItem, metadata);
 
                     if (
                         opt.externalInheritance !== false &&
-                        (metadata.layer.file !== opt.file || name !== metadata.typeName)
+                        (layer.file !== opt.file || name !== metadata.typeName)
                     ) {
                         // Using an existing type. A new type is created that inherits from the
                         // original type.
-                        zodItem = ZodHelpers.cloneZod(zodItem);
-                        zodItem._zod2x = {
-                            parentLayer: metadata.layer,
+                        zodItem = setZod2xMetadata(ZodHelpers.cloneZod(zodItem), {
+                            parentLayer: layer,
                             aliasOf: metadata.typeName,
                             layer: opt,
                             typeName: name,
@@ -107,7 +101,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                                     ? metadata.genericTypes
                                     : undefined,
                             isGenericChild: true,
-                        };
+                        });
                     }
 
                     return zodItem;

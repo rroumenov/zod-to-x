@@ -63,7 +63,7 @@ console.log(`getAttributeType: ${token.constructor.name}`, token);
 
 #### Wrong output name
 - Check `.zod2x("Name")` is called on the schema
-- Check `_zod2x.typeName` is set in the AST node
+- Check `getZod2xMetadata(schema)?.typeName` is set for the schema
 
 #### Missing import
 - Check `parentFile` and `parentNamespace` are set on the AST node

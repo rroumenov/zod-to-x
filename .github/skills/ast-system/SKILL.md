@@ -69,7 +69,7 @@ ASTAliasedTypes = ASTString | ASTNumber | ASTBoolean | ASTLiteral | ASTDate | AS
 
 ## How `Zod2Ast.build()` Works
 
-1. Takes a named Zod schema (must have `_zod2x.typeName`)
+1. Takes a named Zod schema (must have a `typeName` in its zod2x metadata, see `getZod2xMetadata`)
 2. Recursively walks the schema tree
 3. Converts each Zod type to its AST equivalent
 4. Named sub-schemas become `ASTDefinition` references

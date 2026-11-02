@@ -10,7 +10,41 @@ describe("Zod2X core", () => {
     describe("zod2x method", () => {
         test("Key/value overload sets metadata of schemas without previous metadata", () => {
             const schema = (z.object({ a: z.string() }) as any).zod2x("typeName", "Item");
-            expect(schema._zod2x.typeName).toBe("Item");
+            expect(buildTs(z.object({ item: schema }).zod2x("Root"))).toContain(
+                "export interface Item {"
+            );
+        });
+
+        test("Type name is kept by schemas cloned with describe or meta", () => {
+            const role = z.enum(["Admin", "User"]).zod2x("Role").describe("User role");
+            const user = z.object({ role }).zod2x("User").meta({ description: "User data" });
+
+            const output = buildTs(z.object({ user }).zod2x("Root"));
+            expect(output).toContain("export enum Role {");
+            expect(output).toContain("export interface User {");
+        });
+
+        test("Schemas with a Zod id can be named", () => {
+            const item = z.object({ a: z.string() }).meta({ id: "CoreItemWithId" });
+            expect(() => item.zod2x("Item")).not.toThrow();
+            expect(() => item.zod2x("OtherItem")).not.toThrow();
+        });
+
+        test("Literal parent enum can be set using an options object", () => {
+            const kind = z.enum(["A", "B"]).zod2x("Kind");
+            const variantA = z
+                .object({ kind: z.literal("A").zod2x({ parentEnum: kind }), a: z.string() })
+                .zod2x("VariantA");
+            const variantB = z
+                .object({ kind: z.literal("B").zod2x(kind), b: z.number() })
+                .zod2x("VariantB");
+            const root = z
+                .object({ item: z.discriminatedUnion("kind", [variantA, variantB]).zod2x("Item") })
+                .zod2x("Root");
+
+            const output = buildTs(root);
+            expect(output).toContain("kind: Kind.A;");
+            expect(output).toContain("kind: Kind.B;");
         });
     });
 

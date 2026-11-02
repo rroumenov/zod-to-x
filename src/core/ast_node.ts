@@ -21,6 +21,7 @@ import {
     ASTType,
     ASTUnion,
 } from "@/core";
+import { getZod2xMetadata } from "@/lib/zod2x_metadata";
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 import {
     ZodArray,
@@ -159,7 +160,10 @@ export class Zod2Ast {
             return true;
         }
 
-        if (Array.isArray(a._zod2x?.genericTypes) || Array.isArray(b._zod2x?.genericTypes)) {
+        if (
+            Array.isArray(getZod2xMetadata(a)?.genericTypes) ||
+            Array.isArray(getZod2xMetadata(b)?.genericTypes)
+        ) {
             return true;
         }
 
@@ -503,7 +507,7 @@ export class Zod2Ast {
      * affected type properties.
      */
     private _getNames(schema: ZodType) {
-        const name = schema._zod2x?.typeName;
+        const name = getZod2xMetadata(schema)?.typeName;
 
         if (!name) {
             let itemProperties: string[] = ["Unknown type"];
@@ -512,14 +516,14 @@ export class Zod2Ast {
                 itemProperties = Object.keys(schema.def.shape);
             } else if (ZodHelpers.isZodAnyUnionType(schema)) {
                 itemProperties = schema.def.options.map((i) => {
-                    return (i as ZodType)._zod2x?.typeName || (i as ZodType).def.type;
+                    return getZod2xMetadata(i as ZodType)?.typeName || (i as ZodType).def.type;
                 });
             } else if (ZodHelpers.isZodIntersection(schema)) {
                 const left = schema.def.left as ZodType;
                 const right = schema.def.right as ZodType;
                 itemProperties = [
-                    left._zod2x?.typeName || left.def.type,
-                    right._zod2x?.typeName || right.def.type,
+                    getZod2xMetadata(left)?.typeName || left.def.type,
+                    getZod2xMetadata(right)?.typeName || right.def.type,
                 ];
             } else if (ZodHelpers.isZodEnum(schema)) {
                 itemProperties = this._getEnumValues(schema).map((i) => i[0]);
@@ -534,7 +538,7 @@ export class Zod2Ast {
 
         return {
             name,
-            ...this._getTranspilerableFile(name, schema._zod2x),
+            ...this._getTranspilerableFile(name, getZod2xMetadata(schema)),
         };
     }
 
@@ -817,7 +821,7 @@ export class Zod2Ast {
     }
 
     private _getAliasAst(schema: ZodType, item: ASTAliasedTypes): ASTDefinition | ASTAliasedTypes {
-        if (schema._zod2x?.typeName === undefined || this.opt.skipBasicTypes === true) {
+        if (getZod2xMetadata(schema)?.typeName === undefined || this.opt.skipBasicTypes === true) {
             return item;
         }
 
@@ -903,7 +907,7 @@ export class Zod2Ast {
                 ? ++subSchema.arrayDimension!
                 : 1;
 
-            if (isParentArray && schema._zod2x?.typeName) {
+            if (isParentArray && getZod2xMetadata(schema)?.typeName) {
                 return this._getArrayAst(schema, subSchema);
             } else {
                 return subSchema;
@@ -921,11 +925,11 @@ export class Zod2Ast {
             let parentEnumKey: string | undefined = undefined;
 
             // TODO: Support multiple values
-            if (schema._zod2x?.parentEnum) {
-                parentEnumKey = this._getEnumValues(schema._zod2x?.parentEnum as ZodEnum).find(
-                    (i) => i[1] === schema.def.values.at(0)
-                )?.[0];
-                parentEnum = this._zodToAST(schema._zod2x?.parentEnum as ZodEnum, {
+            if (getZod2xMetadata(schema)?.parentEnum) {
+                parentEnumKey = this._getEnumValues(
+                    getZod2xMetadata(schema)?.parentEnum as ZodEnum
+                ).find((i) => i[1] === schema.def.values.at(0))?.[0];
+                parentEnum = this._zodToAST(getZod2xMetadata(schema)?.parentEnum as ZodEnum, {
                     isInjectedEnum: true,
                 }) as ASTDefinition;
             }

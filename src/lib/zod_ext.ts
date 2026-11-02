@@ -1,5 +1,7 @@
-import { core, z, ZodEnum } from "zod/v4";
+import { core, z, ZodEnum, ZodType } from "zod/v4";
 import { util } from "zod/v4/core";
+
+import { getZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
 
 export interface IZod2xLayerMetadata {
     /**
@@ -120,10 +122,6 @@ export interface IZod2xMetadata {
 }
 
 declare module "zod/v4" {
-    interface ZodType {
-        _zod2x?: IZod2xMetadata;
-    }
-
     interface ZodObject<in Shape, Config> {
         /**
          * Creates a new Zod object with the specified `typeName` metadata property.
@@ -315,14 +313,18 @@ function getZod2XConstructor() {
         value?: IZod2xMetadata[K]
     ) {
         if (typeof opt === "string" && value !== undefined) {
-            this._zod2x = { ...(this._zod2x ?? {}), [opt]: value };
-            return this;
+            return setZod2xMetadata(this, {
+                ...(getZod2xMetadata(this) ?? {}),
+                [opt]: value,
+            } as IZod2xMetadata);
         }
 
-        const newItem = this.meta({ ...(this.meta() || {}) });
-        newItem._zod2x = typeof opt === "string" ? { typeName: opt } : opt;
-
-        return newItem;
+        // Zod's clone keeps a reference to its parent, so Zod metadata (description, ...) is
+        // inherited without registering it again.
+        return setZod2xMetadata(
+            this.clone(),
+            typeof opt === "string" ? { typeName: opt } : { ...(opt as IZod2xMetadata) }
+        );
     };
 }
 
@@ -374,14 +376,13 @@ export function extendZod(zod: any /*typeof z ---> any type until solve type inc
             this: any,
             opt: ZodEnum<any> | Pick<IZod2xMetadata, "parentEnum">
         ) {
-            const newItem = this.meta({ ...(this.meta() || {}) });
-
-            newItem._zod2x =
-                opt instanceof zod.ZodEnum || opt instanceof zod.ZodNativeEnum
+            return setZod2xMetadata(
+                this.clone(),
+                // Zod's type is checked instead of instanceof to resolve Bun incompatibilities.
+                ((opt as ZodEnum<any>)?.def?.type === "enum"
                     ? { parentEnum: opt }
-                    : opt;
-
-            return newItem;
+                    : { ...opt }) as IZod2xMetadata
+            );
         };
     }
 

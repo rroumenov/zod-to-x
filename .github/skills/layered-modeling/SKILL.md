@@ -46,8 +46,8 @@ Defined in `src/layered-modeling/layer.ts`:
 2. **Sets `modelName`** and **`layerMetadata`** on the instance
 3. **Iterates own properties** — for each Zod schema property:
    - Calls `setMetadata(PascalCase(propertyName), zodSchema, layerOpt)`
-   - Sets `_zod2x.typeName` and `_zod2x.layer`
-4. **Cross-layer detection** — if a property's existing `_zod2x` has a different `file` or different `typeName`:
+   - Sets `typeName` and `layer` zod2x metadata (`setZod2xMetadata`)
+4. **Cross-layer detection** — if a property's existing zod2x metadata has a different `file` or different `typeName`:
    - **Clones** the Zod object
    - Sets `aliasOf` = original type name
    - Sets `parentLayer` = original layer metadata

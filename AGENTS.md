@@ -85,7 +85,7 @@ Optional: **`libs.ts`** — Import/include definitions (Python, C++ use this).
 
 ### Metadata
 
-Metadata lives in `zodInstance._zod2x` with fields: `typeName`, `parentEnum`, `layer`, `aliasOf`, `parentLayer`, `genericTypes`, `isGenericChild`.
+Metadata is not injected into schemas: it lives in a `WeakMap` keyed by schema instance (`src/lib/zod2x_metadata.ts`), read with `getZod2xMetadata(schema)` and written with `setZod2xMetadata(schema, meta)`. Fields: `typeName`, `parentEnum`, `layer`, `aliasOf`, `parentLayer`, `genericTypes`, `isGenericChild`. Schemas cloned by Zod without changing their definition (`.describe()`, `.meta()`, `.clone()`) inherit the metadata of their parent through `_zod.parent`, as a whole (it is not merged).
 
 ### ZodHelpers
 

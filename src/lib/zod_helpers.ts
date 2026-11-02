@@ -1,6 +1,7 @@
 import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
-import { Extended } from "./zod_ext";
+import { getZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
+import { Extended, IZod2xMetadata } from "./zod_ext";
 
 export type {
     ZodArray,
@@ -117,7 +118,7 @@ export class ZodHelpers {
      * that share the same type name.
      */
     static getShallowSignature(i: ZodType, depth = 0): string {
-        const typeName = i?._zod2x?.typeName;
+        const typeName = getZod2xMetadata(i)?.typeName;
         if (typeName) {
             return `#${typeName}`;
         }
@@ -281,8 +282,12 @@ export class ZodHelpers {
         );
     }
 
+    /**
+     * Creates a new instance of the schema with the same definition. Zod metadata (description,
+     * ...) is inherited from the original schema.
+     */
     static cloneZod(i: ZodType) {
-        return i.meta({ ...(i.meta() || {}) });
+        return i.clone();
     }
 
     /**
@@ -351,41 +356,52 @@ export function useGenericType(
 ): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
     const builder = () => {
         let extended = genObj;
+        let isGenericInstance = false;
+        const genObjZod2x = getZod2xMetadata(genObj);
+        const genericTypes: NonNullable<IZod2xMetadata["genericTypes"]> = [
+            ...(genObjZod2x?.genericTypes ?? []),
+        ];
+
         // Zod 4's extend() doesn't copy meta() (unlike Zod 3 which spread _def).
         // Capture it once so it can be restored after each extend call.
         // The description (e.g. "GenericUserEntity") is used by transpilers to
         // identify the base generic class for cross-layer type aliases.
-        const genObjMeta = genObj.meta();
+        // The id is not restored because it must be unique in Zod's global registry.
+        const { id: _id, ...genObjMeta } = genObj.meta() ?? {};
         for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
             if (ZodHelpers.isZod2XGeneric(property)) {
                 const childType = childrens[key];
                 if (!childType) {
                     throw new Error(
-                        `Missing child type for generic property ${key} in ${genObj._zod2x!.typeName}.`
+                        `Missing child type for generic property ${key} in ${genObjZod2x?.typeName}.`
                     );
                 }
-                const zod2xMeta = structuredClone(extended._zod2x);
                 extended = extended.extend({ [key]: childType });
-                if (genObjMeta && Object.keys(genObjMeta).length > 0) {
+                if (Object.keys(genObjMeta).length > 0) {
                     extended = extended.meta({ ...genObjMeta }) as ZodObject<any>;
                 }
-                extended._zod2x = zod2xMeta;
-                extended._zod2x!.isGenericChild = false;
+                isGenericInstance = true;
 
-                if (!Array.isArray(extended._zod2x!.genericTypes)) {
-                    extended._zod2x!.genericTypes = [];
-                }
-
-                if (childType._zod2x !== undefined) {
-                    extended._zod2x!.genericTypes!.push({
-                        typeName: childType._zod2x.typeName,
-                        layer: childType._zod2x.layer!,
+                const childZod2x = getZod2xMetadata(childType);
+                if (childZod2x !== undefined) {
+                    genericTypes.push({
+                        typeName: childZod2x.typeName,
+                        layer: childZod2x.layer!,
                     });
                 }
             }
         }
+
+        if (isGenericInstance) {
+            setZod2xMetadata(extended, {
+                ...genObjZod2x!,
+                isGenericChild: false,
+                genericTypes,
+            });
+        }
+
         return extended;
     };
 
-    return skipLazy ? builder() : z.lazy(builder);
+    return skipLazy ? builder() : Extended.getZ().lazy(builder);
 }

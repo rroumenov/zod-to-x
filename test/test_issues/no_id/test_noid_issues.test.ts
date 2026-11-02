@@ -12,6 +12,7 @@ import { runCase6Suite } from "./6/case_6.test-suite";
 import { runCase7Suite } from "./7/case_7.test-suite";
 import { runCase8Suite } from "./8/case_8.test-suite";
 import { runCase9Suite } from "./9/case_9.test-suite";
+import { runCase10Suite } from "./10/case_10.test-suite";
 
 describe("Test issues - No id", () => {
     runCase1Suite();
@@ -23,4 +24,5 @@ describe("Test issues - No id", () => {
     runCase7Suite();
     runCase8Suite();
     runCase9Suite();
+    runCase10Suite();
 });
