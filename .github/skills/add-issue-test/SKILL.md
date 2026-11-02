@@ -1,8 +1,14 @@
 ---
 name: add-issue-test
 description: |
-    A skill for adding a new issue/regression test case to the codebase. This is used when a new bug or edge case is discovered, either from a GitHub issue or internal testing. The skill guides you through creating a minimal reproducing schema, writing the expected output, and verifying the test fails before fixing the bug.
+    Create a new issue test or regression test for a bug or edge case in zod-to-x. Use when asked to reproduce a bug, add an issue test, or write a failing test before a fix. Covers minimal schemas, expected outputs, and all affected transpilers.
 ---
+
+## Inputs and Scope
+
+Collect the bug's schema/configuration, expected behavior, and affected transpilers. If the affected languages are unknown, check all supported transpilers.
+
+For a test-only request, stop after confirming the intended regression failure and report that the test is ready for a fix. Do not fix production code unless requested. For a bug-fix request, continue through the optional fix steps below.
 
 ## Critical Rule: Multi-Language Coverage
 
@@ -10,6 +16,8 @@ Every issue test MUST include expected output files for **ALL supported transpil
 - **TypeScript** — `.expected_typescript.ts`
 - **Python** — `.expected_python.py`
 - **C++** — `.expected_cpp.h`
+- **Dart** — `.expected_dart.dart`
+- **Go** — `.expected_go.go`
 
 If a bug is in `src/core/` (AST or base transpiler), it affects all languages — test all of them. If a bug is in a specific transpiler (e.g., `src/transpilers/python/runner.ts`), check whether the same flaw exists in other transpilers and test those too.
 
@@ -40,7 +48,7 @@ mkdir -p test/test_issues/no_id/N/struct-expected test/test_issues/no_id/N/class
  * Describe what was failing and why.
  */
 import { z } from "zod";
-import { extendZod, Domain, Application, Zod2XModel } from "../../../dist";
+import { extendZod, Domain, Application, Zod2XModel } from "../../../../dist";
 extendZod(z);
 
 // Define the problematic schema(s) using layered modeling
@@ -97,15 +105,33 @@ const runCaseNCppSuite = createGenericTestSuite(
     "cpp"
 );
 
+const runCaseNDartSuite = createGenericTestSuite(
+    "Case N",
+    caseNModel,
+    Zod2XTranspilers.Zod2Dart,
+    "./test/test_issues/no_id/N",
+    "dart"
+);
+
+const runCaseNGoSuite = createGenericTestSuite(
+    "Case N",
+    caseNModel,
+    Zod2XTranspilers.Zod2Go,
+    "./test/test_issues/no_id/N",
+    "golang"
+);
+
 // Single exported entry point for the facade
 export const runCaseNSuite = () => {
     runCaseNTsSuite();
     runCaseNPySuite();
     runCaseNCppSuite();
+    runCaseNDartSuite();
+    runCaseNGoSuite();
 };
 ```
 
-Note: `createGenericTestSuite` accepts an optional `language` parameter (`"typescript"` | `"python"` | `"cpp"`, defaults to `"typescript"`). It handles the correct expected file names and test modes per language automatically — see `test/common/utils.ts`.
+Include only affected languages. `createGenericTestSuite` accepts an optional `language` parameter (`"typescript"` | `"python"` | `"cpp"` | `"dart"` | `"golang"`, defaults to `"typescript"`). Go uses `"golang"` as the selector but `expected_go.go` as the filename. The helper handles each language's supported modes — see [test utilities](../../../test/common/utils.ts).
 
 ### 5. Create Expected Output Files
 
@@ -122,6 +148,12 @@ Create expected output files for **every affected transpiler**:
 - `struct-expected/case_N.expected_cpp.h`
 - `class-expected/case_N.expected_cpp.h`
 
+**Dart** (class mode only):
+- `class-expected/case_N.expected_dart.dart`
+
+**Go** (struct mode only):
+- `struct-expected/case_N.expected_go.go`
+
 **Important:** Write what the output SHOULD be (the correct behavior), not what it currently produces.
 
 File naming convention: `case_N.expected_<language>.<ext>` where N matches the folder number. The prefix is derived from the suite name: `"Case N"` → `case_n`.
@@ -130,15 +162,9 @@ File naming convention: `case_N.expected_<language>.<ext>` where N matches the f
 
 | Bug location | Languages to test |
 |---|---|
-| `src/core/ast_node.ts` | ALL (TS + Py + C++) |
-| `src/core/transpiler.ts` | ALL (TS + Py + C++) |
-| `src/lib/zod_helpers.ts` | ALL (TS + Py + C++) |
-| `src/lib/zod_ext.ts` | ALL (TS + Py + C++) |
-| `src/layered-modeling/` | ALL (TS + Py + C++) |
-| `src/transpilers/typescript/` | TypeScript (check if Python/C++ have same issue) |
-| `src/transpilers/python/` | Python (check if TS/C++ have same issue) |
-| `src/transpilers/cpp/` | C++ (check if TS/Py have same issue) |
-| `src/converters/protobuf_v3/` | Protobuf only |
+| `src/core/`, `src/lib/`, `src/layered-modeling/` | All applicable TS, Python, C++, Dart, and Go outputs; assess converters too |
+| `src/transpilers/<lang>/` | That language; check equivalent methods in every other transpiler |
+| `src/converters/` | Affected converters; use their existing test patterns rather than this language-suite helper |
 
 ### 6. Register in the Facade
 
@@ -159,13 +185,13 @@ describe("Test issues - No id", () => {
 npm run build && npm test
 ```
 
-The new test should **fail** — this confirms it captures the bug.
+The new test should **fail for the intended incorrect output** — a build, import, or setup failure does not confirm the bug. Report the failing assertions, covered languages, and files created. For a test-only request, stop here and report readiness for the fix; if the test unexpectedly passes, investigate rather than claiming reproduction.
 
-### 8. Fix the Bug
+### 8. Fix the Bug (Only When Requested)
 
 Analyze the failure and fix the source code (usually in `src/transpilers/` or `src/core/`).
 
-### 9. Verify All Tests Pass
+### 9. Verify All Tests Pass (After a Fix)
 
 ```bash
 npm run build && npm test
@@ -185,6 +211,8 @@ ALL tests must pass, not just the new one.
 | Expected Py class | `case_N.expected_python.py` | `case_6.expected_python.py` |
 | Expected C++ struct | `case_N.expected_cpp.h` | `case_6.expected_cpp.h` |
 | Expected C++ class | `case_N.expected_cpp.h` | `case_6.expected_cpp.h` |
+| Expected Dart class | `case_N.expected_dart.dart` | `case_6.expected_dart.dart` |
+| Expected Go struct | `case_N.expected_go.go` | `case_6.expected_go.go` |
 | Internal suite functions | `runCaseN<Lang>Suite` (not exported) | `runCase6TsSuite`, `runCase6PySuite`, `runCase6CppSuite` |
 | Exported facade function | `runCaseNSuite` | `runCase6Suite` |
 | Suite name | `"Case N"` | `"Case 6"` |
@@ -192,11 +220,11 @@ ALL tests must pass, not just the new one.
 ## Tips
 
 - Start with the simplest schema that reproduces the bug
-- **Always check if the same bug exists in other transpilers** — if you find it in TypeScript, check Python and C++ too
-- The `createGenericTestSuite` helper tests both struct and class modes automatically
+- **Always check if the same bug exists in other transpilers**, including Dart and Go
+- The `createGenericTestSuite` helper tests supported output modes automatically
 - Look at existing cases in `test/test_issues/no_id/1/` through `6/` for reference patterns
 - When a bug involves generics, use `createGenericType` and `useGenericType` in the case file
-- For core bugs (`src/core/` or `src/lib/`), you MUST create expected output for ALL three languages
+- For core bugs (`src/core/` or `src/lib/`), create expected output for every affected supported language
 - For transpiler-specific bugs, still check the other transpilers for the same pattern — document your findings in the case file comment
 
 ## Backfilling When a New Language Is Added
@@ -204,6 +232,6 @@ ALL tests must pass, not just the new one.
 When a new transpiler is added to zod-to-x:
 1. Review ALL existing issue test cases in `test/test_issues/`
 2. For each case, determine if the bug scenario applies to the new language
-3. If it does, add expected output files for the new language in `struct-expected/` and `class-expected/`
+3. If it does, add expected output files for the new language in its supported `struct-expected/` and/or `class-expected/` modes
 4. Update the test suite to include the new transpiler
 5. Run `npm run build && npm test` to verify

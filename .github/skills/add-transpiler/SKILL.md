@@ -1,14 +1,19 @@
 ---
 name: add-transpiler
 description: |
-    A skill for creating a new language transpiler from scratch using Test-Driven Development (TDD). Use this when adding support for a new target language in zod-to-x. The skill provides a comprehensive step-by-step process, including planning type mappings, creating tests first, implementing the transpiler, and iterating until all tests pass.
+    Create a new transpiler or add support for a new target language in zod-to-x using TDD. Use for new-transpiler requests, including type mapping approval, serialization, output forms, implementation, and issue-test backfilling.
 ---
+
+## Inputs
+
+Collect the target language, serialization strategy (native, framework-based, or none), and output forms (struct, class, or both as applicable). Resolve missing behavioral choices before implementation.
 
 ## Prerequisites
 
-- Understand all Zod types supported by the project → see [SUPPORTED_ZOD_TYPES.md](/SUPPORTED_ZOD_TYPES.md)
+- Understand all Zod types supported by the project → see [SUPPORTED_ZOD_TYPES.md](../../../SUPPORTED_ZOD_TYPES.md)
+- Study the [TypeScript transpiler](../../../src/transpilers/typescript/) as the simplest reference
 - Study how the target language handles: types, enums, unions, generics/templates, imports, optional/nullable, serialization
-- Run `npm install && npm run build` to ensure clean starting state
+- Run `npm run build` to establish the starting state; restore dependencies if validation fails because they are missing
 
 ## Step-by-Step Process
 
@@ -38,6 +43,8 @@ Before writing any code, create a complete mapping table:
 | `z.any()` | ? | Dynamic/generic type? |
 | `z.optional()` | ? | |
 | `z.nullable()` | ? | |
+
+Present the complete mapping table, serialization approach, and output forms to the user and obtain confirmation before creating tests or implementation files.
 
 ### 2. Create Tests First (TDD)
 
@@ -177,7 +184,7 @@ Fix failures one at a time. Common issues:
 2. For each case, determine if the bug scenario applies to the new language
 3. If it applies, add expected output files:
    - `struct-expected/case_N.expected_<lang>.<ext>` (if the language supports struct/interface mode)
-   - `class-expected/case_N.expected_<lang>.<ext>`
+   - `class-expected/case_N.expected_<lang>.<ext>` (if the language supports class mode)
 4. Update each `case_N.test-suite.ts` to include a `createGenericTestSuite` call for the new transpiler
 5. Update the facade `test_noid_issues.test.ts` to import and call the new suite functions
 6. Run `npm run build && npm test` to verify

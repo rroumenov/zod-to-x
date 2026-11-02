@@ -1,8 +1,14 @@
 ---
 name: transpiler-debugging
 description: |
-    A skill for debugging transpilation issues in zod-to-x. This includes diagnosing why a Zod schema isn't transpiling correctly, inspecting the AST output, tracing the transpiler logic, and implementing fixes. Use this skill when a test fails, the output is incorrect, or you need to understand why a specific schema isn't transpiling as expected.
+    Debug transpilation: diagnose and fix incorrect Zod schema output, inspect the AST, and trace transpiler failures. Use when a schema is not transpiling correctly, a test fails, or current output differs from expected output. Respect diagnosis-only requests.
 ---
+
+## Inputs and Outcome
+
+Collect the schema, current output, expected output, affected language, and relevant options. Reproduce with the smallest schema before tracing the pipeline below.
+
+The normal debug-transpilation workflow includes diagnosis, a fix, and regression tests in every affected language. If the user requests diagnosis only, report the cause and impact without modifying source or tests.
 
 ## Diagnostic Flow
 
@@ -34,6 +40,8 @@ Check:
 - Are `genericTypes` and `templatesTranslation` populated for generics?
 - Is `arrayDimension` correct for nested arrays?
 - Does the `name` match what `.zod2x("Name")` set?
+
+An incorrect AST points to `src/core/ast_node.ts`, `src/lib/`, or layered metadata handling. A correct AST points to the target renderer or shared dispatch in `src/core/transpiler.ts`; trace the specific method rather than assuming the bug is language-local.
 
 ### 3. Trace the Transpiler
 
@@ -130,7 +138,7 @@ Tests import from `dist/` — if you changed source but didn't rebuild, tests us
 
 After finding the root cause, **always** perform this analysis:
 
-1. **Core fix (`src/core/`, `src/lib/`, `src/layered-modeling/`):** The bug affects ALL transpilers. Test TypeScript, Python, AND C++ output. Create regression tests for all three.
+1. **Core fix (`src/core/`, `src/lib/`, `src/layered-modeling/`):** Assess all transpilers: TypeScript, Python, C++ variants, Dart, and Go, plus applicable converters. Create regression tests for every affected output.
 
 2. **Transpiler-specific fix (`src/transpilers/<lang>/`):** Check if the same method in other transpilers has the same flaw. Common patterns that are implemented independently in each runner:
    - `checkExtendedTypeInclusion()` — cross-layer alias handling
@@ -139,3 +147,10 @@ After finding the root cause, **always** perform this analysis:
    - `getGenericTemplatesTranslation()` — generic parameter syntax
 
 3. **Document the scope** in your fix: which transpilers were affected and which were checked.
+
+## Complete the Fix
+
+1. Identify the specific failing method. Follow [add-issue-test](../add-issue-test/SKILL.md) to create a regression test that fails for the intended reason before the fix. Cover all affected languages and supported output forms.
+2. Implement the root-cause fix in every affected transpiler or shared component and confirm the regression tests pass afterward.
+3. Run `npm run build && npm test`. Do not accept stale `dist/` output or merely update expected files to match a bug.
+4. Remove temporary diagnostics and report the cause, affected languages, fix, regression coverage, and verification results.
