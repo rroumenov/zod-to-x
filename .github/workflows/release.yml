@@ -1,10 +1,17 @@
 name: Release
 
+# Manual release. Merging PRs to main / main_v1 releases nothing; the version and notes
+# are derived from the Conventional Commit titles (fix / feat / type!) merged since the
+# last release. Run this workflow from the Actions tab ("Run workflow", choosing main or
+# main_v1 as the branch) when you want to release.
+#
+# Steps: generate changesets from commits -> `changeset version` -> commit + tag to the
+# branch -> npm publish -> GitHub release. If a run fails after pushing the release
+# commit, run it again: with nothing pending it publishes the current version if npm
+# doesn't have it.
+
 on:
-    push:
-        branches:
-            - main
-            - main_v1
+    workflow_dispatch:
 
 concurrency:
     group: release-${{ github.ref_name }}
@@ -12,11 +19,15 @@ concurrency:
 
 permissions:
     contents: write
-    pull-requests: write
 
 jobs:
     release:
+        if: github.ref_name == 'main' || github.ref_name == 'main_v1'
         runs-on: ubuntu-latest
+        env:
+            # main publishes as npm `latest`; main_v1 (Zod 3) as `latestV1`.
+            NPM_TAG: ${{ github.ref_name == 'main' && 'latest' || 'latestV1' }}
+            GH_LATEST: ${{ github.ref_name == 'main' && 'true' || 'false' }}
         steps:
             - uses: actions/checkout@v5
               with:
@@ -29,29 +40,64 @@ jobs:
             - run: npm run build
             - run: npm test
 
-            # Derive changesets from fix/feat commits since the last release. Files stay
-            # uncommitted; changesets/action consumes them to build the release PR.
-            - run: node scripts/commits-to-changesets.mjs
+            # Build changesets from the Conventional Commit subjects (fix -> patch,
+            # feat -> minor, type! -> major) merged since the last `chore(release)` commit.
+            # No per-PR changeset files needed; the files stay uncommitted and are consumed
+            # by `changeset version` below.
+            - name: Generate changesets from commits
+              run: node scripts/commits-to-changesets.mjs
 
-            - uses: changesets/action@v1
-              with:
-                  version: npm run version
-                  publish: ${{ github.ref_name == 'main_v1' && 'npm run release:v1' || 'npm run release' }}
-                  commit: "chore(release): version packages"
-                  title: "chore(release): version packages"
-                  createGithubReleases: false
+            - name: Check pending changesets
+              id: pending
+              run: |
+                  COUNT=$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' | wc -l)
+                  echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+                  if [ "$COUNT" -eq 0 ]; then
+                      NAME=$(node -p "require('./package.json').name")
+                      VERSION=$(node -p "require('./package.json').version")
+                      if [ -n "$(npm view "$NAME@$VERSION" version 2>/dev/null)" ]; then
+                          echo "::error::No pending changesets and $NAME@$VERSION is already on npm. Nothing to release."
+                          exit 1
+                      fi
+                      echo "No pending changesets; $NAME@$VERSION is not on npm yet, publishing it."
+                  else
+                      echo "Pending changesets ($COUNT):"
+                      find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' -exec sh -c 'echo "--- $1"; cat "$1"' _ {} \;
+                  fi
+
+            # Bumps package.json, updates CHANGELOG.md and package-lock.json, deletes the
+            # consumed changesets. Commit + tag are pushed atomically; if the branch moved
+            # during the run the push is rejected and nothing is published.
+            - name: Version, commit and tag
+              if: steps.pending.outputs.count != '0'
+              run: |
+                  npm run version
+                  VERSION=$(node -p "require('./package.json').version")
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add -A
+                  git commit -m "chore(release): v$VERSION"
+                  git tag "v$VERSION"
+                  git push --atomic origin "HEAD:$GITHUB_REF_NAME" "v$VERSION"
+
+            - name: Publish to npm
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+              run: |
+                  NAME=$(node -p "require('./package.json').name")
+                  VERSION=$(node -p "require('./package.json').version")
+                  if [ -n "$(npm view "$NAME@$VERSION" version 2>/dev/null)" ]; then
+                      echo "$NAME@$VERSION is already on npm"
+                  else
+                      npm publish --access public --tag "$NPM_TAG"
+                  fi
+                  # Make sure the dist-tag points at this version (also fixes a re-run).
+                  npm dist-tag add "$NAME@$VERSION" "$NPM_TAG"
 
-            # Draft a GitHub release for the merged "Version Packages" PR. The tag is
-            # created when the draft is published. Runs after a successful publish only.
-            - name: Draft GitHub release
-              if: startsWith(github.event.head_commit.message, 'chore(release)')
+            # Published immediately (not a draft), notes taken from the CHANGELOG entry.
+            - name: Create GitHub release
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  LATEST: ${{ github.ref_name == 'main_v1' && 'false' || 'true' }}
               run: |
                   VERSION=$(node -p "require('./package.json').version")
                   TAG="v$VERSION"
@@ -61,5 +107,5 @@ jobs:
                   fi
                   awk -v v="$VERSION" '/^## /{p=($2==v);next} p' CHANGELOG.md > notes.md
                   test -s notes.md || { echo "No changelog entry for $VERSION"; exit 1; }
-                  gh release create "$TAG" --draft --title "$TAG" --notes-file notes.md \
-                      --target "$GITHUB_SHA" --latest="$LATEST"
+                  gh release create "$TAG" --title "$TAG" --notes-file notes.md \
+                      --target "$(git rev-parse HEAD)" --latest="$GH_LATEST"
