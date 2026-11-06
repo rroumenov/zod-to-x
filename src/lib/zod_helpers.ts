@@ -1,6 +1,6 @@
 import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
-import { resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
+import { getZod2xMetadata, resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
 import { Extended } from "./zod_ext";
 
 export type {
@@ -327,8 +327,16 @@ export class ZodHelpers {
     }
 }
 
-export function createGenericType(name: string) {
-    return Extended.getZ().promise(Extended.getZ().literal(name));
+/**
+ * Creates a generic template to be used as a property of a generic ZodObject.
+ * @param name Template name. Ex: "T", "K", "TData", ...
+ * @param defaultType Optional type used by `useGenericType` when no type is provided for the
+ * template. It can be any supported type: basic types, arrays, named types, ...
+ * @returns The generic template.
+ */
+export function createGenericType(name: string, defaultType?: ZodType) {
+    const template = Extended.getZ().promise(Extended.getZ().literal(name));
+    return defaultType ? setZod2xMetadata(template, { genericDefault: defaultType }) : template;
 }
 
 /**
@@ -336,7 +344,8 @@ export function createGenericType(name: string) {
  * The new type references the generic type and the child types used for each template, so its
  * type name, layer and templates translation are resolved from them when transpiled.
  * @param genObj ZodObject with generic types.
- * @param childrens Record of child types to replace generics.
+ * @param childrens Record of child types to replace generics. Templates created with a default
+ * type can be omitted.
  * @returns The extended ZodObject with replaced generic types.
  */
 export function useGenericType(
@@ -365,7 +374,7 @@ export function useGenericType(
         const { id: _id, ...genObjMeta } = genObj.meta() ?? {};
         for (const [key, property] of Object.entries<ZodType>(genObj.shape)) {
             if (ZodHelpers.isZod2XGeneric(property)) {
-                const childType = childrens[key];
+                const childType = childrens[key] ?? getZod2xMetadata(property)?.genericDefault;
                 if (!childType) {
                     throw new Error(
                         `Missing child type for generic property ${key} in ` +

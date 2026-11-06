@@ -601,6 +601,21 @@ readonly DiscriminantDataRetrieve = z.lazy(() =>  // Lazy the zod type itself
 //   | HttpSuccessfulResponse<SomeDtoResult>
 //   | HttpUnsuccessfulResponse;
 ```
+4) A default type can be provided as the second argument of `createGenericType`. It can be any supported type: a basic type, an array, a named type, ... Templates with a default type can be omitted in `useGenericType`, and the default type is used instead. The default is applied when the generic type is instantiated, so the output is valid for all supported languages, including the ones without default type parameters (Go, Dart):
+```ts
+// inside GenericsInfrastructure class
+readonly Page = z.object({
+  cursor: createGenericType("TCursor", z.string()),
+  content: createGenericType("TContent", this.SomeDtoResult),
+});
+
+readonly DefaultPage = useGenericType(this.Page, {});
+readonly PageOfIds = useGenericType(this.Page, { content: z.array(z.string()) });
+
+// Output
+// export interface DefaultPage extends Page<string, SomeDtoResult> {}
+// export interface PageOfIds extends Page<string, string[]> {}
+```
 
 Complete definition examples can be found [here](https://github.com/rroumenov/zod-to-x/blob/main/test/common/layered_generics.ts).
 

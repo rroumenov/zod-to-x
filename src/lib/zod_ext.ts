@@ -126,6 +126,13 @@ export interface IZod2xMetadata {
         generic: ZodObject<any>;
         templates: [string, ZodType][];
     };
+
+    /**
+     * For Layered Modeling defining generics.
+     * For generic templates created with `createGenericType`, the type used by `useGenericType`
+     * when no type is provided for the template.
+     */
+    genericDefault?: ZodType;
 }
 
 declare module "zod/v4" {
