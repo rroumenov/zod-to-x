@@ -102,8 +102,12 @@ Work on short-lived branches and PR (or push) to these. No `dev` branches.
 
 Commit subjects (PR title when squash-merging) use Conventional Commits: `fix:` → patch,
 `feat:` → minor, `type!:` / `BREAKING CHANGE:` → major; `chore/docs/test/ci/refactor/...` → no release.
-On push, `.github/workflows/release.yml` runs `scripts/commits-to-changesets.mjs` and
-`changesets/action`, which opens a "Version Packages" PR; merging it publishes to npm.
+No changeset files are written by hand. Merging does not release anything.
+Releases are manual: run the "Release" workflow (`.github/workflows/release.yml`) from the
+Actions tab on `main` or `main_v1`. It runs `scripts/commits-to-changesets.mjs` (changesets from
+the commits since the last `chore(release)` commit), then `changeset version`, pushes a
+`chore(release): vX.Y.Z` commit + `vX.Y.Z` tag, runs `npm publish` (`latest` on `main`,
+`latestV1` on `main_v1`) and publishes the GitHub release.
 
 ## Test Patterns
 
