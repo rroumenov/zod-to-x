@@ -70,8 +70,23 @@ export function cloneSchema<T extends ZodTypeAny>(schema: T): T {
     return linkToSource(new (schema as any).constructor({ ...schema._def }), schema);
 }
 
+/**
+ * Returns the schema another schema was copied from by Zod, if the copy only changes cosmetic
+ * keys of its definition (e.g. `.describe()`, `.strict()`), so both represent the same type.
+ */
+export function getCopySource(schema: unknown): object | undefined {
+    const def = (schema as any)?._def;
+    const source = def?.[SOURCE];
+
+    if (source === undefined || source === schema || !isCosmeticCopy(def, source._def)) {
+        return undefined;
+    }
+
+    return source;
+}
+
 export function getZod2xMetadata(schema: unknown): IZod2xMetadata | undefined {
-    let current: any = schema;
+    let current: unknown = schema;
 
     while (current !== undefined && current !== null && typeof current === "object") {
         const metadata = store.get(current);
@@ -79,16 +94,7 @@ export function getZod2xMetadata(schema: unknown): IZod2xMetadata | undefined {
             return metadata;
         }
 
-        const source = current._def?.[SOURCE];
-        if (
-            source === undefined ||
-            source === current ||
-            !isCosmeticCopy(current._def, source._def)
-        ) {
-            return undefined;
-        }
-
-        current = source;
+        current = getCopySource(current);
     }
 
     return undefined;
