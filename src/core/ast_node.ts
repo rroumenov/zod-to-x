@@ -311,6 +311,7 @@ export class Zod2Ast {
                     parentFile: isExternal ? i.layer!.file : undefined,
                     parentNamespace: isExternal ? i.layer!.namespace : undefined,
                     aliasOf: i.typeName,
+                    kind: this._getSchemaKind(i.schema),
                 };
             });
 
@@ -366,6 +367,24 @@ export class Zod2Ast {
         }
 
         return {};
+    }
+
+    /**
+     * Returns the kind of the AST node of a named schema, without building it (see `getASTKind`).
+     */
+    private _getSchemaKind(schema: ZodTypeAny): string | undefined {
+        if (ZodHelpers.isZodLazy(schema)) {
+            return this._getSchemaKind(schema._def.getter());
+        } else if (ZodHelpers.isZodAnyEnumType(schema)) {
+            return ASTEnum.kind;
+        } else if (ZodHelpers.isZodObject(schema)) {
+            return ASTObject.kind;
+        } else if (ZodHelpers.isZodAnyUnionType(schema)) {
+            return ASTUnion.kind;
+        } else if (ZodHelpers.isZodIntersection(schema)) {
+            return ASTIntersection.kind;
+        }
+        return undefined;
     }
 
     /**

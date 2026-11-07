@@ -74,3 +74,8 @@ AnyMessage anyMessageFromJson(Map<String, dynamic> json) {
   };
 }
 
+Map<String, dynamic> anyMessageToJson(AnyMessage value) => switch (value) {
+  Message<MessageType, UserCreated> x => x.toJson((v) => v.value, (v) => v.toJson()),
+  Message<MessageType, UserDeleted> x => x.toJson((v) => v.value, (v) => v.toJson()),
+  _ => (value as dynamic).toJson() as Map<String, dynamic>,
+};

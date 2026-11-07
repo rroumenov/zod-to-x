@@ -130,6 +130,11 @@ DiscriminantDataRetrieve discriminantDataRetrieveFromJson(Map<String, dynamic> j
   };
 }
 
+Map<String, dynamic> discriminantDataRetrieveToJson(DiscriminantDataRetrieve value) => switch (value) {
+  HttpSuccessfulResponse<SomeDtoResult> x => x.toJson((v) => v.toJson()),
+  _ => (value as dynamic).toJson() as Map<String, dynamic>,
+};
+
 @JsonSerializable(explicitToJson: true)
 class IntersectedDataRetrieve {
   final bool success;

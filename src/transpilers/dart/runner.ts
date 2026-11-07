@@ -7,6 +7,7 @@ import {
     ASTEnum,
     ASTIntersection,
     ASTLiteral,
+    ASTMap,
     ASTNode,
     ASTNodes,
     ASTObject,
@@ -57,11 +58,22 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
      * (e.g. "discriminatedUnionItemFromJson").
      * Populated during pre-scan when an ASTUnion node has aliasOf set.
      */
-    private _discriminatedUnionDelegateFromJson = new Map<string, string>();
+    private _discriminatedUnionDelegate = new Map<string, string>();
 
     /**
-     * Unified set of type names needing custom @JsonKey annotations.
-     * - Discriminated union types: fromJson = <camelName>FromJson (local function)
+     * Types used for the templates of typedefs of generic types (local or imported), by typedef
+     * name. E.g. "AdminUserEntity" → [{ aliasOf: "AdminUserMetadata", kind: "ASTObject" }].
+     */
+    private _typedefTemplates = new Map<string, ASTTemplateTranslation[]>();
+
+    /**
+     * Types used for the templates of fields of generic types of other files, by helper key.
+     */
+    private _usedCustomFromJsonTemplates = new Map<string, ASTTemplateTranslation[]>();
+
+    /**
+     * Unified set of type names needing custom @JsonKey annotations (discriminated unions use
+     * their own <camelName>FromJson and <camelName>ToJson functions).
      * - Typedef types: fromJson = _<camelName>FromJson (standalone wrapper)
      * - TypedefList: list fromJson/toJson helpers
      * _toJson helpers are emitted in runAfter() for all entries.
@@ -70,7 +82,17 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
      */
     private _usedCustomFromJsonTypes = new Map<
         string,
-        { typeName: string; kind: "discUnion" | "typedef" | "typedefList" }
+        {
+            typeName: string;
+            kind:
+                | "typedef"
+                | "typedefList"
+                | "discUnionList"
+                | "discUnionMap"
+                | "discUnionNullable";
+            /** Base name of the functions of a discriminated union (`<fnBase>FromJson`). */
+            fnBase?: string;
+        }
     >();
 
     /**
@@ -110,8 +132,10 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         this._typedefNames.clear();
         this._usedCustomFromJsonTypes.clear();
         this._usedCustomFromJsonFullTypes.clear();
-        this._discriminatedUnionDelegateFromJson.clear();
+        this._discriminatedUnionDelegate.clear();
         this._typedefToExtendedType.clear();
+        this._typedefTemplates.clear();
+        this._usedCustomFromJsonTemplates.clear();
 
         this._checkImportedNamesClash(transpilerQueue);
 
@@ -120,13 +144,10 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 // Track the union name for @JsonKey emission
                 this._discriminatedUnionTypes.add(node.name);
                 // If this is a typedef alias of another disc union (aliasOf set),
-                // record which entity-level fromJson function to delegate to.
+                // record which entity-level fromJson/toJson functions to delegate to.
                 const aliasOf = (node as any).aliasOf as string | undefined;
                 if (aliasOf) {
-                    this._discriminatedUnionDelegateFromJson.set(
-                        node.name,
-                        `${Case.camel(aliasOf)}FromJson`
-                    );
+                    this._discriminatedUnionDelegate.set(node.name, Case.camel(aliasOf));
                 }
                 node.options.forEach((opt: ASTNode) => {
                     const name = (opt as any).name as string | undefined;
@@ -156,6 +177,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                     .join(", ");
                 if (typeArgs && node.name) {
                     this._typedefToExtendedType.set(node.name, `${node.genericOf}<${typeArgs}>`);
+                    this._typedefTemplates.set(node.name, node.templatesTranslation);
                 }
             }
         });
@@ -211,45 +233,70 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         // These helpers prevent json_serializable from following typedef chains and generating
         // code that references transitively-imported types not directly in scope.
         if (this.opt.useJsonSerialization !== false) {
-            for (const { typeName, kind } of this._usedCustomFromJsonTypes.values()) {
+            for (const {
+                typeName,
+                kind,
+                fnBase: unionFn,
+            } of this._usedCustomFromJsonTypes.values()) {
                 const fnBase = Case.camel(typeName);
-                // Use full type (including generics) if available, e.g. GenericUserEntity<SomeDtoResult>
-                const fullType = this._usedCustomFromJsonFullTypes.get(typeName) ?? typeName;
-                // Extract type argument for generic classes: "Foo<Bar>" → "Bar"
-                const genericArgMatch = fullType.match(/^([^<]+)<(.+)>$/);
-                const baseTypeName = genericArgMatch ? genericArgMatch[1] : fullType;
-                const typeArg = genericArgMatch ? genericArgMatch[2] : undefined;
-                const isGeneric = typeArg !== undefined;
 
-                if (kind === "discUnion") {
-                    // Abstract class: toJson helper only (fromJson is the named union function)
-                    this.push0(`Map<String, dynamic> _${fnBase}ToJson(${fullType} value) =>`);
-                    this.push1(`(value as dynamic).toJson() as Map<String, dynamic>;\n`);
-                } else if (kind === "typedef") {
-                    // Use full extended type if it has generics (e.g. AdminUserEntity → GenericUserEntity<AdminUserMetadata>)
-                    const extendedType =
-                        this._usedCustomFromJsonFullTypes.get(typeName) ??
-                        this._typedefToExtendedType.get(typeName);
-                    const genericArgMatch = extendedType?.match(/^([^<]+)<(.+)>$/);
-                    const extBaseType = genericArgMatch ? genericArgMatch[1] : undefined;
-                    const extTypeArg = genericArgMatch ? genericArgMatch[2] : undefined;
+                if (kind === "discUnionList") {
+                    this.push0(`List<${typeName}> _${fnBase}ListFromJson(Object? json) =>`);
+                    this.push1(
+                        `(json as List<dynamic>).map((e) => ${unionFn}FromJson(e as Map<String, dynamic>)).toList();\n`
+                    );
+                    this.push0(
+                        `List<Map<String, dynamic>> _${fnBase}ListToJson(List<${typeName}> list) =>`
+                    );
+                    this.push1(`list.map(${unionFn}ToJson).toList();\n`);
+                    continue;
+                } else if (kind === "discUnionNullable") {
+                    this.push0(
+                        `Map<String, dynamic>? _${fnBase}NullableToJson(${typeName}? value) =>`
+                    );
+                    this.push1(`value == null ? null : ${unionFn}ToJson(value);\n`);
+                    continue;
+                } else if (kind === "discUnionMap") {
+                    this.push0(`Map<String, ${typeName}> _${fnBase}MapFromJson(Object? json) =>`);
+                    this.push1(
+                        `(json as Map<String, dynamic>).map((k, e) => MapEntry(k, ${unionFn}FromJson(e as Map<String, dynamic>)));\n`
+                    );
+                    this.push0(
+                        `Map<String, Map<String, dynamic>> _${fnBase}MapToJson(Map<String, ${typeName}> map) =>`
+                    );
+                    this.push1(`map.map((k, e) => MapEntry(k, ${unionFn}ToJson(e)));\n`);
+                    continue;
+                }
 
-                    if (isGeneric) {
-                        // Direct generic field (e.g. GenericUserEntity<SomeDtoResult>): factory pattern
-                        this.push0(`${fullType} _${fnBase}FromJson(Object? json) =>`);
-                        this.push1(
-                            `${baseTypeName}.fromJson(json as Map<String, dynamic>, (j) => ${typeArg}.fromJson(j as Map<String, dynamic>));\n`
-                        );
-                        this.push0(`Map<String, dynamic> _${fnBase}ToJson(${fullType} value) =>`);
-                        this.push1(`value.toJson((v) => v.toJson());\n`);
-                    } else if (extBaseType && extTypeArg) {
-                        // Typedef of a generic class (e.g. AdminUserEntity = GenericUserEntity<AdminUserMetadata>)
-                        this.push0(`${typeName} _${fnBase}FromJson(Object? json) =>`);
-                        this.push1(
-                            `${extBaseType}.fromJson(json as Map<String, dynamic>, (j) => ${extTypeArg}.fromJson(j as Map<String, dynamic>));\n`
-                        );
-                        this.push0(`Map<String, dynamic> _${fnBase}ToJson(${typeName} value) =>`);
-                        this.push1(`value.toJson((v) => v.toJson());\n`);
+                // Types used for the templates of a generic field of another file (e.g.
+                // GenericUserEntity<SomeDtoResult>) or of a typedef of a generic type (e.g.
+                // AdminUserEntity = GenericUserEntity<AdminUserMetadata>).
+                const fullType = this._usedCustomFromJsonFullTypes.get(typeName);
+                const templates =
+                    this._usedCustomFromJsonTemplates.get(typeName) ??
+                    this._typedefTemplates.get(typeName);
+
+                if (kind === "typedef") {
+                    const extendedType = fullType ?? this._typedefToExtendedType.get(typeName);
+                    const genericMatch = extendedType?.match(/^([^<]+)<(.+)>$/);
+                    const valueType = fullType ?? typeName;
+
+                    if (genericMatch) {
+                        const fromJson = templates
+                            ? this._genericFromJson(
+                                  genericMatch[1],
+                                  templates,
+                                  "json as Map<String, dynamic>"
+                              )
+                            : `${genericMatch[1]}.fromJson(json as Map<String, dynamic>, (j) => ` +
+                              `${genericMatch[2]}.fromJson(j as Map<String, dynamic>))`;
+                        const toJson = templates
+                            ? this._genericToJson("value", templates)
+                            : `value.toJson((v) => v.toJson())`;
+                        this.push0(`${valueType} _${fnBase}FromJson(Object? json) =>`);
+                        this.push1(`${fromJson};\n`);
+                        this.push0(`Map<String, dynamic> _${fnBase}ToJson(${valueType} value) =>`);
+                        this.push1(`${toJson};\n`);
                     } else {
                         // Non-generic class: simple fromJson + toJson helpers
                         this.push0(`${typeName} _${fnBase}FromJson(Object? json) =>`);
@@ -259,21 +306,24 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                     }
                 } else if (kind === "typedefList") {
                     // List<typedef>: list fromJson + toJson helpers
+                    const fromJson = templates
+                        ? this._genericFromJson(typeName, templates, "e as Map<String, dynamic>")
+                        : `${typeName}.fromJson(e as Map<String, dynamic>)`;
+                    const toJson = templates
+                        ? this._genericToJson("e", templates)
+                        : `(e as dynamic).toJson() as Map<String, dynamic>`;
                     this.push0(`List<${typeName}> _${fnBase}ListFromJson(Object? json) =>`);
-                    this.push1(
-                        `(json as List<dynamic>).map((e) => ${typeName}.fromJson(e as Map<String, dynamic>)).toList();\n`
-                    );
+                    this.push1(`(json as List<dynamic>).map((e) => ${fromJson}).toList();\n`);
                     this.push0(
                         `List<Map<String, dynamic>> _${fnBase}ListToJson(List<${typeName}> list) =>`
                     );
-                    this.push1(
-                        `list.map((e) => (e as dynamic).toJson() as Map<String, dynamic>).toList();\n`
-                    );
+                    this.push1(`list.map((e) => ${toJson}).toList();\n`);
                 }
             }
         }
         this._usedCustomFromJsonTypes.clear();
         this._usedCustomFromJsonFullTypes.clear();
+        this._usedCustomFromJsonTemplates.clear();
     }
 
     // ── Import / namespace ──────────────────────────────────────────────────
@@ -300,6 +350,9 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             (data instanceof ASTIntersection && data.newObject !== undefined);
 
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
+        if (translatedTemplates && data.name && data instanceof ASTObject) {
+            this._typedefTemplates.set(data.name, data.templatesTranslation);
+        }
 
         return {
             type: isStruct ? undefined : (type as "union" | "alias" | undefined),
@@ -513,7 +566,11 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
     /**
      * Dart union:
      * - Non-discriminated: typedef alias to Object with a comment listing member types.
-     * - Discriminated: abstract base class + factory unmarshal function using Dart 3 switch.
+     * - Discriminated: abstract base class + factory unmarshal function using Dart 3 switch,
+     *   and a function that serializes it.
+     *
+     * Classes of other files cannot implement the union, so these variants are wrapped in
+     * local classes that do (`class AnyEventCreated implements AnyEvent { final Created value; }`).
      */
     protected transpileUnion(data: ASTUnion): void {
         if (this.checkExtendedTypeInclusion(data, "union")) return;
@@ -522,78 +579,178 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
 
         const optionNames = data.options.map(this.getAttributeType.bind(this));
 
-        if (data.discriminantKey) {
-            this.push0(`// Discriminated union on '${data.discriminantKey}'.`);
-            this.push0(`// Possible types: ${optionNames.join(", ")}`);
-            this.push0(`abstract class ${data.name} {}\n`);
-
-            // Emit factory unmarshal function when all members have a discriminant value
-            const optionsData = data.options.map((opt, i) => ({
-                typeName: optionNames[i],
-                discriminantValue: (opt as ASTDefinition).constraints?.discriminantValue as
-                    | string
-                    | undefined,
-            }));
-
-            const allHaveDiscriminantValue = optionsData.every(
-                (o) => o.discriminantValue !== undefined
-            );
-
-            if (allHaveDiscriminantValue && this.opt.useJsonSerialization !== false) {
-                const fnName = Case.camel(data.name);
-                this.push0(`${data.name} ${fnName}FromJson(Map<String, dynamic> json) {`);
-                this.push1(`return switch (json['${data.discriminantKey}']) {`);
-
-                for (const [i, opt] of optionsData.entries()) {
-                    const dv = opt.discriminantValue!;
-                    const isNumber = !isNaN(Number(dv));
-                    const isBool = dv === "true" || dv === "false";
-                    const caseVal = isNumber || isBool ? dv : `'${dv}'`;
-                    // For generic types like Foo<Bar, Baz>, use the factory with one fromJson
-                    // function per template: fromJson(json, (j) => Bar..., (j) => Baz...)
-                    const typeNameStr = opt.typeName;
-                    const genericMatch = typeNameStr.match(/^([^<]+)<(.+)>$/);
-                    const templates = (data.options[i] as ASTDefinition).templatesTranslation;
-                    if (genericMatch) {
-                        const baseType = genericMatch[1];
-                        const fromJsonFns =
-                            templates.length > 0
-                                ? templates.map((t) => this._templateFromJson(t))
-                                : [`(j) => ${genericMatch[2]}.fromJson(j as Map<String, dynamic>)`];
-                        this.push2(
-                            `${caseVal} => ${baseType}.fromJson(json, ${fromJsonFns.join(", ")}),`
-                        );
-                    } else {
-                        this.push2(`${caseVal} => ${typeNameStr}.fromJson(json),`);
-                    }
-                }
-
-                const escapedKey = data.discriminantKey.replace(/"/g, '\\"');
-                this.push2(
-                    `_ => throw Exception("Unknown ${data.name} discriminant: \${json['${escapedKey}']}")`
-                );
-                this.push1(`};`);
-                this.push0(`}\n`);
-            }
-        } else {
+        if (!data.discriminantKey) {
             this.push0(`// ${data.name} is a union of: ${optionNames.join(", ")}`);
             this.push0(`typedef ${data.name} = Object;\n`);
+            return;
+        }
+
+        const useJson = this.opt.useJsonSerialization !== false;
+        const options = data.options.map((opt, i) => {
+            const discriminantValue = (opt as ASTDefinition).constraints?.discriminantValue as
+                | string
+                | undefined;
+            const baseName = optionNames[i].replace(/<.*$/, "");
+            return {
+                typeName: optionNames[i],
+                discriminantValue,
+                templates: this._getInstanceTemplates(opt),
+                wrapper: opt.parentFile
+                    ? `${data.name}${Case.pascal(String(discriminantValue ?? baseName))}`
+                    : undefined,
+            };
+        });
+
+        this.push0(`// Discriminated union on '${data.discriminantKey}'.`);
+        this.push0(`// Possible types: ${options.map((o) => o.wrapper ?? o.typeName).join(", ")}`);
+        this.push0(`abstract class ${data.name} {}\n`);
+
+        for (const opt of options.filter((o) => o.wrapper !== undefined)) {
+            this.push0(`/// ${data.name} variant of ${opt.typeName}, declared in another file.`);
+            this.push0(`class ${opt.wrapper} implements ${data.name} {`);
+            this.push1(`final ${opt.typeName} value;\n`);
+            this.push1(`const ${opt.wrapper}(this.value);`);
+            if (useJson) {
+                const toJson = opt.templates
+                    ? this._genericToJson("value", opt.templates)
+                    : "value.toJson()";
+                this.push0("");
+                this.push1(`Map<String, dynamic> toJson() => ${toJson};`);
+            }
+            this.push0(`}\n`);
+        }
+
+        // Emit factory unmarshal function when all members have a discriminant value
+        const allHaveDiscriminantValue = options.every((o) => o.discriminantValue !== undefined);
+
+        if (allHaveDiscriminantValue && useJson) {
+            const fnName = Case.camel(data.name);
+            this.push0(`${data.name} ${fnName}FromJson(Map<String, dynamic> json) {`);
+            this.push1(`return switch (json['${data.discriminantKey}']) {`);
+
+            for (const opt of options) {
+                const dv = opt.discriminantValue!;
+                const isNumber = !isNaN(Number(dv));
+                const isBool = dv === "true" || dv === "false";
+                const caseVal = isNumber || isBool ? dv : `'${dv}'`;
+                // Generic types use the factory with one fromJson function per template:
+                // Foo.fromJson(json, (j) => Bar..., (j) => Baz...)
+                const genericMatch = opt.typeName.match(/^([^<]+)<(.+)>$/);
+                let value: string;
+                if (opt.templates) {
+                    const typeName = genericMatch ? genericMatch[1] : opt.typeName;
+                    value = this._genericFromJson(typeName, opt.templates, "json");
+                } else if (genericMatch) {
+                    value =
+                        `${genericMatch[1]}.fromJson(json, (j) => ` +
+                        `${genericMatch[2]}.fromJson(j as Map<String, dynamic>))`;
+                } else {
+                    value = `${opt.typeName}.fromJson(json)`;
+                }
+                this.push2(`${caseVal} => ${opt.wrapper ? `${opt.wrapper}(${value})` : value},`);
+            }
+
+            const escapedKey = data.discriminantKey.replace(/"/g, '\\"');
+            this.push2(
+                `_ => throw Exception("Unknown ${data.name} discriminant: \${json['${escapedKey}']}")`
+            );
+            this.push1(`};`);
+            this.push0(`}\n`);
+
+            // Instances of generic types need the functions that serialize their templates.
+            const genericOptions = options.filter((o) => o.templates && !o.wrapper);
+            const toJsonSignature = `Map<String, dynamic> ${fnName}ToJson(${data.name} value) =>`;
+            if (genericOptions.length === 0) {
+                this.push0(toJsonSignature);
+                this.push1(`(value as dynamic).toJson() as Map<String, dynamic>;\n`);
+            } else {
+                this.push0(`${toJsonSignature} switch (value) {`);
+                for (const opt of genericOptions) {
+                    this.push1(`${opt.typeName} x => ${this._genericToJson("x", opt.templates!)},`);
+                }
+                this.push1(`_ => (value as dynamic).toJson() as Map<String, dynamic>,`);
+                this.push0(`};\n`);
+            }
         }
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────
 
     /**
-     * Returns the function that deserializes the type used for a template of a generic type:
-     * enum values for literals of an enum (`Event<EventKind>`), the class factory otherwise.
+     * Returns the functions that deserialize and serialize the type used for a template of a
+     * generic type (the `fromJsonT` and `toJsonT` arguments of json_serializable).
      */
-    private _templateFromJson(template: ASTTemplateTranslation): string {
-        if (template.type instanceof ASTLiteral && template.type.parentEnum) {
-            const enumName = this.getAttributeType(template.type);
-            return `(j) => ${enumName}.values.firstWhere((e) => e.value == j)`;
+    private _templateJson(template: ASTTemplateTranslation): { fromJson: string; toJson: string } {
+        const type = template.type;
+        const typeName = type ? this.getAttributeType(type) : template.aliasOf!;
+
+        if (
+            (type instanceof ASTLiteral && type.parentEnum !== undefined) ||
+            template.kind === ASTEnum.kind
+        ) {
+            // Enums are serialized by their value (@JsonEnum(valueField: 'value')).
+            return {
+                fromJson: `(j) => ${typeName}.values.firstWhere((e) => e.value == j)`,
+                toJson: `(v) => v.value`,
+            };
         }
-        const typeName = template.type ? this.getAttributeType(template.type) : template.aliasOf!;
-        return `(j) => ${typeName}.fromJson(j as Map<String, dynamic>)`;
+
+        if (type === undefined || type instanceof ASTDefinition) {
+            if (template.kind === ASTUnion.kind && this._discriminatedUnionTypes.has(typeName)) {
+                const fnBase = Case.camel(typeName);
+                return {
+                    fromJson: `(j) => ${fnBase}FromJson(j as Map<String, dynamic>)`,
+                    toJson: `(v) => ${fnBase}ToJson(v)`,
+                };
+            }
+            return {
+                fromJson: `(j) => ${typeName}.fromJson(j as Map<String, dynamic>)`,
+                toJson: `(v) => v.toJson()`,
+            };
+        }
+
+        switch (typeName) {
+            case "int":
+                return { fromJson: `(j) => (j as num).toInt()`, toJson: `(v) => v` };
+            case "double":
+                return { fromJson: `(j) => (j as num).toDouble()`, toJson: `(v) => v` };
+            case "DateTime":
+                return {
+                    fromJson: `(j) => DateTime.parse(j as String)`,
+                    toJson: `(v) => v.toIso8601String()`,
+                };
+            case "dynamic":
+                return { fromJson: `(j) => j`, toJson: `(v) => v` };
+            default:
+                return { fromJson: `(j) => j as ${typeName}`, toJson: `(v) => v` };
+        }
+    }
+
+    /** Ex: Message.fromJson(json, (j) => ..., (j) => ...) */
+    private _genericFromJson(
+        typeName: string,
+        templates: ASTTemplateTranslation[],
+        json: string
+    ): string {
+        const fns = templates.map((t) => this._templateJson(t).fromJson);
+        return `${typeName}.fromJson(${[json, ...fns].join(", ")})`;
+    }
+
+    /** Ex: value.toJson((v) => ..., (v) => ...) */
+    private _genericToJson(value: string, templates: ASTTemplateTranslation[]): string {
+        return `${value}.toJson(${templates.map((t) => this._templateJson(t).toJson).join(", ")})`;
+    }
+
+    /**
+     * Returns the types used for the templates of a type that is an instance of a generic type
+     * (directly or through a typedef), if any.
+     */
+    private _getInstanceTemplates(node: ASTNode): ASTTemplateTranslation[] | undefined {
+        const templates =
+            node instanceof ASTDefinition && node.templatesTranslation.length > 0
+                ? node.templatesTranslation
+                : this._typedefTemplates.get(node.name ?? "");
+        return templates !== undefined && templates.length > 0 ? templates : undefined;
     }
 
     /** Renders the full body of a Dart class for an ASTObject. */
@@ -686,22 +843,64 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             const baseType = varType.replace(/\?$/, "").replace(/^List<(.+)>$/, "$1");
             const localTypeName = baseType.includes(".") ? baseType.split(".").pop()! : baseType;
 
-            if (this._discriminatedUnionTypes.has(localTypeName) && !isList) {
-                // Abstract discriminated union — use local or delegate fromJson function.
-                // If this union is a typedef alias of another (aliasOf set), delegate to
-                // the entity-level fromJson so we don't define a duplicate dispatcher.
-                this._usedCustomFromJsonTypes.set(localTypeName, {
+            // Discriminated unions are abstract classes: they use the fromJson/toJson functions
+            // of the union. If the union is a typedef alias of another (aliasOf set), the
+            // functions of the entity-level union are used, as none are defined for the alias.
+            const unionFnBase = (name: string) =>
+                this._discriminatedUnionDelegate.get(name) ?? Case.camel(name);
+            const mapValue =
+                memberNode instanceof ASTMap &&
+                !memberNode.arrayDimension &&
+                memberNode.value instanceof ASTDefinition &&
+                !memberNode.value.arrayDimension &&
+                this.getAttributeType(memberNode.key) === "String"
+                    ? memberNode.value.name
+                    : undefined;
+
+            if (
+                isList &&
+                (memberNode as any).arrayDimension === 1 &&
+                this._discriminatedUnionTypes.has(localTypeName)
+            ) {
+                // List of a discriminated union: list helpers that use its functions.
+                this._usedCustomFromJsonTypes.set(`${localTypeName}[]`, {
                     typeName: localTypeName,
-                    kind: "discUnion",
+                    kind: "discUnionList",
+                    fnBase: unionFnBase(localTypeName),
                 });
                 const fnBase = Case.camel(localTypeName);
-                const fromJsonFn =
-                    this._discriminatedUnionDelegateFromJson.get(localTypeName) ??
-                    `${fnBase}FromJson`;
                 const namePart = fieldName !== key ? `name: '${key}', ` : "";
                 this.push1(
-                    `@JsonKey(${namePart}fromJson: ${fromJsonFn}, toJson: _${fnBase}ToJson)`
+                    `@JsonKey(${namePart}fromJson: _${fnBase}ListFromJson, toJson: _${fnBase}ListToJson)`
                 );
+                annotationEmitted = true;
+            } else if (mapValue !== undefined && this._discriminatedUnionTypes.has(mapValue)) {
+                // Record of a discriminated union: map helpers that use its functions.
+                this._usedCustomFromJsonTypes.set(`${mapValue}{}`, {
+                    typeName: mapValue,
+                    kind: "discUnionMap",
+                    fnBase: unionFnBase(mapValue),
+                });
+                const fnBase = Case.camel(mapValue);
+                const namePart = fieldName !== key ? `name: '${key}', ` : "";
+                this.push1(
+                    `@JsonKey(${namePart}fromJson: _${fnBase}MapFromJson, toJson: _${fnBase}MapToJson)`
+                );
+                annotationEmitted = true;
+            } else if (this._discriminatedUnionTypes.has(localTypeName) && !isList) {
+                const fnBase = unionFnBase(localTypeName);
+                const namePart = fieldName !== key ? `name: '${key}', ` : "";
+                // toJson functions must accept the type of the field, also when it is nullable.
+                let toJson = `${fnBase}ToJson`;
+                if (isOpt) {
+                    this._usedCustomFromJsonTypes.set(`${localTypeName}?`, {
+                        typeName: localTypeName,
+                        kind: "discUnionNullable",
+                        fnBase,
+                    });
+                    toJson = `_${Case.camel(localTypeName)}NullableToJson`;
+                }
+                this.push1(`@JsonKey(${namePart}fromJson: ${fnBase}FromJson, toJson: ${toJson})`);
                 annotationEmitted = true;
             } else if (this._typedefNames.has(localTypeName) && !isList && isClassLike) {
                 // Locally-defined typedef of a class — use standalone fromJson helper to
@@ -730,6 +929,10 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 const fullType = varType.replace(/\?$/, "");
                 if (!isList && fullType !== typeName) {
                     this._usedCustomFromJsonFullTypes.set(typeName, fullType);
+                    const templates = this._getInstanceTemplates(memberNode);
+                    if (templates) {
+                        this._usedCustomFromJsonTemplates.set(typeName, templates);
+                    }
                 }
                 const namePart = fieldName !== key ? `name: '${key}', ` : "";
                 if (isList) {
