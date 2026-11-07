@@ -133,6 +133,17 @@ interface ILayerResolution {
      * Layer files that declare the type of a declaration without referencing one another.
      */
     ties: Map<ILayerDeclaration, string[]>;
+
+    /**
+     * Local aliases of each model: types of other files that the model redeclares, by the schema
+     * that defines them, with the handle of the alias.
+     */
+    localAliases: Map<object, Map<unknown, ZodTypeAny>>;
+
+    /**
+     * Returns the schema that defines the metadata of a schema.
+     */
+    findMetadataSource: (schema: unknown) => unknown;
 }
 
 /**
@@ -177,6 +188,27 @@ function resolveDeclarations(): ILayerResolution {
             const own = getOwnZod2xMetadata(current);
             if (own !== undefined) {
                 return own;
+            }
+
+            current = getCopySource(current);
+        }
+
+        return undefined;
+    };
+
+    // Schema that defines the metadata of a schema: a declared type, a layer alias or a schema
+    // with metadata set on it.
+    const findMetadataSource = (schema: unknown): unknown => {
+        let current: unknown = schema;
+
+        while (current !== undefined && current !== null && typeof current === "object") {
+            const entry = layered.get(current);
+            if (entry !== undefined) {
+                return "metadata" in entry ? current : findMetadataSource(entry.sameAs);
+            }
+
+            if (getOwnZod2xMetadata(current) !== undefined) {
+                return current;
             }
 
             current = getCopySource(current);
@@ -352,7 +384,38 @@ function resolveDeclarations(): ILayerResolution {
         }
     }
 
-    return { lookup, ties };
+    // A model that redeclares a type of another file uses its alias for the references to that
+    // type. A type redeclared more than once by the same model is ambiguous, so its references
+    // keep using the original type.
+    const localAliases = new Map<object, Map<unknown, ZodTypeAny>>();
+    const ambiguous = new Map<object, Set<unknown>>();
+    for (const declaration of declarations) {
+        const entry = layered.get(declaration.handle);
+        const extended =
+            entry !== undefined && "metadata" in entry ? entry.metadata.aliasOf : undefined;
+
+        if (
+            extended === undefined ||
+            resolveZod2xMetadata(extended, lookup)?.layer?.file === declaration.layer.file
+        ) {
+            continue;
+        }
+
+        const source = findMetadataSource(extended);
+        const aliases = localAliases.get(declaration.model) ?? new Map<unknown, ZodTypeAny>();
+        if (aliases.has(source)) {
+            const sources = ambiguous.get(declaration.model) ?? new Set<unknown>();
+            sources.add(source);
+            ambiguous.set(declaration.model, sources);
+        }
+        aliases.set(source, declaration.handle);
+        localAliases.set(declaration.model, aliases);
+    }
+    ambiguous.forEach((sources, model) =>
+        sources.forEach((source) => localAliases.get(model)!.delete(source))
+    );
+
+    return { lookup, ties, localAliases, findMetadataSource };
 }
 
 function getResolution(): ILayerResolution {
@@ -370,6 +433,22 @@ function getResolution(): ILayerResolution {
 export function getOwnershipTie(handle: ZodTypeAny): string[] | undefined {
     const declaration = declarationsByHandle.get(handle);
     return declaration === undefined ? undefined : getResolution().ties.get(declaration);
+}
+
+/**
+ * Returns the local alias that a model uses in place of a schema, if any: the model redeclares
+ * the type of another file that the schema defines.
+ */
+export function getLocalAliasSubstitute(
+    model: object
+): ((schema: ZodTypeAny) => ZodTypeAny | undefined) | undefined {
+    const resolved = getResolution();
+    const aliases = resolved.localAliases.get(model);
+    if (aliases === undefined || aliases.size === 0) {
+        return undefined;
+    }
+
+    return (schema) => aliases.get(resolved.findMetadataSource(schema));
 }
 
 // Layered metadata is resolved from the declared types when schemas are resolved.

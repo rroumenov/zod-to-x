@@ -8,5 +8,5 @@ type ShippingAddress struct {
 
 type ShippingRequest struct {
     OrderId string `json:"orderId"`
-    Destination CASE_12_DOMAIN.Address `json:"destination"`
+    Destination ShippingAddress `json:"destination"`
 }
