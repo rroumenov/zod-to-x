@@ -87,6 +87,13 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
     }
 
     /**
+     * Dart libraries can import each other.
+     */
+    override supportsCircularImports(): boolean {
+        return true;
+    }
+
+    /**
      * Overrides transpile() to pre-scan discriminated union memberships before the normal pass.
      * This allows transpileStruct() to emit `implements UnionName` on member classes.
      */

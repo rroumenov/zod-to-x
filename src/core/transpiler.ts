@@ -533,6 +533,16 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     }
 
     /**
+     * For Layered Modeling.
+     * Indicates if the output can import files that import it back, directly or through other
+     * files. Imports are not generated when `useImports` is false.
+     * @returns `true` if circular imports between files are supported; otherwise, `false`.
+     */
+    supportsCircularImports(): boolean {
+        return this.opt.useImports === false;
+    }
+
+    /**
      * Transpiles a queue of AST nodes into the target language.
      * @param transpilerQueue - An array of transpilerable types (AST nodes with names).
      * @returns The transpiled code as a string.
