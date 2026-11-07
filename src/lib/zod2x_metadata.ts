@@ -85,7 +85,7 @@ function isCosmeticDefChange(def: any, sourceDef: any): boolean {
  * modified). Zod keeps a reference to the parent of copies with the same definition; copies with
  * a different unknown keys policy are linked here. Copies are linked to their own copies too.
  */
-function linkCopies(schema: object) {
+export function linkCopies(schema: object) {
     const clone = (schema as any).clone;
 
     if (linkedSchemas.has(schema) || typeof clone !== "function") {
@@ -122,6 +122,18 @@ export function getCopySource(schema: unknown): object | undefined {
     return (schema as any)._zod?.parent ?? copySources.get(schema);
 }
 
+/**
+ * Returns the metadata set on a schema itself, without the one inherited from the schema it was
+ * copied from.
+ */
+export function getOwnZod2xMetadata(schema: unknown): IZod2xMetadata | undefined {
+    return typeof schema === "object" && schema !== null ? store.get(schema) : undefined;
+}
+
+/**
+ * Returns the metadata of a schema: its own metadata or, if it has none, the metadata of the
+ * schema it was copied from by Zod without changing the type it represents.
+ */
 export function getZod2xMetadata(schema: unknown): IZod2xMetadata | undefined {
     let current: unknown = schema;
 
@@ -181,18 +193,42 @@ export interface IZod2xResolvedMetadata {
 }
 
 /**
+ * Returns the metadata of a schema to resolve.
+ */
+export type Zod2xMetadataLookup = (schema: unknown) => IZod2xMetadata | undefined;
+
+/**
+ * Lookup that adds the layered modeling metadata (type names and layers of the types declared by
+ * layered models), which is not stored in the schemas but resolved from the created models.
+ */
+let layeredLookup: Zod2xMetadataLookup | undefined;
+
+/**
+ * Sets the lookup used by default to resolve the metadata of schemas. Used by layered modeling.
+ */
+export function setLayeredMetadataLookup(lookup: Zod2xMetadataLookup) {
+    layeredLookup = lookup;
+}
+
+/**
  * Returns the metadata of a schema, resolving the information derived from the schemas it
  * references (original type of layer aliases, generic type and templates of generic instances).
+ *
+ * @param lookup - Returns the metadata of each schema. Defaults to the layered modeling lookup,
+ *                 which falls back to the metadata set on the schemas.
  */
-export function resolveZod2xMetadata(schema: unknown): IZod2xResolvedMetadata | undefined {
-    const metadata = getZod2xMetadata(schema);
+export function resolveZod2xMetadata(
+    schema: unknown,
+    lookup: Zod2xMetadataLookup = layeredLookup ?? getZod2xMetadata
+): IZod2xResolvedMetadata | undefined {
+    const metadata = lookup(schema);
 
     if (metadata === undefined) {
         return undefined;
     }
 
     if (metadata.aliasOf !== undefined) {
-        const original = resolveZod2xMetadata(metadata.aliasOf);
+        const original = resolveZod2xMetadata(metadata.aliasOf, lookup);
         const isGenericInstance = original?.isGenericChild === false;
 
         return {
@@ -208,13 +244,13 @@ export function resolveZod2xMetadata(schema: unknown): IZod2xResolvedMetadata | 
     }
 
     if (metadata.genericOf !== undefined) {
-        const generic = resolveZod2xMetadata(metadata.genericOf.generic);
+        const generic = resolveZod2xMetadata(metadata.genericOf.generic, lookup);
 
         return {
             typeName: metadata.typeName ?? generic?.typeName,
             layer: metadata.layer ?? generic?.layer,
             genericTypes: metadata.genericOf.templates.map(([_key, template]) => {
-                const templateMetadata = resolveZod2xMetadata(template);
+                const templateMetadata = resolveZod2xMetadata(template, lookup);
                 return {
                     schema: template,
                     typeName: templateMetadata?.typeName,

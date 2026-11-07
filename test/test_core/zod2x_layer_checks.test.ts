@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { describe, expect, test } from "vitest";
-import { Application, Domain, extendZod, Zod2XModel, Zod2XTranspilers } from "../../dist";
+import { Application, Domain, extendZod, Layer, Zod2XModel, Zod2XTranspilers } from "../../dist";
 extendZod(z);
 
 const { Zod2Cpp, Zod2Cpp17, Zod2Dart, Zod2Go, Zod2Py, Zod2Ts } = Zod2XTranspilers;
@@ -98,6 +98,60 @@ describe("Layered model checks", () => {
             expect(tieDomain.transpile(Zod2Ts)).toContain("export interface Address {");
             expect(tieApp.transpile(Zod2Ts)).toContain(
                 "export interface Address extends TIE_DOMAIN.Address {}"
+            );
+        });
+    });
+
+    describe("Layered resolution", () => {
+        test("Model properties are copies of the declared schemas, which are not modified", () => {
+            const address = z.object({ street: z.string() });
+            const ownKeys = Object.keys(address);
+
+            @Domain({ namespace: "RES_COPY", file: "res_copy" })
+            class ResCopy extends Zod2XModel {
+                readonly Address = address;
+            }
+            const resCopy = new ResCopy();
+
+            expect(resCopy.Address).not.toBe(address);
+            expect(resCopy.Address.parse({ street: "Main" })).toEqual({ street: "Main" });
+            expect(() => resCopy.Address.parse({})).toThrow();
+            expect(resCopy.transpile(Zod2Ts)).toContain("export interface Address {");
+            expect(Object.keys(address).filter((key) => !ownKeys.includes(key))).toEqual([
+                // Wrapped to link `.strict()` and similar copies until they are detected by
+                // structure.
+                "clone",
+            ]);
+        });
+
+        test("Types belong to the lowest layer, whatever the creation order", () => {
+            const shared = z.object({ id: z.string() });
+
+            @Layer({ namespace: "RES_INFRA", file: "res_infra", index: 2 })
+            class ResInfra extends Zod2XModel {
+                readonly Entity = shared;
+            }
+
+            @Application({ namespace: "RES_APP", file: "res_app" })
+            class ResApp extends Zod2XModel {
+                readonly Entity = shared;
+            }
+
+            @Domain({ namespace: "RES_DOMAIN", file: "res_domain" })
+            class ResDomain extends Zod2XModel {
+                readonly Entity = shared;
+            }
+
+            const resInfra = new ResInfra();
+            const resApp = new ResApp();
+            const resDomain = new ResDomain();
+
+            expect(resDomain.transpile(Zod2Ts)).toContain("export interface Entity {");
+            expect(resApp.transpile(Zod2Ts)).toContain(
+                "export interface Entity extends RES_DOMAIN.Entity {}"
+            );
+            expect(resInfra.transpile(Zod2Ts)).toContain(
+                "export interface Entity extends RES_DOMAIN.Entity {}"
             );
         });
     });
