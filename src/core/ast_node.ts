@@ -686,10 +686,17 @@ export class Zod2Ast {
         if (opt?.discriminantKey) {
             if (Object.keys(item.properties).includes(opt.discriminantKey)) {
                 const key = opt.discriminantKey;
-                if (item.properties[key] instanceof ASTLiteral) {
+                // Instances of generic types take the discriminant from the type used for its
+                // template (e.g. `type: z.literal("A")` for `type: createGenericType("T")`).
+                const property = item.properties[key];
+                const discriminant =
+                    property instanceof ASTGenericType
+                        ? templatesTranslation?.[[...item.templates].indexOf(property.name)]?.type
+                        : property;
+                if (discriminant instanceof ASTLiteral) {
                     /* Used for serialization purposes, it is parsed as string for
                      * convenience */
-                    discriminantValue = item.properties[key].value.toString();
+                    discriminantValue = discriminant.value.toString();
                 } else {
                     console.warn(`Consider to set '${key}' key of '${name}' as ZodLiteral`);
                 }
