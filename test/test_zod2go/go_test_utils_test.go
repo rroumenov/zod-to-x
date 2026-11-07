@@ -48,8 +48,8 @@ func testSerialization(t *testing.T, name string, fixture []byte, v any) {
 }
 
 // ── Discriminated union standalone fixtures ───────────────────────────────────
-// Use UnmarshalDiscriminatedUnionItem for dispatch (interface-typed parent field
-// cannot be deserialized directly).
+// Dispatched by UnmarshalDiscriminatedUnionItem, also used by the UnmarshalJSON method of the
+// structs with fields of the union.
 var jObjectItemWithDiscriminator = []byte(`{"key": "testKey", "discriminator": "Enum1"}`)
 var jOtherObjectItemWithDiscriminator = []byte(`{"otherKey": "testOtherKey", "discriminator": "Enum2"}`)
 
@@ -57,7 +57,7 @@ var jOtherObjectItemWithDiscriminator = []byte(`{"otherKey": "testOtherKey", "di
 // Go serialization notes:
 //   setItem: {"key":{}} object form (map[string]struct{} marshals as object)
 //   nullableItem: omitted (nil *T with omitempty → key absent on marshal)
-//   discriminatedUnionItem: null — parent struct field is interface-typed; use UnmarshalDiscriminatedUnionItem for standalone dispatch
+//   discriminatedUnionItem: interface-typed field, deserialized by the UnmarshalJSON method of the struct
 
 var jSupportedSchemas = []byte(`{
 	"stringItem": "testString",
@@ -78,7 +78,7 @@ var jSupportedSchemas = []byte(`{
 	"setItem": {"setValue1": {}, "setValue2": {}},
 	"tupleItem": [42.42, "tupleString", true],
 	"unionItem": {"key": "key1"},
-	"discriminatedUnionItem": null,
+	"discriminatedUnionItem": {"otherKey": "otherKey4", "discriminator": "Enum2"},
 	"intersectionItem": {"key": "key3", "otherKey": "otherKey"},
 	"anyItem": {"anyKey": "anyValue"},
 	"optionalItem": "optionalValue"
@@ -106,7 +106,7 @@ var jSupportedSchemasLayeredEntity = []byte(`{
 	"setItem": {"setValue1": {}, "setValue2": {}},
 	"tupleItem": [42.42, "tupleString", true],
 	"unionItem": {"key": "key1"},
-	"discriminatedUnionItem": null,
+	"discriminatedUnionItem": {"otherKey": "otherKey4", "discriminator": "Enum2"},
 	"intersectionItem": {"key": "key3", "otherKey": "otherKey"},
 	"anyItem": {"anyKey": "anyValue"},
 	"optionalItem": "optionalValue"
@@ -131,7 +131,7 @@ var jSupportedSchemasLayeredApplication = []byte(`{
 	"newSetItem": {"setValue1": {}, "setValue2": {}},
 	"newTupleItem": [42.42, "tupleString", true],
 	"newUnionItem": {"key": "key1"},
-	"newDiscriminatedUnionItem": null,
+	"newDiscriminatedUnionItem": {"key": "key4", "discriminator": "Enum1"},
 	"newIntersectionItem": {"key": "key3", "otherKey": "otherKey"},
 	"newAnyItem": {"anyKey": "anyValue"},
 	"newOptionalItem": "optionalValue"

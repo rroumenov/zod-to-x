@@ -23,5 +23,6 @@ export interface EventLog {
     message: AnyMessage;
     history: AnyEvent[];
     last?: AnyEvent;
+    byId: Record<string, AnyEvent>;
 }
 
