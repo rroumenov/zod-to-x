@@ -15,7 +15,7 @@ extendZod(z);
  * - Use case:
  * A layer composes types of a lower layer in a discriminated union: types of the other layer
  * only, mixed with a local type, and instances of a generic type of the other layer. The unions
- * are used as fields (also in arrays and as optional fields).
+ * are used as fields (also in arrays, records and as optional fields).
  *
  * - Previous state:
  * The variants are declared in another file, so the union could not be declared on them:
@@ -104,6 +104,7 @@ class Case19App extends Zod2XModel {
         message: this.AnyMessage,
         history: z.array(this.AnyEvent),
         last: this.AnyEvent.optional(),
+        byId: z.record(z.string(), this.AnyEvent),
     });
 }
 

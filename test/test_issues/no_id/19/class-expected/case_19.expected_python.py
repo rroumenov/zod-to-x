@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union
 import case_19_domain as CASE_19_DOMAIN
 
 class BaseSchema(BaseModel):
@@ -45,4 +45,5 @@ class EventLog(BaseSchema):
     message: AnyMessage
     history: List[AnyEvent]
     last: Optional[AnyEvent] = None
+    by_id: Dict[str, AnyEvent]
 

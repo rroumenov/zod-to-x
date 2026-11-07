@@ -28,6 +28,7 @@ export class EventLog {
     message: AnyMessage;
     history: AnyEvent[];
     last?: AnyEvent;
+    byId: Record<string, AnyEvent>;
 
     constructor(data: EventLog) {
         this.event = data.event;
@@ -35,6 +36,7 @@ export class EventLog {
         this.message = data.message;
         this.history = data.history;
         this.last = data.last;
+        this.byId = data.byId;
     }
 }
 

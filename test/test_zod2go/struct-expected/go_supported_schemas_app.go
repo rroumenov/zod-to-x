@@ -1,6 +1,9 @@
 package models
 
-import GO_SUPPORTED_SCHEMAS "./go_supported_schemas_entity"
+import (
+	"encoding/json"
+	GO_SUPPORTED_SCHEMAS "./go_supported_schemas_entity"
+)
 
 type NewStringItem = GO_SUPPORTED_SCHEMAS.StringItem
 
@@ -76,4 +79,24 @@ type GoSupportedSchemasApplication struct {
 
     // A nullable string
     NewNullableItem *string `json:"newNullableItem,omitempty"`
+}
+
+// UnmarshalJSON deserializes the fields of GoSupportedSchemasApplication whose type is a discriminated union.
+func (s *GoSupportedSchemasApplication) UnmarshalJSON(data []byte) error {
+    type alias GoSupportedSchemasApplication
+    aux := struct {
+        *alias
+        NewDiscriminatedUnionItem json.RawMessage `json:"newDiscriminatedUnionItem"`
+    }{alias: (*alias)(s)}
+    if err := json.Unmarshal(data, &aux); err != nil {
+        return err
+    }
+    if len(aux.NewDiscriminatedUnionItem) > 0 && string(aux.NewDiscriminatedUnionItem) != "null" {
+        v, err := GO_SUPPORTED_SCHEMAS.UnmarshalDiscriminatedUnionItem(aux.NewDiscriminatedUnionItem)
+        if err != nil {
+            return err
+        }
+        s.NewDiscriminatedUnionItem = v
+    }
+    return nil
 }

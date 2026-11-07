@@ -171,4 +171,29 @@ replace generics_app => ./generics_app
 EOF
 run_go_test "$TMPDIR_GENERICS" "Layered Generics"
 
+# ─── Issue case 19: unions of types of another layer (app + domain) ──────────
+ISSUE_19="$SCRIPT_DIR/../test_issues/no_id/19/struct-expected"
+TMPDIR_CASE_19="$TMPDIR_BASE/case_19"
+mkdir -p "$TMPDIR_CASE_19/case_19_domain"
+cp "$ISSUE_19/case_19_domain.expected_go.go" "$TMPDIR_CASE_19/case_19_domain/case_19_domain.go"
+cat > "$TMPDIR_CASE_19/case_19_domain/go.mod" << 'EOF'
+module case_19_domain
+go 1.21
+EOF
+
+# Rewrite "./case_19_domain" → "case_19_domain"
+sed 's|"./case_19_domain"|"case_19_domain"|g' \
+    "$ISSUE_19/case_19.expected_go.go" > "$TMPDIR_CASE_19/case_19.go"
+cp "$SCRIPT_DIR/go_test_utils_test.go"  "$TMPDIR_CASE_19/"
+cp "$SCRIPT_DIR/issues/case_19_test.go" "$TMPDIR_CASE_19/"
+cat > "$TMPDIR_CASE_19/go.mod" << 'EOF'
+module models
+go 1.21
+
+require case_19_domain v0.0.0
+
+replace case_19_domain => ./case_19_domain
+EOF
+run_go_test "$TMPDIR_CASE_19" "Issue case 19"
+
 echo "All Go native tests passed!"

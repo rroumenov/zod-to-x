@@ -6,7 +6,9 @@ import {
     ASTDefinition,
     ASTEnum,
     ASTIntersection,
+    ASTMap,
     ASTNode,
+    ASTNodes,
     ASTObject,
     ASTUnion,
     TExtendedTypeKind,
@@ -25,9 +27,25 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
 
     protected lib;
 
+    /**
+     * Unions of the transpiled file and of the files it imports, by node key.
+     */
+    private _unions = new Map<string, ASTUnion>();
+
     constructor(opt: IZod2GoOpt = {}) {
         super({ ...defaultOpts, ...opt });
         this.lib = getLibs();
+    }
+
+    transpile(transpilerQueue: ASTNodes): string {
+        this._unions.clear();
+        transpilerQueue.nodes.forEach((node, key) => {
+            if (node instanceof ASTUnion) {
+                this._unions.set(key, node);
+            }
+        });
+
+        return super.transpile(transpilerQueue);
     }
 
     protected runBefore(): void {
@@ -291,18 +309,41 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
 
         if (data.discriminantKey) {
             const methodName = `is${data.name}`;
+
+            // Methods cannot be declared on types of other packages, so their variants are
+            // wrapped in local types that embed them: their fields and their JSON are the same.
+            const variantTypes = data.options.map((opt, i) => {
+                if (!opt.parentFile) {
+                    return optionNames[i];
+                }
+                const discriminantValue = (opt as ASTDefinition).constraints?.discriminantValue;
+                const baseName = optionNames[i].replace(/\[.*$/, "").split(".").pop()!;
+                return `${data.name}${Case.pascal(String(discriminantValue ?? baseName))}`;
+            });
+
             this.push0(`// ${data.name} is a discriminated union on "${data.discriminantKey}".`);
-            this.push0(`// Possible types: ${optionNames.join(", ")}`);
+            this.push0(`// Possible types: ${variantTypes.join(", ")}`);
             this.push0(`type ${data.name} interface {`);
             this.push1(`${methodName}()`);
             this.push0(`}\n`);
+
+            data.options.forEach((opt, i) => {
+                if (opt.parentFile) {
+                    this.push0(
+                        `// ${variantTypes[i]} is the ${data.name} variant of ${optionNames[i]}.`
+                    );
+                    this.push0(`type ${variantTypes[i]} struct {`);
+                    this.push1(optionNames[i]);
+                    this.push0(`}\n`);
+                }
+            });
 
             // Marker stubs: one no-op method per member type so each satisfies the interface.
             // For generic instantiations (e.g. "HttpSuccessfulResponse[SomeDtoResult]") we emit
             // a generic receiver "func (t Base[T]) isXxx() {}" using the base type name only, with
             // one type parameter per template, once for all the instances of the generic type.
             const receivers = new Set<string>();
-            optionNames.forEach((name, i) => {
+            variantTypes.forEach((name, i) => {
                 const bracketIdx = name.indexOf("[");
                 if (bracketIdx === -1) {
                     receivers.add(name);
@@ -321,7 +362,7 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
 
             // UnmarshalXxx helper — only when every member has a discriminant value in the AST.
             const optionsData = data.options.map((opt, i) => ({
-                typeName: optionNames[i],
+                typeName: variantTypes[i],
                 discriminantValue: (opt as ASTDefinition).constraints?.discriminantValue as
                     | string
                     | undefined,
@@ -435,6 +476,170 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
             this._transpileMember(fieldName, key, value);
         }
 
+        this.push0(`}\n`);
+
+        this._transpileUnionFieldsUnmarshal(data);
+    }
+
+    /**
+     * Returns the function that deserializes a discriminated union (`UnmarshalXxx`), if any.
+     */
+    private _getUnionUnmarshal(node: ASTNode): string | undefined {
+        if (!(node instanceof ASTDefinition) || node.instanceType !== ASTUnion.kind) {
+            return undefined;
+        }
+
+        const key =
+            node.parentFile !== undefined && node.aliasOf === undefined
+                ? `${node.parentFile}::${node.name}`
+                : node.name;
+        const union = this._unions.get(key);
+        const hasUnmarshal =
+            union?.discriminantKey !== undefined &&
+            union.options.every(
+                (opt) => (opt as ASTDefinition).constraints?.discriminantValue !== undefined
+            );
+
+        if (!hasUnmarshal) {
+            return undefined;
+        }
+
+        // Layer aliases of unions are Go type aliases: the function of the original is used.
+        const name = `Unmarshal${union.aliasOf ?? union.name}`;
+        return this.isExternalTypeImport(union) && union.parentNamespace
+            ? this.getTypeFromExternalNamespace(union.parentNamespace, name)
+            : name;
+    }
+
+    /**
+     * Returns how a field whose type is a discriminated union is deserialized, if it is one.
+     */
+    private _getUnionField(node: ASTNode):
+        | {
+              kind: "single" | "array" | "map";
+              unmarshal: string;
+              itemType: string;
+              keyType?: string;
+          }
+        | undefined {
+        const itemType = (item: ASTNode) =>
+            this.getAttributeType(
+                Object.assign(Object.create(item), { arrayDimension: undefined })
+            );
+
+        if (node instanceof ASTMap && !node.arrayDimension) {
+            const unmarshal = node.value.arrayDimension
+                ? undefined
+                : this._getUnionUnmarshal(node.value);
+            return unmarshal
+                ? {
+                      kind: "map",
+                      unmarshal,
+                      itemType: itemType(node.value),
+                      keyType: this.getAttributeType(node.key),
+                  }
+                : undefined;
+        }
+
+        const unmarshal = this._getUnionUnmarshal(node);
+        if (unmarshal === undefined || (node.arrayDimension ?? 0) > 1) {
+            return undefined;
+        }
+
+        return {
+            kind: node.arrayDimension ? "array" : "single",
+            unmarshal,
+            itemType: itemType(node),
+        };
+    }
+
+    /**
+     * Ex: for the fields `Event AnyEvent` and `History []AnyEvent`
+     * func (s *EventLog) UnmarshalJSON(data []byte) error {
+     *     type alias EventLog
+     *     aux := struct {
+     *         *alias
+     *         Event json.RawMessage `json:"event"`
+     *         History []json.RawMessage `json:"history"`
+     *     }{alias: (*alias)(s)}
+     *     ...
+     * }
+     *
+     * encoding/json cannot deserialize interfaces, so the fields whose type is a discriminated
+     * union are deserialized as raw JSON, and then by the function of the union. The alias type
+     * deserializes the other fields without calling this method again.
+     */
+    private _transpileUnionFieldsUnmarshal(data: ASTObject): void {
+        // Generic types cannot declare the local alias type in their methods.
+        if (data.templates.size > 0 || this.opt.useJsonTags === false) {
+            return;
+        }
+
+        const fields = Object.entries(data.properties)
+            .map(([key, node]) => ({
+                key,
+                name: this.opt.keepKeys === true ? key : Case.pascal(key),
+                isPointer: node.isOptional || node.isNullable,
+                field: this._getUnionField(node),
+            }))
+            .filter((i) => i.field !== undefined);
+
+        if (fields.length === 0) {
+            return;
+        }
+
+        this.imports.add(this.lib.jsonPackage);
+
+        const rawTypes = { single: "json.RawMessage", array: "[]json.RawMessage" };
+        this.push0(
+            `// UnmarshalJSON deserializes the fields of ${data.name} whose type is a discriminated union.`
+        );
+        this.push0(`func (s *${data.name}) UnmarshalJSON(data []byte) error {`);
+        this.push1(`type alias ${data.name}`);
+        this.push1(`aux := struct {`);
+        this.push2(`*alias`);
+        for (const { key, name, field } of fields) {
+            const rawType =
+                field!.kind === "map"
+                    ? `map[${field!.keyType}]json.RawMessage`
+                    : rawTypes[field!.kind];
+            this.push2(`${name} ${rawType} \`json:"${key}"\``);
+        }
+        this.push1(`}{alias: (*alias)(s)}`);
+        this.push1(`if err := json.Unmarshal(data, &aux); err != nil {`);
+        this.push2(`return err`);
+        this.push1(`}`);
+
+        for (const { name, isPointer, field } of fields) {
+            const { kind, unmarshal, itemType, keyType } = field!;
+            const ref = isPointer ? "&" : "";
+
+            if (kind === "single") {
+                this.push1(`if len(aux.${name}) > 0 && string(aux.${name}) != "null" {`);
+                this.push2(`v, err := ${unmarshal}(aux.${name})`);
+                this.push2(`if err != nil {`);
+                this.push3(`return err`);
+                this.push2(`}`);
+                this.push2(`s.${name} = ${ref}v`);
+                this.push1(`}`);
+            } else {
+                const [itemsType, loopKey] =
+                    kind === "array" ? [`[]${itemType}`, "i"] : [`map[${keyType}]${itemType}`, "k"];
+                this.push1(`if aux.${name} != nil {`);
+                this.push2(`items := make(${itemsType}, len(aux.${name}))`);
+                this.push2(`for ${loopKey}, raw := range aux.${name} {`);
+                this.push3(`v, err := ${unmarshal}(raw)`);
+                this.push3(`if err != nil {`);
+                this.output.push(`${this.indent[4]}return err`);
+                this.push3(`}`);
+                this.push3(`items[${loopKey}] = v`);
+                this.push2(`}`);
+                this.push2(`s.${name} = ${ref}items`);
+                this.push1(`}`);
+            }
+        }
+
+        this.push1(`return nil`);
         this.push0(`}\n`);
     }
 
