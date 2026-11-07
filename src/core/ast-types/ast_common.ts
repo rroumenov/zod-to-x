@@ -78,6 +78,11 @@ export type ASTTemplateTranslation = Pick<
     "parentFile" | "parentNamespace" | "aliasOf"
 > & {
     type?: ASTType;
+
+    /**
+     * Kind of the AST node of a named type (e.g. "ASTEnum", "ASTObject"). See `getASTKind`.
+     */
+    kind?: string;
 };
 
 /**

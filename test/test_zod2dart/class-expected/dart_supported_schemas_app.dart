@@ -67,7 +67,7 @@ class DartSupportedSchemasApplication {
   final NewSetItem newSetItem;
   final NewTupleItem newTupleItem;
   final NewUnionItem newUnionItem;
-  @JsonKey(fromJson: discriminatedUnionItemFromJson, toJson: _newDiscriminatedUnionItemToJson)
+  @JsonKey(fromJson: discriminatedUnionItemFromJson, toJson: discriminatedUnionItemToJson)
   final NewDiscriminatedUnionItem newDiscriminatedUnionItem;
   final NewIntersectionItem newIntersectionItem;
   final NewAnyItem newAnyItem;
@@ -114,7 +114,4 @@ NewObjectItem _newObjectItemFromJson(Object? json) =>
   NewObjectItem.fromJson(json as Map<String, dynamic>);
 
 Map<String, dynamic> _newObjectItemToJson(NewObjectItem value) =>
-  (value as dynamic).toJson() as Map<String, dynamic>;
-
-Map<String, dynamic> _newDiscriminatedUnionItemToJson(NewDiscriminatedUnionItem value) =>
   (value as dynamic).toJson() as Map<String, dynamic>;
