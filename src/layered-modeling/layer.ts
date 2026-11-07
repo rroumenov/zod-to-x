@@ -1,170 +1,17 @@
 import Case from "case";
 
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
-import {
-    getCopySource,
-    getZod2xMetadata,
-    resolveZod2xMetadata,
-    setZod2xMetadata,
-} from "@/lib/zod2x_metadata";
-import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
+import { ZodHelpers } from "@/lib/zod_helpers";
+
+import { declareLayerType, registerLayeredModel } from "./resolver";
+
+export { getLayeredGeneration, getLayeredModels, getOwnershipTie } from "./resolver";
 
 enum EZod2XLayer {
     DOMAIN = 0,
     APPLICATION = 1,
     INFRASTRUCTURE = 2,
     PRESENTATION = 3,
-}
-
-/**
- * Model property that defines a type of a layer.
- */
-interface ITypeOwnership {
-    model: any;
-    prop: string;
-    name: string;
-    layer: IZod2xLayerMetadata;
-
-    /**
-     * Type name set with zod2x before the type was used by a layer, if any.
-     */
-    userTypeName?: string;
-}
-
-/**
- * Model property where each type is defined. Used to move a type to a lower layer when it is used
- * by a higher layer first.
- */
-const ownerships = new WeakMap<ZodTypeAny, ITypeOwnership>();
-
-/**
- * Models created with a layer decorator. Used to analyse the imports between layer files.
- */
-const layeredModels = new Set<object>();
-
-/**
- * Returns the models created with a layer decorator.
- */
-export function getLayeredModels(): ReadonlySet<object> {
-    return layeredModels;
-}
-
-/**
- * Incremented when a layered model is created or a type is moved to another layer. The layered
- * information of the types depends on all created models, so ASTs and imports computed with a
- * previous generation are computed again.
- */
-let layeredGeneration = 0;
-
-/**
- * Returns the current generation of the layered models.
- */
-export function getLayeredGeneration(): number {
-    return layeredGeneration;
-}
-
-/**
- * Schemas read from model properties while each model is being created (models created while
- * creating another model are stacked). A type read from the property of another model is
- * referenced from it, instead of being declared again.
- */
-const readsDuringCreation: Set<ZodTypeAny>[] = [];
-
-/**
- * Layer files of the models of a same layer that declare a type without referencing one another,
- * so the file that defines it would depend on the order in which the models are created.
- */
-const ownershipTies = new WeakMap<ZodTypeAny, Set<string>>();
-
-/**
- * Returns the layer files that declare a type without referencing one another, if any.
- */
-export function getOwnershipTie(schema: ZodTypeAny): string[] | undefined {
-    const files = ownershipTies.get(schema);
-    return files === undefined ? undefined : [...files].sort();
-}
-
-function recordOwnershipTie(schema: ZodTypeAny, files: string[]) {
-    const tie = ownershipTies.get(schema) ?? new Set<string>();
-    files.forEach((file) => tie.add(file));
-    ownershipTies.set(schema, tie);
-}
-
-/**
- * Checks if a schema, or the schema it was cloned from by Zod (e.g. with `.describe()`), was read
- * from a model property.
- */
-function wasReadFromModel(reads: Set<ZodTypeAny>, schema: ZodTypeAny): boolean {
-    let current: any = schema;
-
-    while (current !== undefined && current !== null) {
-        if (reads.has(current)) {
-            return true;
-        }
-        current = getCopySource(current);
-    }
-
-    return false;
-}
-
-/**
- * Exposes a model property through an accessor, so reading it while another model is being
- * created is known. It keeps being writable, as ownership transfers replace it with an alias.
- */
-function exposeModelProperty(model: any, prop: string) {
-    let value = model[prop];
-
-    Object.defineProperty(model, prop, {
-        configurable: true,
-        enumerable: true,
-        get() {
-            readsDuringCreation[readsDuringCreation.length - 1]?.add(value);
-            return value;
-        },
-        set(newValue) {
-            value = newValue;
-        },
-    });
-}
-
-/**
- * Creates a new type that extends an existing one, which is referenced.
- */
-function createLayerAlias(
-    original: ZodTypeAny,
-    layer: IZod2xLayerMetadata,
-    name: string
-): ZodTypeAny {
-    return setZod2xMetadata(ZodHelpers.cloneZod(original), {
-        typeName: name,
-        layer,
-        aliasOf: original,
-    });
-}
-
-/**
- * Moves a type to a lower layer. The model of the higher layer that defined it uses an alias of
- * the type instead, as it would have done if the lower layer had been created first.
- */
-function transferOwnership(zodItem: ZodTypeAny, owner: ITypeOwnership) {
-    const previous = ownerships.get(zodItem);
-    const userTypeName = previous?.userTypeName;
-
-    setZod2xMetadata(zodItem, {
-        ...getZod2xMetadata(zodItem),
-        typeName: userTypeName || owner.name,
-        layer: owner.layer,
-    });
-    ownerships.set(zodItem, { ...owner, userTypeName });
-    layeredGeneration++;
-
-    if (
-        previous !== undefined &&
-        previous.model[previous.prop] === zodItem &&
-        previous.layer.externalInheritance !== false
-    ) {
-        previous.model[previous.prop] = createLayerAlias(zodItem, previous.layer, previous.name);
-    }
 }
 
 /**
@@ -216,132 +63,46 @@ export function Layer(opt: IZod2xLayerMetadata) {
                     return (constructor as any).instance;
                 }
 
-                // Properties of other models read by the property initializers of this model.
-                const reads = new Set<ZodTypeAny>();
-                readsDuringCreation.push(reads);
-
                 super(...args);
                 (constructor as any).instance = this as unknown as T;
-                layeredModels.add(this);
-                layeredGeneration++;
 
-                /**
-                 * Set metadata for each transpilerable property of the class if not already set.
-                 * @param prop - Property name. Its pascal case is used as type name.
-                 * @param zodItem - Property schema.
-                 * @returns The schema to use as property value.
-                 */
-                const setMetadata = (prop: string, zodItem: ZodTypeAny): ZodTypeAny => {
-                    const name = Case.pascal(prop);
-                    const own = getZod2xMetadata(zodItem);
-                    const resolved = resolveZod2xMetadata(zodItem);
-                    const isDerivedType =
-                        own?.aliasOf !== undefined || own?.genericOf !== undefined;
-
-                    if (!isDerivedType && resolved?.layer === undefined) {
-                        // First use of the type: it belongs to this layer. A type name set with
-                        // zod2x is kept.
-                        setZod2xMetadata(zodItem, {
-                            ...own,
-                            typeName: own?.typeName || name,
-                            layer: opt,
-                        });
-                        ownerships.set(zodItem, {
-                            model: this,
-                            prop,
-                            name,
-                            layer: opt,
-                            userTypeName: own?.typeName,
-                        });
-                        return zodItem;
-                    }
-
-                    if (
-                        !isDerivedType &&
-                        resolved!.layer!.file !== opt.file &&
-                        resolved!.layer!.index > opt.index
-                    ) {
-                        // Type used before by a higher layer: it is moved to this layer, so the
-                        // result does not depend on the order in which models are created.
-                        transferOwnership(zodItem, { model: this, prop, name, layer: opt });
-                        return zodItem;
-                    }
-
-                    if (isDerivedType && resolved?.layer === undefined) {
-                        // Instance of a generic type that does not belong to any layer.
-                        setZod2xMetadata(zodItem, {
-                            ...own,
-                            layer: opt,
-                            ...(resolved?.typeName ? {} : { typeName: name }),
-                        });
-                    }
-
-                    if (
-                        !isDerivedType &&
-                        resolved!.layer!.file !== opt.file &&
-                        resolved!.layer!.index === opt.index &&
-                        !wasReadFromModel(reads, zodItem)
-                    ) {
-                        // Type declared by models of the same layer without referencing one
-                        // another: the file that defines it depends on the creation order.
-                        recordOwnershipTie(zodItem, [resolved!.layer!.file, opt.file]);
-                    }
-
-                    const current = resolveZod2xMetadata(zodItem)!;
-                    if (
-                        opt.externalInheritance !== false &&
-                        (current.layer!.file !== opt.file || name !== current.typeName)
-                    ) {
-                        // Using an existing type. A new type is created that inherits from the
-                        // original type.
-                        return createLayerAlias(zodItem, opt, name);
-                    }
-
-                    return zodItem;
+                // Each transpilerable property declares a type of the layer. The property is
+                // replaced by a copy of its schema, so its uses through the model are known. Types,
+                // aliases and owners are resolved when the models are transpiled.
+                const isTranspilerable = (item: any) =>
+                    ZodHelpers.isTranspilerableZodType(item) ||
+                    ZodHelpers.isTranspilerableAliasedZodType(item, opt.basicTypes === false);
+                const declare = (prop: string, item: any) => {
+                    (this as any)[prop] = declareLayerType(
+                        this,
+                        prop,
+                        Case.pascal(prop),
+                        opt,
+                        item
+                    );
                 };
 
-                try {
-                    const lazyProperties: any[] = [];
-                    Object.getOwnPropertyNames(this).forEach((prop) => {
-                        const item = (this as any)[prop];
-
-                        if (
-                            ZodHelpers.isTranspilerableZodType(item) ||
-                            ZodHelpers.isTranspilerableAliasedZodType(
-                                item,
-                                opt.basicTypes === false
-                            )
-                        ) {
-                            (this as any)[prop] = setMetadata(prop, item);
-                        } else if (ZodHelpers.isZodLazy(item)) {
-                            lazyProperties.push(prop);
-                        }
-                    });
-
-                    // Process lazy properties after initial pass to ensure proper metadata
-                    // assignment. Their getters can read properties of other models too.
-                    lazyProperties.forEach((i) => {
-                        const lazyItem = (this as any)[i]._def.getter();
-
-                        if (
-                            ZodHelpers.isTranspilerableZodType(lazyItem) ||
-                            ZodHelpers.isTranspilerableAliasedZodType(
-                                lazyItem,
-                                opt.basicTypes === false
-                            )
-                        ) {
-                            (this as any)[i] = setMetadata(i, lazyItem);
-                        }
-                    });
-                } finally {
-                    readsDuringCreation.pop();
-                }
-
+                const lazyProperties: string[] = [];
                 Object.getOwnPropertyNames(this).forEach((prop) => {
-                    if (ZodHelpers.isZodType((this as any)[prop])) {
-                        exposeModelProperty(this, prop);
+                    const item = (this as any)[prop];
+
+                    if (isTranspilerable(item)) {
+                        declare(prop, item);
+                    } else if (ZodHelpers.isZodLazy(item)) {
+                        lazyProperties.push(prop);
                     }
                 });
+
+                // Lazy properties are declared after the rest, so their getters can use them.
+                lazyProperties.forEach((prop) => {
+                    const lazyItem = (this as any)[prop]._def.getter();
+
+                    if (isTranspilerable(lazyItem)) {
+                        declare(prop, lazyItem);
+                    }
+                });
+
+                registerLayeredModel(this);
             }
         };
     };
