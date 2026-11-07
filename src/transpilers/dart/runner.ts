@@ -6,9 +6,11 @@ import {
     ASTDefinition,
     ASTEnum,
     ASTIntersection,
+    ASTLiteral,
     ASTNode,
     ASTNodes,
     ASTObject,
+    ASTTemplateTranslation,
     ASTUnion,
     NotTranspilerableTypeError,
     TExtendedTypeKind,
@@ -131,7 +133,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                     // Only track types local to this file (no parentFile = not imported)
                     if (name && !opt.parentFile) {
                         const existing = this._unionMembers.get(name) ?? [];
-                        existing.push(node.name);
+                        if (!existing.includes(node.name)) existing.push(node.name);
                         this._unionMembers.set(name, existing);
                     }
                 });
@@ -542,19 +544,24 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 this.push0(`${data.name} ${fnName}FromJson(Map<String, dynamic> json) {`);
                 this.push1(`return switch (json['${data.discriminantKey}']) {`);
 
-                for (const opt of optionsData) {
+                for (const [i, opt] of optionsData.entries()) {
                     const dv = opt.discriminantValue!;
                     const isNumber = !isNaN(Number(dv));
                     const isBool = dv === "true" || dv === "false";
                     const caseVal = isNumber || isBool ? dv : `'${dv}'`;
-                    // For generic types like Foo<Bar>, use 2-arg factory fromJson(json, Bar.fromJson)
+                    // For generic types like Foo<Bar, Baz>, use the factory with one fromJson
+                    // function per template: fromJson(json, (j) => Bar..., (j) => Baz...)
                     const typeNameStr = opt.typeName;
                     const genericMatch = typeNameStr.match(/^([^<]+)<(.+)>$/);
+                    const templates = (data.options[i] as ASTDefinition).templatesTranslation;
                     if (genericMatch) {
                         const baseType = genericMatch[1];
-                        const typeArgStr = genericMatch[2];
+                        const fromJsonFns =
+                            templates.length > 0
+                                ? templates.map((t) => this._templateFromJson(t))
+                                : [`(j) => ${genericMatch[2]}.fromJson(j as Map<String, dynamic>)`];
                         this.push2(
-                            `${caseVal} => ${baseType}.fromJson(json, (j) => ${typeArgStr}.fromJson(j as Map<String, dynamic>)),`
+                            `${caseVal} => ${baseType}.fromJson(json, ${fromJsonFns.join(", ")}),`
                         );
                     } else {
                         this.push2(`${caseVal} => ${typeNameStr}.fromJson(json),`);
@@ -575,6 +582,19 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Returns the function that deserializes the type used for a template of a generic type:
+     * enum values for literals of an enum (`Event<EventKind>`), the class factory otherwise.
+     */
+    private _templateFromJson(template: ASTTemplateTranslation): string {
+        if (template.type instanceof ASTLiteral && template.type.parentEnum) {
+            const enumName = this.getAttributeType(template.type);
+            return `(j) => ${enumName}.values.firstWhere((e) => e.value == j)`;
+        }
+        const typeName = template.type ? this.getAttributeType(template.type) : template.aliasOf!;
+        return `(j) => ${typeName}.fromJson(j as Map<String, dynamic>)`;
+    }
 
     /** Renders the full body of a Dart class for an ASTObject. */
     private _transpileStructBody(data: ASTObject): void {
