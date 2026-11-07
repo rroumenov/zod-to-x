@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace CASE_19_APP {
@@ -55,6 +56,7 @@ namespace CASE_19_APP {
         AnyMessage message;
         std::vector<AnyEvent> history;
         boost::optional<AnyEvent> last;
+        std::unordered_map<std::string, AnyEvent> by_id;
     
     public:
         EventLog() = default;
@@ -78,6 +80,10 @@ namespace CASE_19_APP {
         
         boost::optional<AnyEvent> get_last() const { return this->last; }
         void set_last(boost::optional<AnyEvent> value) { this->last = value; }
+        
+        const std::unordered_map<std::string, AnyEvent>& get_by_id() const { return this->by_id; }
+        std::unordered_map<std::string, AnyEvent>& get_mut_by_id() { return this->by_id; }
+        void set_by_id(const std::unordered_map<std::string, AnyEvent>& value) { this->by_id = value; }
     };
 
 }
@@ -196,6 +202,7 @@ namespace CASE_19_APP {
         j["message"] = x.get_message();
         j["history"] = x.get_history();
         CASE_19_APP::set_opt<AnyEvent>(j, "last", x.get_last());
+        j["byId"] = x.get_by_id();
     }
 
     inline void from_json(const nlohmann::json& j, EventLog& x) {
@@ -204,6 +211,7 @@ namespace CASE_19_APP {
         x.set_message(j.at("message").get<AnyMessage>());
         x.set_history(j.at("history").get<std::vector<AnyEvent>>());
         x.set_last(CASE_19_APP::get_opt<AnyEvent>(j, "last"));
+        x.set_by_id(j.at("byId").get<std::unordered_map<std::string, AnyEvent>>());
     }
 
 }

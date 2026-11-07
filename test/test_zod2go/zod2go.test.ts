@@ -375,6 +375,25 @@ describe("Zod2Go", () => {
             "}\n\n" +
             "type ModelItem struct {\n" +
             '    Item DiscriminatedUnionItem `json:"item"`\n' +
+            "}\n\n" +
+            "// UnmarshalJSON deserializes the fields of ModelItem whose type is a discriminated union.\n" +
+            "func (s *ModelItem) UnmarshalJSON(data []byte) error {\n" +
+            "    type alias ModelItem\n" +
+            "    aux := struct {\n" +
+            "        *alias\n" +
+            '        Item json.RawMessage `json:"item"`\n' +
+            "    }{alias: (*alias)(s)}\n" +
+            "    if err := json.Unmarshal(data, &aux); err != nil {\n" +
+            "        return err\n" +
+            "    }\n" +
+            '    if len(aux.Item) > 0 && string(aux.Item) != "null" {\n' +
+            "        v, err := UnmarshalDiscriminatedUnionItem(aux.Item)\n" +
+            "        if err != nil {\n" +
+            "            return err\n" +
+            "        }\n" +
+            "        s.Item = v\n" +
+            "    }\n" +
+            "    return nil\n" +
             "}";
 
         testOutput(output, expectedOutput);
