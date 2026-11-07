@@ -10,6 +10,7 @@ import {
     Zod2XTranspilers,
     Zod2XTypes,
 } from "../../dist";
+import { snapshotSchema } from "../common/utils";
 extendZod(z);
 
 const buildTs = (schema: any, strict = true) =>
@@ -51,6 +52,60 @@ describe("Zod2X core", () => {
                     "export interface Item {"
                 );
             }
+        });
+
+        test("Schemas are not modified when they are named", () => {
+            const item = z.object({ a: z.string() });
+            const named = item.zod2x("Item");
+            const snapshots = [item, named].map(snapshotSchema);
+
+            expect(buildTs(z.object({ copy: named.strict() }).zod2x("Root"))).toContain(
+                "export interface Item {"
+            );
+            expect(snapshots.map((snapshot) => snapshot.changes())).toEqual([[], []]);
+        });
+
+        test("Type name is kept by copies of objects with members defined by getters", () => {
+            // The getter references a schema that is not initialized when the object is named.
+            const Item: any = z
+                .object({
+                    get owner() {
+                        return Owner;
+                    },
+                    name: z.string(),
+                })
+                .zod2x("Item");
+            const Owner = z.object({ id: z.string() }).zod2x("Owner");
+
+            // Copies created before and after Zod builds the shape of the object.
+            const before = Item.strict();
+            Item.parse({ owner: { id: "1" }, name: "Item" });
+            const copies = [before, before.loose(), Item.strict(), Item.loose().strip()];
+            for (const copy of copies) {
+                const output = buildTs(z.object({ copy }).zod2x("Root"));
+                expect(output).toContain("export interface Item {");
+                expect(output).toContain("owner: Owner;");
+            }
+        });
+
+        test("Copies are resolved when schemas are copies of one another", () => {
+            const base = z.object({ a: z.string() });
+            const described = base.describe("Described").zod2x("Described");
+            const strict = base.strict().zod2x("Strict");
+
+            const output = buildTs(
+                z
+                    .object({
+                        base: base.passthrough().zod2x("Base"),
+                        described: described.loose(),
+                        strict: strict.strip(),
+                    })
+                    .zod2x("Root")
+            );
+            expect(output).toContain("export interface Base {");
+            // Copies by structure are the same type as the first named schema of their structure.
+            expect(output).toContain("described: Described;");
+            expect(output).toContain("strict: Described;");
         });
 
         test("Type name is not inherited by types derived with extend, pick, omit or partial", () => {
