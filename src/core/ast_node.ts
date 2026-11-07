@@ -58,6 +58,12 @@ export interface IZod2AstOpt {
      * Default is false.
      */
     skipBasicTypes?: boolean;
+
+    /**
+     * Resolves the zod2x metadata of a schema. Layered models provide their own resolution.
+     * Defaults to the metadata set on the schemas (`resolveZod2xMetadata`).
+     */
+    resolveMetadata?: (schema: ZodTypeAny) => IZod2xResolvedMetadata | undefined;
 }
 
 interface ISchemasMetadata {
@@ -140,6 +146,13 @@ export class Zod2Ast {
     }
 
     /**
+     * Returns the resolved zod2x metadata of a schema.
+     */
+    private _resolve(schema: ZodTypeAny): IZod2xResolvedMetadata | undefined {
+        return (this.opt.resolveMetadata ?? resolveZod2xMetadata)(schema);
+    }
+
+    /**
      * Returns the key used to store a transpilerable node. Types imported from other files are
      * namespaced by their file, so they do not clash with local types that share the same name.
      * Aliases of external types are local definitions.
@@ -162,8 +175,8 @@ export class Zod2Ast {
         }
 
         if (
-            resolveZod2xMetadata(a)?.genericTypes !== undefined ||
-            resolveZod2xMetadata(b)?.genericTypes !== undefined
+            this._resolve(a)?.genericTypes !== undefined ||
+            this._resolve(b)?.genericTypes !== undefined
         ) {
             return true;
         }
@@ -175,7 +188,9 @@ export class Zod2Ast {
         const sameSignatures = (x: ZodTypeAny[], y: ZodTypeAny[]) =>
             x.length === y.length &&
             x.every(
-                (i, j) => ZodHelpers.getShallowSignature(i) === ZodHelpers.getShallowSignature(y[j])
+                (i, j) =>
+                    ZodHelpers.getShallowSignature(i, this._resolve.bind(this)) ===
+                    ZodHelpers.getShallowSignature(y[j], this._resolve.bind(this))
             );
 
         if (ZodHelpers.isZodObject(a) && ZodHelpers.isZodObject(b)) {
@@ -518,7 +533,7 @@ export class Zod2Ast {
      * affected type properties.
      */
     private _getNames(schema: ZodTypeAny) {
-        const name = resolveZod2xMetadata(schema)?.typeName;
+        const name = this._resolve(schema)?.typeName;
 
         if (!name) {
             let itemProperties: string[] = ["Unknown type"];
@@ -527,14 +542,12 @@ export class Zod2Ast {
                 itemProperties = Object.keys(schema._def.shape());
             } else if (ZodHelpers.isZodAnyUnionType(schema)) {
                 itemProperties = schema._def.options.map(
-                    (i: ZodTypeAny) => resolveZod2xMetadata(i)?.typeName || i._def.typeName
+                    (i: ZodTypeAny) => this._resolve(i)?.typeName || i._def.typeName
                 );
             } else if (ZodHelpers.isZodIntersection(schema)) {
                 itemProperties = [
-                    resolveZod2xMetadata(schema._def.left)?.typeName ||
-                        schema._def.left._def.typeName,
-                    resolveZod2xMetadata(schema._def.right)?.typeName ||
-                        schema._def.right._def.typeName,
+                    this._resolve(schema._def.left)?.typeName || schema._def.left._def.typeName,
+                    this._resolve(schema._def.right)?.typeName || schema._def.right._def.typeName,
                 ];
             } else if (ZodHelpers.isZodAnyEnumType(schema)) {
                 itemProperties = this._getEnumValues(schema).map((i) => i[0]);
@@ -547,7 +560,7 @@ export class Zod2Ast {
             );
         }
 
-        const metadata = resolveZod2xMetadata(schema);
+        const metadata = this._resolve(schema);
 
         return {
             name,
@@ -841,10 +854,7 @@ export class Zod2Ast {
         schema: ZodTypeAny,
         item: ASTAliasedTypes
     ): ASTDefinition | ASTAliasedTypes {
-        if (
-            resolveZod2xMetadata(schema)?.typeName === undefined ||
-            this.opt.skipBasicTypes === true
-        ) {
+        if (this._resolve(schema)?.typeName === undefined || this.opt.skipBasicTypes === true) {
             return item;
         }
 
@@ -915,7 +925,7 @@ export class Zod2Ast {
                 ? ++subSchema.arrayDimension!
                 : 1;
 
-            if (isParentArray && resolveZod2xMetadata(schema)?.typeName) {
+            if (isParentArray && this._resolve(schema)?.typeName) {
                 return this._getArrayAst(schema, subSchema);
             } else {
                 return subSchema;
@@ -932,7 +942,7 @@ export class Zod2Ast {
             let parentEnum: ASTDefinition | undefined = undefined;
             let parentEnumKey: string | undefined = undefined;
 
-            const parentEnumSchema = resolveZod2xMetadata(schema)?.parentEnum;
+            const parentEnumSchema = this._resolve(schema)?.parentEnum;
             if (parentEnumSchema) {
                 parentEnumKey = this._getEnumValues(parentEnumSchema).find(
                     (i) => i[1] === def.value
