@@ -31,6 +31,13 @@ const suites = models.flatMap(([name, model]) => [
         "./test/test_issues/no_id/19",
         "golang"
     ),
+    createGenericTestSuite(
+        name,
+        model,
+        Zod2XTranspilers.Zod2Dart,
+        "./test/test_issues/no_id/19",
+        "dart"
+    ),
 ]);
 
 export const runCase19Suite = () => suites.forEach((suite) => suite());
