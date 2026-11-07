@@ -18,7 +18,8 @@ const json jEventLog = json::parse(R"({
     "mixed": {"kind": "Archived", "id": "2"},
     "message": {"type": "Alert", "payload": {"text": "disk", "level": 3}},
     "history": [{"kind": "Created", "id": "3"}, {"kind": "Deleted", "id": "4"}],
-    "last": {"kind": "Created", "id": "5"}
+    "last": {"kind": "Created", "id": "5"},
+    "byId": {"6": {"kind": "Deleted", "id": "6"}}
 })");
 
 int main() {
@@ -38,7 +39,8 @@ int main() {
         FIELD(log, message).which() == 1 &&
         FIELD(log, history)[0].which() == 0 &&
         FIELD(log, history)[1].which() == 1 &&
-        FIELD(log, last)->which() == 0;
+        FIELD(log, last)->which() == 0 &&
+        FIELD(log, by_id).at("6").which() == 1;
     std::cout << (dispatched ? "Test passed: " : "Test failed: ") << testName
               << " - Variants dispatched by discriminant." << std::endl;
     totalTests++;

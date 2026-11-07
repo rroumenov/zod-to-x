@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace CASE_19_APP {
@@ -41,6 +42,7 @@ namespace CASE_19_APP {
         AnyMessage message;
         std::vector<AnyEvent> history;
         boost::optional<AnyEvent> last;
+        std::unordered_map<std::string, AnyEvent> by_id;
     };
 
 }
@@ -159,6 +161,7 @@ namespace CASE_19_APP {
         j["message"] = x.message;
         j["history"] = x.history;
         CASE_19_APP::set_opt<AnyEvent>(j, "last", x.last);
+        j["byId"] = x.by_id;
     }
 
     inline void from_json(const nlohmann::json& j, EventLog& x) {
@@ -167,6 +170,7 @@ namespace CASE_19_APP {
         x.message = j.at("message").get<AnyMessage>();
         x.history = j.at("history").get<std::vector<AnyEvent>>();
         x.last = CASE_19_APP::get_opt<AnyEvent>(j, "last");
+        x.by_id = j.at("byId").get<std::unordered_map<std::string, AnyEvent>>();
     }
 
 }

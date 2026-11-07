@@ -157,3 +157,23 @@ type GoSupportedSchemas struct {
     // A nullable string
     NullableItem *string `json:"nullableItem,omitempty"`
 }
+
+// UnmarshalJSON deserializes the fields of GoSupportedSchemas whose type is a discriminated union.
+func (s *GoSupportedSchemas) UnmarshalJSON(data []byte) error {
+    type alias GoSupportedSchemas
+    aux := struct {
+        *alias
+        DiscriminatedUnionItem json.RawMessage `json:"discriminatedUnionItem"`
+    }{alias: (*alias)(s)}
+    if err := json.Unmarshal(data, &aux); err != nil {
+        return err
+    }
+    if len(aux.DiscriminatedUnionItem) > 0 && string(aux.DiscriminatedUnionItem) != "null" {
+        v, err := UnmarshalDiscriminatedUnionItem(aux.DiscriminatedUnionItem)
+        if err != nil {
+            return err
+        }
+        s.DiscriminatedUnionItem = v
+    }
+    return nil
+}
