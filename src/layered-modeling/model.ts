@@ -5,7 +5,7 @@ import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 import * as Transpilers from "@/transpilers";
 import { log } from "@/utils/logger";
 
-import { getLayeredModels, getOwnershipTie } from "./layer";
+import { getLayeredGeneration, getLayeredModels, getOwnershipTie } from "./layer";
 
 type TargetKeys = keyof typeof Transpilers;
 type Target<T extends TargetKeys> = (typeof Transpilers)[T];
@@ -15,7 +15,17 @@ type AstOpt = Pick<IZod2AstOpt, "strict">;
 /**
  * Returns the files, other than its own file, of the types used by an AST.
  */
+/**
+ * Files imported by each AST, as ASTs are not modified once built.
+ */
+const importedFilesCache = new WeakMap<ASTNodes, Set<string>>();
+
 function getImportedFiles(astNodes: ASTNodes, ownFile: string): Set<string> {
+    const cached = importedFilesCache.get(astNodes);
+    if (cached !== undefined) {
+        return cached;
+    }
+
     const files = new Set<string>();
     const visited = new Set<object>();
 
@@ -42,6 +52,7 @@ function getImportedFiles(astNodes: ASTNodes, ownFile: string): Set<string> {
     };
 
     visit(astNodes.nodes);
+    importedFilesCache.set(astNodes, files);
     return files;
 }
 
@@ -93,6 +104,7 @@ function findImportCycle(imports: Map<string, Set<string>>, file: string): strin
  */
 export class Zod2XModel {
     private astNodes = new Map<string, ASTNodes>();
+    private astNodesGeneration = -1;
 
     private getModelName(): string {
         const modelName: string = (this as any)["modelName"];
@@ -157,6 +169,14 @@ export class Zod2XModel {
     }
 
     private getAstNode(opt: AstOpt = {}): ASTNodes {
+        // Layered information depends on all created models, so ASTs built before a model was
+        // created (or a type moved to another layer) are built again.
+        const generation = getLayeredGeneration();
+        if (generation !== this.astNodesGeneration) {
+            this.astNodes.clear();
+            this.astNodesGeneration = generation;
+        }
+
         const cacheKey = JSON.stringify({ strict: opt.strict ?? true });
         const cached = this.astNodes.get(cacheKey);
         if (cached) {
@@ -186,6 +206,18 @@ export class Zod2XModel {
     }
 
     /**
+     * Returns an AST of the model to know the files it imports: any AST built for the current
+     * generation (strict mode does not change the imported files), or a non-strict one.
+     */
+    private getImportsAstNode(): ASTNodes {
+        if (this.astNodesGeneration === getLayeredGeneration() && this.astNodes.size > 0) {
+            return this.astNodes.values().next().value!;
+        }
+
+        return this.getAstNode({ strict: false });
+    }
+
+    /**
      * Checks that the file of this model does not import itself back through the files of other
      * layered models, for transpilers that do not support circular imports.
      */
@@ -201,7 +233,7 @@ export class Zod2XModel {
             let modelAstNodes: ASTNodes = astNodes;
             if (model !== this) {
                 try {
-                    modelAstNodes = model.getAstNode({ strict: false });
+                    modelAstNodes = model.getImportsAstNode();
                 } catch {
                     return; // Errors of other models are reported when they are transpiled.
                 }

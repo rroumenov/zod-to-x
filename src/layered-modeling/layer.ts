@@ -50,6 +50,20 @@ export function getLayeredModels(): ReadonlySet<object> {
 }
 
 /**
+ * Incremented when a layered model is created or a type is moved to another layer. The layered
+ * information of the types depends on all created models, so ASTs and imports computed with a
+ * previous generation are computed again.
+ */
+let layeredGeneration = 0;
+
+/**
+ * Returns the current generation of the layered models.
+ */
+export function getLayeredGeneration(): number {
+    return layeredGeneration;
+}
+
+/**
  * Schemas read from model properties while each model is being created (models created while
  * creating another model are stacked). A type read from the property of another model is
  * referenced from it, instead of being declared again.
@@ -138,6 +152,7 @@ function transferOwnership(zodItem: ZodType, owner: ITypeOwnership) {
         layer: owner.layer,
     });
     ownerships.set(zodItem, { ...owner, userTypeName });
+    layeredGeneration++;
 
     if (
         previous !== undefined &&
@@ -204,6 +219,7 @@ export function Layer(opt: IZod2xLayerMetadata) {
                 super(...args);
                 (constructor as any).instance = this as unknown as T;
                 layeredModels.add(this);
+                layeredGeneration++;
 
                 /**
                  * Set metadata for each transpilerable property of the class if not already set.
