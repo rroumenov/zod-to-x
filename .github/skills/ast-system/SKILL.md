@@ -73,7 +73,7 @@ ASTAliasedTypes = ASTString | ASTNumber | ASTBoolean | ASTLiteral | ASTDate | AS
 2. Recursively walks the schema tree
 3. Converts each Zod type to its AST equivalent
 4. Named sub-schemas become `ASTDefinition` references
-5. Generic markers (`z.promise(z.literal("T"))`) become `ASTGenericType`
+5. Generic markers (`createGenericType("T")`, read with `ZodHelpers.getGenericTemplateName`; the previous `z.promise(z.literal("T"))` marker is still recognised) become `ASTGenericType`
 6. Layer metadata flows through to `parentFile`, `parentNamespace`, `aliasOf`
 
 ## Transpiler Dispatch
@@ -100,7 +100,7 @@ Property types go through `getAttributeType()` which dispatches to the primitive
 
 ### Generics Flow
 
-1. `createGenericType("T")` → `z.promise(z.literal("T"))` marker
+1. `createGenericType("T")` → `z.unknown()` marker with `genericTemplate: "T"` zod2x metadata
 2. `Zod2Ast.build()` recognizes the marker → creates `ASTGenericType { name: "T" }`
 3. Object with generics gets `templates: Set<string>` and `templatesTranslation: { parentFile?, parentNamespace?, aliasOf?, type? }[]` (named templates by name, other templates by their AST in `type`)
 4. `Zod2X.getGenericTemplatesTranslation()` renders (brackets from `genericTemplatesBrackets`) `<T>` / `Generic[T]` / `template<typename T>`

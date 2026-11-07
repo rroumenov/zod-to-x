@@ -33,7 +33,6 @@ import {
     ZodIntersection,
     ZodObject,
     ZodType,
-    ZodLiteral,
 } from "@/lib/zod_helpers";
 import { log } from "@/utils/logger";
 
@@ -398,11 +397,8 @@ export class Zod2Ast {
             for (const key in shape) {
                 const prevWasRequired =
                     properties[key] !== undefined && !properties[key].isOptional;
-                if (
-                    ZodHelpers.isZodPromise<ZodLiteral>(shape[key]) &&
-                    ZodHelpers.isZod2XGeneric(shape[key])
-                ) {
-                    const templateKey = shape[key].unwrap().def.values[0] as string;
+                const templateKey = ZodHelpers.getGenericTemplateName(shape[key]);
+                if (templateKey !== undefined) {
                     properties[key] = new ASTGenericType(templateKey);
                 } else {
                     properties[key] = this._zodToAST(shape[key]);
@@ -613,11 +609,8 @@ export class Zod2Ast {
             const properties: Record<string, ASTType> = {};
             const templates = new Set<string>();
             for (const key in shape) {
-                if (
-                    ZodHelpers.isZodPromise<ZodLiteral>(shape[key]) &&
-                    ZodHelpers.isZod2XGeneric(shape[key])
-                ) {
-                    const templateKey = shape[key].unwrap().def.values[0] as string;
+                const templateKey = ZodHelpers.getGenericTemplateName(shape[key]);
+                if (templateKey !== undefined) {
                     properties[key] = new ASTGenericType(templateKey);
                     if (templates.has(templateKey)) {
                         throw new AstTypeNameDefinitionError(

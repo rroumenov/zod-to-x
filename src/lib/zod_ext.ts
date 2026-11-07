@@ -129,6 +129,12 @@ export interface IZod2xMetadata {
 
     /**
      * For Layered Modeling defining generics.
+     * For generic templates created with `createGenericType`, the template name.
+     */
+    genericTemplate?: string;
+
+    /**
+     * For Layered Modeling defining generics.
      * For generic templates created with `createGenericType`, the type used by `useGenericType`
      * when no type is provided for the template.
      */
