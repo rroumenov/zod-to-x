@@ -137,6 +137,9 @@ DiscriminatedUnionItem discriminatedUnionItemFromJson(Map<String, dynamic> json)
   };
 }
 
+Map<String, dynamic> discriminatedUnionItemToJson(DiscriminatedUnionItem value) =>
+  (value as dynamic).toJson() as Map<String, dynamic>;
+
 // Intersection Item
 @JsonSerializable(explicitToJson: true)
 class IntersectionItem {
@@ -184,7 +187,7 @@ class DartSupportedSchemas {
   final SetItem setItem;
   final TupleItem tupleItem;
   final UnionItem unionItem;
-  @JsonKey(fromJson: discriminatedUnionItemFromJson, toJson: _discriminatedUnionItemToJson)
+  @JsonKey(fromJson: discriminatedUnionItemFromJson, toJson: discriminatedUnionItemToJson)
   final DiscriminatedUnionItem discriminatedUnionItem;
   final IntersectionItem intersectionItem;
   final AnyItem anyItem;
@@ -229,6 +232,3 @@ class DartSupportedSchemas {
 
   Map<String, dynamic> toJson() => _$DartSupportedSchemasToJson(this);
 }
-
-Map<String, dynamic> _discriminatedUnionItemToJson(DiscriminatedUnionItem value) =>
-  (value as dynamic).toJson() as Map<String, dynamic>;

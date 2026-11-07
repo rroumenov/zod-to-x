@@ -47,3 +47,6 @@ UserConfig userConfigFromJson(Map<String, dynamic> json) {
     _ => throw Exception("Unknown UserConfig discriminant: ${json['role']}")
   };
 }
+
+Map<String, dynamic> userConfigToJson(UserConfig value) =>
+  (value as dynamic).toJson() as Map<String, dynamic>;
