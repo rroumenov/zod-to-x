@@ -682,13 +682,11 @@ export class Zod2Ast {
         if (opt?.discriminantKey) {
             if (Object.keys(item.properties).includes(opt.discriminantKey)) {
                 const key = opt.discriminantKey;
-                // Instances of generic types take the discriminant from the type used for its
-                // template (e.g. `type: z.literal("A")` for `type: createGenericType("T")`).
-                const property = item.properties[key];
-                const discriminant =
-                    property instanceof ASTGenericType
-                        ? templatesTranslation?.[[...item.templates].indexOf(property.name)]?.type
-                        : property;
+                // The discriminant is read from the schema, not from the node: the node of a
+                // generic type (or of a type of another file) is shared by all its instances,
+                // whose discriminant is the type used for its template (e.g. `type:
+                // z.literal("A")` for `type: createGenericType("T")`).
+                const discriminant = this._zodToAST(shape[key]);
                 if (discriminant instanceof ASTLiteral) {
                     /* Used for serialization purposes, it is parsed as string for
                      * convenience */
