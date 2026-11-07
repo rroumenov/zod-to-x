@@ -1,7 +1,12 @@
 import Case from "case";
 
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
-import { getZod2xMetadata, resolveZod2xMetadata, setZod2xMetadata } from "@/lib/zod2x_metadata";
+import {
+    getCopySource,
+    getZod2xMetadata,
+    resolveZod2xMetadata,
+    setZod2xMetadata,
+} from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
@@ -82,7 +87,7 @@ function wasReadFromModel(reads: Set<ZodType>, schema: ZodType): boolean {
         if (reads.has(current)) {
             return true;
         }
-        current = current._zod?.parent;
+        current = getCopySource(current);
     }
 
     return false;

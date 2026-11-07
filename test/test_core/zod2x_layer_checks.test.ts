@@ -65,6 +65,7 @@ describe("Layered model checks", () => {
             class TieRefB extends Zod2XModel {
                 readonly Address = tieRefA.Address;
                 readonly Billing = tieRefA.Address.describe("Billing address");
+                readonly Strict = tieRefA.Address.strict();
                 readonly Shipping = z.lazy(() => tieRefA.Address);
                 readonly Customer = z.object({ address: tieRefA.Address });
             }
@@ -73,6 +74,7 @@ describe("Layered model checks", () => {
             const output = tieRefB.transpile(Zod2Ts);
             expect(output).toContain("export interface Address extends TIE_REF_A.Address {}");
             expect(output).toContain("export interface Billing extends TIE_REF_A.Address {}");
+            expect(output).toContain("export interface Strict extends TIE_REF_A.Address {}");
             expect(output).toContain("export interface Shipping extends TIE_REF_A.Address {}");
             expect(tieRefA.transpile(Zod2Ts)).toContain("export interface Address {");
         });

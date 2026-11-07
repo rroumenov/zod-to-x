@@ -295,11 +295,26 @@ export class ZodHelpers {
      * Ex: z.promise(z.literal("K")) will be transpiled to Template<K>
      */
     static isZod2XGeneric(i: ZodType): boolean {
-        return (
-            this.isZodPromise<ZodLiteral>(i) &&
-            this.isZodLiteral(i.unwrap()) &&
-            typeof i.unwrap().def.values[0] === "string"
-        );
+        return this.getGenericTemplateName(i) !== undefined;
+    }
+
+    /**
+     * Returns the template name of a generic template created with `createGenericType`, if the
+     * schema is one. Templates defined as `z.promise(z.literal("T"))` (the marker used by
+     * previous versions) are supported too.
+     */
+    static getGenericTemplateName(i: ZodType): string | undefined {
+        const templateName = getZod2xMetadata(i)?.genericTemplate;
+        if (templateName !== undefined) {
+            return templateName;
+        }
+
+        if (this.isZodPromise<ZodLiteral>(i) && this.isZodLiteral(i.unwrap())) {
+            const value = i.unwrap().def.values[0];
+            return typeof value === "string" ? value : undefined;
+        }
+
+        return undefined;
     }
 
     static createZodObject(properties: Map<string, ZodType>): ZodObject<any> {
@@ -335,8 +350,11 @@ export class ZodHelpers {
  * @returns The generic template.
  */
 export function createGenericType(name: string, defaultType?: ZodType) {
-    const template = Extended.getZ().promise(Extended.getZ().literal(name));
-    return defaultType ? setZod2xMetadata(template, { genericDefault: defaultType }) : template;
+    // Any value is valid for a template until a type is provided for it with `useGenericType`.
+    return setZod2xMetadata(Extended.getZ().unknown(), {
+        genericTemplate: name,
+        ...(defaultType ? { genericDefault: defaultType } : {}),
+    });
 }
 
 /**

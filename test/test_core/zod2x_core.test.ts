@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { describe, expect, test } from "vitest";
 import {
     Application,
+    createGenericType,
     Domain,
     extendZod,
     Zod2Ast,
@@ -32,6 +33,42 @@ describe("Zod2X core", () => {
             expect(output).toContain("export interface User {");
         });
 
+        test("Type name is kept by object schemas copied with another unknown keys policy", () => {
+            const item = () => z.object({ a: z.string() }).zod2x("Item");
+            const copies = [
+                item().strict(),
+                item().strip(),
+                item().passthrough(),
+                item().loose(),
+                item().catchall(z.string()),
+                item().describe("Documented").strict(),
+                item().strict().describe("Documented"),
+                item().strict().loose(),
+            ];
+
+            for (const copy of copies) {
+                expect(buildTs(z.object({ copy }).zod2x("Root"))).toContain(
+                    "export interface Item {"
+                );
+            }
+        });
+
+        test("Type name is not inherited by types derived with extend, pick, omit or partial", () => {
+            const item = z.object({ a: z.string(), b: z.number() }).zod2x("Item");
+            const derivedTypes = [
+                item.extend({ c: z.boolean() }),
+                item.pick({ a: true }),
+                item.omit({ a: true }),
+                item.partial(),
+            ];
+
+            for (const derived of derivedTypes) {
+                expect(() => buildTs(z.object({ derived }).zod2x("Root"))).toThrow(
+                    /object type must have a typeName/
+                );
+            }
+        });
+
         test("Schemas with a Zod id can be named", () => {
             const item = z.object({ a: z.string() }).meta({ id: "CoreItemWithId" });
             expect(() => item.zod2x("Item")).not.toThrow();
@@ -53,6 +90,28 @@ describe("Zod2X core", () => {
             const output = buildTs(root);
             expect(output).toContain("kind: Kind.A;");
             expect(output).toContain("kind: Kind.B;");
+        });
+    });
+
+    describe("Generic types", () => {
+        test("Templates are not Zod promises", () => {
+            expect(createGenericType("T").def.type).not.toBe("promise");
+        });
+
+        test("Templates keep being templates when documented", () => {
+            const box = z
+                .object({ value: createGenericType("T").describe("Boxed value") })
+                .zod2x("Box");
+
+            expect(buildTs(z.object({ box }).zod2x("Root"))).toContain("export interface Box<T> {");
+        });
+
+        test("Templates defined with the previous promise marker are supported", () => {
+            const box = z.object({ value: z.promise(z.literal("T")) }).zod2x("Box");
+
+            const output = buildTs(z.object({ box }).zod2x("Root"));
+            expect(output).toContain("export interface Box<T> {");
+            expect(output).toContain("value: T;");
         });
     });
 

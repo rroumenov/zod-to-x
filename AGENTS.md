@@ -80,12 +80,12 @@ Optional: **`libs.ts`** — Import/include definitions (Python, C++ use this).
 
 - `.zod2x("TypeName")` — assigns output type name to a schema. In layered modeling its optional
 - `.zod2x(zodEnum)` — on `ZodLiteral`, links to parent enum (for discriminated unions)
-- `createGenericType("T")` — creates a generic type placeholder using `z.promise(z.literal("T"))` marker
+- `createGenericType("T")` — creates a generic type placeholder: a `z.unknown()` with `genericTemplate: "T"` zod2x metadata (read with `ZodHelpers.getGenericTemplateName`). The previous `z.promise(z.literal("T"))` marker is still recognised
 - `useGenericType(obj, { slot: concreteType })` — instantiates a generic object
 
 ### Metadata
 
-Metadata is not injected into schemas: it lives in a `WeakMap` keyed by schema instance (`src/lib/zod2x_metadata.ts`), read with `getZod2xMetadata(schema)` and written with `setZod2xMetadata(schema, meta)`. Only source information is stored: `typeName`, `parentEnum`, `layer`, `aliasOf` (reference to the original schema of a layer alias) and `genericOf` (generic schema and template values set by `useGenericType`). Derived information (`parentLayer`, alias type name, `genericTypes`, `isGenericChild`, ...) is computed when needed by `resolveZod2xMetadata(schema)`, so it is always up to date. Schemas cloned by Zod without changing their definition (`.describe()`, `.meta()`, `.clone()`) inherit the metadata of their parent through `_zod.parent`, as a whole (it is not merged).
+Metadata is not injected into schemas: it lives in a `WeakMap` keyed by schema instance (`src/lib/zod2x_metadata.ts`), read with `getZod2xMetadata(schema)` and written with `setZod2xMetadata(schema, meta)`. Only source information is stored: `typeName`, `parentEnum`, `layer`, `aliasOf` (reference to the original schema of a layer alias), `genericOf` (generic schema and template values set by `useGenericType`), and `genericTemplate`/`genericDefault` (set by `createGenericType`). Derived information (`parentLayer`, alias type name, `genericTypes`, `isGenericChild`, ...) is computed when needed by `resolveZod2xMetadata(schema)`, so it is always up to date. Schemas cloned by Zod without changing their definition (`.describe()`, `.meta()`, `.clone()`) inherit the metadata of their parent through `_zod.parent`, as a whole (it is not merged). Object copies that only change the unknown keys policy (`.strict()`, `.strip()`, `.passthrough()`, `.loose()`, `.catchall()`) have no `_zod.parent`: `setZod2xMetadata` wraps the `clone` method of the schema instance (Zod prototypes are not modified) to link them to their source (`getCopySource`), and their own copies too.
 
 ### ZodHelpers
 
