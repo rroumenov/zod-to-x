@@ -117,11 +117,11 @@ describe("Layered model checks", () => {
             expect(resCopy.Address.parse({ street: "Main" })).toEqual({ street: "Main" });
             expect(() => resCopy.Address.parse({})).toThrow();
             expect(resCopy.transpile(Zod2Ts)).toContain("export interface Address {");
-            expect(Object.keys(address).filter((key) => !ownKeys.includes(key))).toEqual([
-                // Wrapped to link `.strict()` and similar copies until they are detected by
-                // structure.
-                "clone",
-            ]);
+            // Only `clone` can be wrapped, to link `.strict()` and similar copies until they are
+            // detected by structure. Zod versions before 4.4 already define it on each instance.
+            const addedKeys = Object.keys(address).filter((key) => !ownKeys.includes(key));
+            expect(addedKeys.filter((key) => key !== "clone")).toEqual([]);
+            expect(Object.keys(address)).toEqual(expect.arrayContaining(ownKeys));
         });
 
         test("Types belong to the lowest layer, whatever the creation order", () => {
