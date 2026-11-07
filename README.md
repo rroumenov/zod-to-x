@@ -710,6 +710,10 @@ For a detailed mapping of supported Zod types across supported targets, please r
 ## Considerations
 - Choose the approach that best suits your needs, either Layered or non-Layered modeling, and avoid mixing them whenever possible, especially when working with enumerations, objects, unions, or intersections (except for `ZodLiteral.zod2x()`, which simply links a literal value to the enumeration it belongs to, if applicable). Their metadata handling differs slightly, which may result in some types not being transpiled as expected.
 
+- In Layered modeling, a type is defined by the model that declares it, and other models use it through that model (`address = userModels.address`). A type declared by models of the same layer in different files without one referencing the other (e.g. a schema defined outside both models) raises an error in strict mode, as the file that defines it would depend on the order in which the models are created. A type declared by models of different layers is defined by the lowest one.
+
+- Python, C++, Go and TypeScript (`outType: "class"`) outputs cannot import files circularly. In Layered modeling, a model whose file imports itself back through other layer files (e.g. two models of the same layer that use types of one another) raises an error in strict mode for those targets. Move the types used by both files to one of them, or to a lower layer. TypeScript interfaces and Dart support circular imports.
+
 - In Layered modeling, the transpilation of primitive types can be completely disabled or combined by defining them outside the layer class:
 ```ts
 // External primitive

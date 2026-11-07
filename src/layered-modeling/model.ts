@@ -1,12 +1,73 @@
 import { ASTNodes, BadLayerDefinitionError, IZod2AstOpt, Zod2Ast } from "@/core";
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
-import { ZodHelpers } from "@/lib/zod_helpers";
+import { getZod2xMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
+import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 import * as Transpilers from "@/transpilers";
+import { log } from "@/utils/logger";
+
+import { getLayeredModels, getOwnershipTie } from "./layer";
 
 type TargetKeys = keyof typeof Transpilers;
 type Target<T extends TargetKeys> = (typeof Transpilers)[T];
 type TargetOpt<K extends TargetKeys> = ConstructorParameters<Target<K>>[0];
 type AstOpt = Pick<IZod2AstOpt, "strict">;
+
+/**
+ * Returns the files, other than its own file, of the types used by an AST.
+ */
+function getImportedFiles(astNodes: ASTNodes, ownFile: string): Set<string> {
+    const files = new Set<string>();
+    const visited = new Set<object>();
+
+    const visit = (value: unknown) => {
+        if (typeof value !== "object" || value === null || visited.has(value)) {
+            return;
+        }
+        visited.add(value);
+
+        if ("_zod" in value) {
+            return; // Zod schemas referenced by AST nodes are not part of the AST.
+        }
+
+        const parentFile = (value as { parentFile?: unknown }).parentFile;
+        if (typeof parentFile === "string" && parentFile !== ownFile) {
+            files.add(parentFile);
+        }
+
+        const children =
+            value instanceof Map || value instanceof Set ? value.values() : Object.values(value);
+        for (const child of children) {
+            visit(child);
+        }
+    };
+
+    visit(astNodes.nodes);
+    return files;
+}
+
+/**
+ * Returns a circular import path that starts and ends in a file, if any.
+ */
+function findImportCycle(imports: Map<string, Set<string>>, file: string): string[] | undefined {
+    const visited = new Set<string>([file]);
+    const pending: string[][] = [[file]];
+
+    while (pending.length > 0) {
+        const path = pending.shift()!;
+
+        for (const next of imports.get(path[path.length - 1]) ?? []) {
+            if (next === file) {
+                return [...path, file];
+            }
+            if (!visited.has(next)) {
+                visited.add(next);
+                pending.push([...path, next]);
+            }
+        }
+    }
+
+    return undefined;
+}
 
 /**
  * Class that provides the foundational structure for defining layered models, managing metadata,
@@ -55,6 +116,46 @@ export class Zod2XModel {
         return layerMetadata;
     }
 
+    /**
+     * Reports an issue of the layered model: an error in strict mode, a warning otherwise.
+     */
+    private reportLayerIssue(message: string, opt: AstOpt, astNodes?: ASTNodes) {
+        if (opt.strict !== false) {
+            throw new BadLayerDefinitionError(message);
+        }
+
+        log.warn(message);
+        astNodes?.warnings.push(message);
+    }
+
+    /**
+     * Returns the issues of types declared by this model and by a model of the same layer in
+     * another file, without one of them referencing the other.
+     */
+    private getOwnershipTieIssues(objectProps: Map<string, ZodType>): string[] {
+        const issues = new Set<string>();
+
+        objectProps.forEach((schema) => {
+            // Layer aliases are checked through the type they extend.
+            for (const item of [schema, getZod2xMetadata(schema)?.aliasOf]) {
+                const files = item === undefined ? undefined : getOwnershipTie(item);
+
+                if (files !== undefined) {
+                    issues.add(
+                        `Type '${resolveZod2xMetadata(item)?.typeName}' is declared by models of ` +
+                            `the same layer in different files (${files.join(", ")}) without ` +
+                            `one referencing the other, so the file that defines it depends on ` +
+                            `the order in which the models are created. Declare it in one model ` +
+                            `and use it in the other through that model (e.g. ` +
+                            `\`address = otherModel.address\`).`
+                    );
+                }
+            }
+        });
+
+        return [...issues];
+    }
+
     private getAstNode(opt: AstOpt = {}): ASTNodes {
         const cacheKey = JSON.stringify({ strict: opt.strict ?? true });
         const cached = this.astNodes.get(cacheKey);
@@ -70,12 +171,57 @@ export class Zod2XModel {
             }
         });
 
+        const tieIssues = this.getOwnershipTieIssues(objectProps);
+        if (tieIssues.length > 0 && opt.strict !== false) {
+            this.reportLayerIssue(tieIssues.join("\n"), opt);
+        }
+
         const astNodes = new Zod2Ast({ ...opt, layer: this.getLayerMetadata() }).build(
             ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName())
         );
+        tieIssues.forEach((issue) => this.reportLayerIssue(issue, opt, astNodes));
         this.astNodes.set(cacheKey, astNodes);
 
         return astNodes;
+    }
+
+    /**
+     * Checks that the file of this model does not import itself back through the files of other
+     * layered models, for transpilers that do not support circular imports.
+     */
+    private checkCircularImports(astNodes: ASTNodes, opt: AstOpt) {
+        const file = this.getLayerMetadata().file;
+        const imports = new Map<string, Set<string>>();
+
+        getLayeredModels().forEach((model) => {
+            if (!(model instanceof Zod2XModel)) {
+                return;
+            }
+
+            let modelAstNodes: ASTNodes = astNodes;
+            if (model !== this) {
+                try {
+                    modelAstNodes = model.getAstNode({ strict: false });
+                } catch {
+                    return; // Errors of other models are reported when they are transpiled.
+                }
+            }
+
+            const modelFile = model.getLayerMetadata().file;
+            const modelImports = imports.get(modelFile) ?? new Set<string>();
+            getImportedFiles(modelAstNodes, modelFile).forEach((i) => modelImports.add(i));
+            imports.set(modelFile, modelImports);
+        });
+
+        const cycle = findImportCycle(imports, file);
+        if (cycle !== undefined) {
+            this.reportLayerIssue(
+                `Circular import between layer files: ${cycle.join(" -> ")}. The output of the ` +
+                    `target language cannot import files circularly. Move the types used by ` +
+                    `both files to one of them, or to a lower layer.`,
+                opt
+            );
+        }
     }
 
     /**
@@ -116,6 +262,12 @@ export class Zod2XModel {
             namespace: this.getLayerMetadata().namespace,
             partFile: this.getLayerMetadata().file,
         } as any);
-        return transpilerInstance.transpile(this.getAstNode(astOpt));
+        const astNodes = this.getAstNode(astOpt);
+
+        if (!transpilerInstance.supportsCircularImports()) {
+            this.checkCircularImports(astNodes, astOpt ?? {});
+        }
+
+        return transpilerInstance.transpile(astNodes);
     }
 }

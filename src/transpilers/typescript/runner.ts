@@ -21,6 +21,14 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         super({ ...defaultOpts, ...opt });
     }
 
+    /**
+     * Interfaces are only used as types, so their imports are erased. Classes extend the classes
+     * of other files (layer aliases), which requires the imported file to be loaded first.
+     */
+    override supportsCircularImports(): boolean {
+        return this.opt.outType !== "class" || super.supportsCircularImports();
+    }
+
     protected runAfter(): void {}
     protected runBefore(): void {}
 

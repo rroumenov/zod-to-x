@@ -53,6 +53,8 @@ Defined in `src/layered-modeling/layer.ts`:
    - Sets `aliasOf` = original schema (a reference: its type name and layer are resolved by `resolveZod2xMetadata`)
    - This creates an import + extends relationship in output
 5. **Second pass** — processes `z.lazy()` properties
+6. **Ownership ties** — properties of other models read while the model is created (also from lazy getters) are tracked. A type already owned by another file of the same layer index that was not read from that model is recorded as a tie (`getOwnershipTie`), reported by `Zod2XModel` for both models
+7. **Exposes properties** — Zod properties become accessors (still writable), so reads from models created later are tracked. The model is added to the registry returned by `getLayeredModels()`
 
 ### Zod2XModel
 
@@ -65,7 +67,7 @@ Defined in `src/layered-modeling/model.ts`. Base class for all layer models.
 | `getModelName()` | Returns decorator-assigned model name |
 | `getLayerMetadata()` | Returns decorator-assigned layer metadata |
 | `getAstNode(opt?)` | Lazy-builds and caches AST from all own Zod properties |
-| `transpile(target, opt?, astOpt?)` | Full transpile: build AST → create transpiler → transpile |
+| `transpile(target, opt?, astOpt?)` | Full transpile: build AST → check circular imports (if the transpiler does not support them) → transpile |
 
 **Usage:**
 ```typescript
