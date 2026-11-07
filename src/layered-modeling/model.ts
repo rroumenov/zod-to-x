@@ -1,6 +1,6 @@
 import { ASTNodes, BadLayerDefinitionError, IZod2AstOpt, Zod2Ast } from "@/core";
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
-import { getZod2xMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
+import { resolveZod2xMetadata } from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
 import * as Transpilers from "@/transpilers";
 import { log } from "@/utils/logger";
@@ -148,20 +148,19 @@ export class Zod2XModel {
         const issues = new Set<string>();
 
         objectProps.forEach((schema) => {
-            // Layer aliases are checked through the type they extend.
-            for (const item of [schema, getZod2xMetadata(schema)?.aliasOf]) {
-                const files = item === undefined ? undefined : getOwnershipTie(item);
+            const files = getOwnershipTie(schema);
 
-                if (files !== undefined) {
-                    issues.add(
-                        `Type '${resolveZod2xMetadata(item)?.typeName}' is declared by models of ` +
-                            `the same layer in different files (${files.join(", ")}) without ` +
-                            `one referencing the other, so the file that defines it depends on ` +
-                            `the order in which the models are created. Declare it in one model ` +
-                            `and use it in the other through that model (e.g. ` +
-                            `\`address = otherModel.address\`).`
-                    );
-                }
+            if (files !== undefined) {
+                // Layer aliases are reported with the name of the type they extend.
+                const metadata = resolveZod2xMetadata(schema);
+                issues.add(
+                    `Type '${metadata?.aliasOf ?? metadata?.typeName}' is declared by models of ` +
+                        `the same layer in different files (${files.join(", ")}) without ` +
+                        `one referencing the other, so the file that defines it depends on ` +
+                        `the order in which the models are created. Declare it in one model ` +
+                        `and use it in the other through that model (e.g. ` +
+                        `\`address = otherModel.address\`).`
+                );
             }
         });
 

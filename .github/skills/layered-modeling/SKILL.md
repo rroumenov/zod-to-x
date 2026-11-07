@@ -44,17 +44,15 @@ Defined in `src/layered-modeling/layer.ts`:
 
 1. **Enforces singleton** — caches instance on `constructor.instance`
 2. **Sets `modelName`** and **`layerMetadata`** on the instance
-3. **Iterates own properties** — for each Zod schema property:
-   - Calls `setMetadata(propertyName, zodSchema)`
-   - First use of a type: sets `typeName` (a name set with `.zod2x()` is kept) and `layer` zod2x metadata (`setZod2xMetadata`)
-   - Type used before by a higher layer: it is moved to this layer, and the higher layer property becomes an alias of it
-4. **Cross-layer detection** — if a property's resolved zod2x metadata has a different `file` or different `typeName`:
-   - **Clones** the Zod object
-   - Sets `aliasOf` = original schema (a reference: its type name and layer are resolved by `resolveZod2xMetadata`)
-   - This creates an import + extends relationship in output
-5. **Second pass** — processes `z.lazy()` properties
-6. **Ownership ties** — properties of other models read while the model is created (also from lazy getters) are tracked. A type already owned by another file of the same layer index that was not read from that model is recorded as a tie (`getOwnershipTie`), reported by `Zod2XModel` for both models
-7. **Exposes properties** — Zod properties become accessors (still writable), so reads from models created later are tracked. The model is added to the registry returned by `getLayeredModels()`
+3. **Declares types** — each transpilerable own property declares a type (`declareLayerType` in `resolver.ts`): the property is replaced by a copy of its schema (its handle). Schemas are not modified and no metadata is stored
+4. **Second pass** — declares `z.lazy()` properties (their getters can use the other properties)
+5. **Registers the model** (`registerLayeredModel`), which increments the layered generation
+
+The resolver (`resolver.ts`) computes the layered information from all declarations when it is needed, once per generation:
+- **Owner** — a type belongs to the lowest layer that declares it, then to the first declaration. A type name set with `.zod2x()` is kept
+- **Aliases** — other declarations extend the owner type when they belong to another file or have another name (`aliasOf` lookup metadata). A declaration through the property of an alias, or of a generic instance, extends that property
+- **Generic instances** (`useGenericType`) declared by a model take the layer of the model if their generic type has none
+- **Ties** — declarations of the same layer in different files that do not use the type through the owner's property (`getOwnershipTie`), reported by `Zod2XModel` for every declaration of the type
 
 ### Zod2XModel
 
