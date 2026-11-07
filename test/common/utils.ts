@@ -141,3 +141,28 @@ export const createGenericTestSuite = (
         });
     };
 };
+
+/**
+ * Takes a snapshot of the own properties of a schema. Returns the properties changed since then,
+ * except prototype methods bound to the instance by Zod when they are used (Zod 4.4+).
+ */
+export const snapshotSchema = (schema: any) => {
+    const clone = schema.clone; // Bound by Zod 4.4+ when read.
+    const descriptors = Object.getOwnPropertyDescriptors(schema);
+
+    return {
+        changes: () =>
+            Reflect.ownKeys(schema).filter((key) => {
+                const before = descriptors[key as any];
+                const after = Object.getOwnPropertyDescriptor(schema, key)!;
+                if (before === undefined) {
+                    return !(
+                        typeof after.value === "function" && key in Object.getPrototypeOf(schema)
+                    );
+                }
+                return key === "clone"
+                    ? schema.clone !== clone
+                    : before.value !== after.value || before.get !== after.get;
+            }),
+    };
+};

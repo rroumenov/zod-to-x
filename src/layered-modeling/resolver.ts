@@ -4,6 +4,7 @@ import {
     getOwnZod2xMetadata,
     getZod2xMetadata,
     linkCopies,
+    registerCopySource,
     resolveZod2xMetadata,
     setLayeredMetadataLookup,
     Zod2xMetadataLookup,
@@ -95,8 +96,9 @@ export function declareLayerType(
     declarations.push(declaration);
     declarationsByHandle.set(handle, declaration);
 
-    // Copies with another unknown keys policy (`.strict()`, ...) are the same type.
-    linkCopies(value);
+    // Copies with another unknown keys policy (`.strict()`, ...) are the same type. Copies of the
+    // declared schema are found by structure; copies of the handle are linked to it.
+    registerCopySource(value);
     linkCopies(handle);
 
     return handle;
