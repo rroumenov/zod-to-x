@@ -4,5 +4,5 @@ export interface ShippingAddress extends CASE_12_DOMAIN.Address {}
 
 export interface ShippingRequest {
     orderId: string;
-    destination: CASE_12_DOMAIN.Address;
+    destination: ShippingAddress;
 }

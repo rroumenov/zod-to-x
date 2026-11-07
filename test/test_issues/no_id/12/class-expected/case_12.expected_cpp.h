@@ -10,7 +10,7 @@ namespace CASE_12_APP {
     class ShippingRequest {
     private:
         std::string order_id;
-        CASE_12_DOMAIN::Address destination;
+        ShippingAddress destination;
     
     public:
         ShippingRequest() = default;
@@ -20,9 +20,9 @@ namespace CASE_12_APP {
         std::string& get_mut_order_id() { return this->order_id; }
         void set_order_id(const std::string& value) { this->order_id = value; }
         
-        const CASE_12_DOMAIN::Address& get_destination() const { return this->destination; }
-        CASE_12_DOMAIN::Address& get_mut_destination() { return this->destination; }
-        void set_destination(const CASE_12_DOMAIN::Address& value) { this->destination = value; }
+        const ShippingAddress& get_destination() const { return this->destination; }
+        ShippingAddress& get_mut_destination() { return this->destination; }
+        void set_destination(const ShippingAddress& value) { this->destination = value; }
     };
 
 }
@@ -43,7 +43,7 @@ namespace CASE_12_APP {
 
     inline void from_json(const nlohmann::json& j, ShippingRequest& x) {
         x.set_order_id(j.at("orderId").get<std::string>());
-        x.set_destination(j.at("destination").get<CASE_12_DOMAIN::Address>());
+        x.set_destination(j.at("destination").get<ShippingAddress>());
     }
 
 }

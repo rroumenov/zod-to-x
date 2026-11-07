@@ -14,4 +14,4 @@ class BaseSchema(BaseModel):
 
 class ShippingRequest(BaseSchema):
     order_id: str
-    destination: CASE_12_DOMAIN.Address
+    destination: ShippingAddress

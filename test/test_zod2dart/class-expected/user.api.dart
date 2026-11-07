@@ -15,8 +15,8 @@ typedef ResUpdateUser = UpdateUserUseCaseResultDto;
 @JsonSerializable(explicitToJson: true)
 class ResUpdateUserMulti {
   final int amount;
-  @JsonKey(fromJson: _updateUserUseCaseResultDtoListFromJson, toJson: _updateUserUseCaseResultDtoListToJson)
-  final List<UpdateUserUseCaseResultDto> data;
+  @JsonKey(fromJson: _resUpdateUserListFromJson, toJson: _resUpdateUserListToJson)
+  final List<ResUpdateUser> data;
 
   ResUpdateUserMulti({
     required this.amount,
@@ -49,10 +49,10 @@ class UserApi {
   Map<String, dynamic> toJson() => _$UserApiToJson(this);
 }
 
-List<UpdateUserUseCaseResultDto> _updateUserUseCaseResultDtoListFromJson(Object? json) =>
-  (json as List<dynamic>).map((e) => UpdateUserUseCaseResultDto.fromJson(e as Map<String, dynamic>)).toList();
+List<ResUpdateUser> _resUpdateUserListFromJson(Object? json) =>
+  (json as List<dynamic>).map((e) => ResUpdateUser.fromJson(e as Map<String, dynamic>)).toList();
 
-List<Map<String, dynamic>> _updateUserUseCaseResultDtoListToJson(List<UpdateUserUseCaseResultDto> list) =>
+List<Map<String, dynamic>> _resUpdateUserListToJson(List<ResUpdateUser> list) =>
   list.map((e) => (e as dynamic).toJson() as Map<String, dynamic>).toList();
 
 ReqUpdateUser _reqUpdateUserFromJson(Object? json) =>
