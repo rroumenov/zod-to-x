@@ -313,9 +313,9 @@ export class ZodHelpers {
      * previous versions) are supported too.
      */
     static getGenericTemplateName(i: ZodType): string | undefined {
-        const templateName = getZod2xMetadata(i)?.genericTemplate;
-        if (templateName !== undefined) {
-            return templateName;
+        // Templates are unknown schemas, so the metadata of other schemas is not read.
+        if (this.isZodUnknown(i)) {
+            return getZod2xMetadata(i)?.genericTemplate;
         }
 
         if (this.isZodPromise<ZodLiteral>(i) && this.isZodLiteral(i.unwrap())) {
