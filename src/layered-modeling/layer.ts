@@ -1,7 +1,12 @@
 import Case from "case";
 
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
-import { getZod2xMetadata, resolveZod2xMetadata, setZod2xMetadata } from "@/lib/zod2x_metadata";
+import {
+    getCopySource,
+    getZod2xMetadata,
+    resolveZod2xMetadata,
+    setZod2xMetadata,
+} from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
 
 enum EZod2XLayer {
@@ -31,6 +36,82 @@ interface ITypeOwnership {
  * by a higher layer first.
  */
 const ownerships = new WeakMap<ZodTypeAny, ITypeOwnership>();
+
+/**
+ * Models created with a layer decorator. Used to analyse the imports between layer files.
+ */
+const layeredModels = new Set<object>();
+
+/**
+ * Returns the models created with a layer decorator.
+ */
+export function getLayeredModels(): ReadonlySet<object> {
+    return layeredModels;
+}
+
+/**
+ * Schemas read from model properties while each model is being created (models created while
+ * creating another model are stacked). A type read from the property of another model is
+ * referenced from it, instead of being declared again.
+ */
+const readsDuringCreation: Set<ZodTypeAny>[] = [];
+
+/**
+ * Layer files of the models of a same layer that declare a type without referencing one another,
+ * so the file that defines it would depend on the order in which the models are created.
+ */
+const ownershipTies = new WeakMap<ZodTypeAny, Set<string>>();
+
+/**
+ * Returns the layer files that declare a type without referencing one another, if any.
+ */
+export function getOwnershipTie(schema: ZodTypeAny): string[] | undefined {
+    const files = ownershipTies.get(schema);
+    return files === undefined ? undefined : [...files].sort();
+}
+
+function recordOwnershipTie(schema: ZodTypeAny, files: string[]) {
+    const tie = ownershipTies.get(schema) ?? new Set<string>();
+    files.forEach((file) => tie.add(file));
+    ownershipTies.set(schema, tie);
+}
+
+/**
+ * Checks if a schema, or the schema it was cloned from by Zod (e.g. with `.describe()`), was read
+ * from a model property.
+ */
+function wasReadFromModel(reads: Set<ZodTypeAny>, schema: ZodTypeAny): boolean {
+    let current: any = schema;
+
+    while (current !== undefined && current !== null) {
+        if (reads.has(current)) {
+            return true;
+        }
+        current = getCopySource(current);
+    }
+
+    return false;
+}
+
+/**
+ * Exposes a model property through an accessor, so reading it while another model is being
+ * created is known. It keeps being writable, as ownership transfers replace it with an alias.
+ */
+function exposeModelProperty(model: any, prop: string) {
+    let value = model[prop];
+
+    Object.defineProperty(model, prop, {
+        configurable: true,
+        enumerable: true,
+        get() {
+            readsDuringCreation[readsDuringCreation.length - 1]?.add(value);
+            return value;
+        },
+        set(newValue) {
+            value = newValue;
+        },
+    });
+}
 
 /**
  * Creates a new type that extends an existing one, which is referenced.
@@ -120,8 +201,13 @@ export function Layer(opt: IZod2xLayerMetadata) {
                     return (constructor as any).instance;
                 }
 
+                // Properties of other models read by the property initializers of this model.
+                const reads = new Set<ZodTypeAny>();
+                readsDuringCreation.push(reads);
+
                 super(...args);
                 (constructor as any).instance = this as unknown as T;
+                layeredModels.add(this);
 
                 /**
                  * Set metadata for each transpilerable property of the class if not already set.
@@ -174,6 +260,17 @@ export function Layer(opt: IZod2xLayerMetadata) {
                         });
                     }
 
+                    if (
+                        !isDerivedType &&
+                        resolved!.layer!.file !== opt.file &&
+                        resolved!.layer!.index === opt.index &&
+                        !wasReadFromModel(reads, zodItem)
+                    ) {
+                        // Type declared by models of the same layer without referencing one
+                        // another: the file that defines it depends on the creation order.
+                        recordOwnershipTie(zodItem, [resolved!.layer!.file, opt.file]);
+                    }
+
                     const current = resolveZod2xMetadata(zodItem)!;
                     if (
                         opt.externalInheritance !== false &&
@@ -187,32 +284,46 @@ export function Layer(opt: IZod2xLayerMetadata) {
                     return zodItem;
                 };
 
-                const lazyProperties: any[] = [];
+                try {
+                    const lazyProperties: any[] = [];
+                    Object.getOwnPropertyNames(this).forEach((prop) => {
+                        const item = (this as any)[prop];
+
+                        if (
+                            ZodHelpers.isTranspilerableZodType(item) ||
+                            ZodHelpers.isTranspilerableAliasedZodType(
+                                item,
+                                opt.basicTypes === false
+                            )
+                        ) {
+                            (this as any)[prop] = setMetadata(prop, item);
+                        } else if (ZodHelpers.isZodLazy(item)) {
+                            lazyProperties.push(prop);
+                        }
+                    });
+
+                    // Process lazy properties after initial pass to ensure proper metadata
+                    // assignment. Their getters can read properties of other models too.
+                    lazyProperties.forEach((i) => {
+                        const lazyItem = (this as any)[i]._def.getter();
+
+                        if (
+                            ZodHelpers.isTranspilerableZodType(lazyItem) ||
+                            ZodHelpers.isTranspilerableAliasedZodType(
+                                lazyItem,
+                                opt.basicTypes === false
+                            )
+                        ) {
+                            (this as any)[i] = setMetadata(i, lazyItem);
+                        }
+                    });
+                } finally {
+                    readsDuringCreation.pop();
+                }
+
                 Object.getOwnPropertyNames(this).forEach((prop) => {
-                    const item = (this as any)[prop];
-
-                    if (
-                        ZodHelpers.isTranspilerableZodType(item) ||
-                        ZodHelpers.isTranspilerableAliasedZodType(item, opt.basicTypes === false)
-                    ) {
-                        (this as any)[prop] = setMetadata(prop, item);
-                    } else if (ZodHelpers.isZodLazy(item)) {
-                        lazyProperties.push(prop);
-                    }
-                });
-
-                // Process lazy properties after initial pass to ensure proper metadata assignment.
-                lazyProperties.forEach((i) => {
-                    const lazyItem = (this as any)[i]._def.getter();
-
-                    if (
-                        ZodHelpers.isTranspilerableZodType(lazyItem) ||
-                        ZodHelpers.isTranspilerableAliasedZodType(
-                            lazyItem,
-                            opt.basicTypes === false
-                        )
-                    ) {
-                        (this as any)[i] = setMetadata(i, lazyItem);
+                    if (ZodHelpers.isZodType((this as any)[prop])) {
+                        exposeModelProperty(this, prop);
                     }
                 });
             }
