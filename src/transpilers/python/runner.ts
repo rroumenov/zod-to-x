@@ -285,12 +285,12 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         return output;
     }
 
-    /** Ex: Literal["value"] or Literal[true] or EnumName.ENUM_VALUE */
+    /** Ex: Literal["value"] or Literal[True] or Literal[EnumName.ENUM_VALUE] */
     protected getLiteralStringType(
         value: string | number | boolean,
         parentEnumNameKey?: [string, string]
     ): string | number {
-        if (!parentEnumNameKey) this.imports.add(this.lib.literalType);
+        this.imports.add(this.lib.literalType);
         return (
             "Literal[" +
             (parentEnumNameKey
