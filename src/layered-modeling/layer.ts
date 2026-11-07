@@ -5,7 +5,12 @@ import { ZodHelpers } from "@/lib/zod_helpers";
 
 import { declareLayerType, registerLayeredModel } from "./resolver";
 
-export { getLayeredGeneration, getLayeredModels, getOwnershipTie } from "./resolver";
+export {
+    getLayeredGeneration,
+    getLayeredModels,
+    getLocalAliasSubstitute,
+    getOwnershipTie,
+} from "./resolver";
 
 enum EZod2XLayer {
     DOMAIN = 0,
