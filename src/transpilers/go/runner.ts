@@ -299,10 +299,23 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
 
             // Marker stubs: one no-op method per member type so each satisfies the interface.
             // For generic instantiations (e.g. "HttpSuccessfulResponse[SomeDtoResult]") we emit
-            // a generic receiver "func (t Base[T]) isXxx() {}" using the base type name only.
-            for (const name of optionNames) {
+            // a generic receiver "func (t Base[T]) isXxx() {}" using the base type name only, with
+            // one type parameter per template, once for all the instances of the generic type.
+            const receivers = new Set<string>();
+            optionNames.forEach((name, i) => {
                 const bracketIdx = name.indexOf("[");
-                const receiver = bracketIdx !== -1 ? `${name.slice(0, bracketIdx)}[T]` : name;
+                if (bracketIdx === -1) {
+                    receivers.add(name);
+                    return;
+                }
+                const count = (data.options[i] as ASTDefinition).templatesTranslation.length;
+                const params =
+                    count > 1
+                        ? Array.from({ length: count }, (_, j) => `T${j + 1}`).join(", ")
+                        : "T";
+                receivers.add(`${name.slice(0, bracketIdx)}[${params}]`);
+            });
+            for (const receiver of receivers) {
                 this.push0(`func (t ${receiver}) ${methodName}() {}\n`);
             }
 
