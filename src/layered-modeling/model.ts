@@ -31,7 +31,7 @@ type AstOpt = Pick<IZod2AstOpt, "strict">;
  * ```
  */
 export class Zod2XModel {
-    private astNodes: ASTNodes | null = null;
+    private astNodes = new Map<string, ASTNodes>();
 
     private getModelName(): string {
         const modelName: string = (this as any)["modelName"];
@@ -56,8 +56,10 @@ export class Zod2XModel {
     }
 
     private getAstNode(opt: AstOpt = {}): ASTNodes {
-        if (this.astNodes) {
-            return this.astNodes;
+        const cacheKey = JSON.stringify({ strict: opt.strict ?? true });
+        const cached = this.astNodes.get(cacheKey);
+        if (cached) {
+            return cached;
         }
 
         const objectProps = new Map<string, any>();
@@ -68,11 +70,12 @@ export class Zod2XModel {
             }
         });
 
-        this.astNodes = new Zod2Ast({ ...opt, layer: this.getLayerMetadata() }).build(
+        const astNodes = new Zod2Ast({ ...opt, layer: this.getLayerMetadata() }).build(
             ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName())
         );
+        this.astNodes.set(cacheKey, astNodes);
 
-        return this.astNodes;
+        return astNodes;
     }
 
     /**

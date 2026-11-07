@@ -8,6 +8,7 @@ import {
     ZodTypeAny,
 } from "zod";
 
+import { linkToSource, resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
 import { Extended } from "./zod_ext";
 
 export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
@@ -26,6 +27,72 @@ type ZodNumberConstraints = {
 export class ZodHelpers {
     static isZodType(i: ZodTypeAny): boolean {
         return ZodFirstPartyTypeKind[i?._def?.typeName as ZodFirstPartyTypeKind] !== undefined;
+    }
+
+    static isZodUnknown(i: ZodTypeAny): i is z.ZodUnknown {
+        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodUnknown;
+    }
+
+    static isZodPipeline(i: ZodTypeAny): i is z.ZodPipeline<any, any> {
+        return (i?._def?.typeName as ZodFirstPartyTypeKind) === ZodFirstPartyTypeKind.ZodPipeline;
+    }
+
+    /**
+     * Wrappers that do not change the data model of their inner schema: `.default()`, `.catch()`,
+     * `.readonly()`, `.brand()` and effects (`.refine()`, `.superRefine()`, `.transform()` and
+     * `z.preprocess()`). The output type of a transformation cannot be known, so its input schema
+     * is used.
+     */
+    static isZodTransparentWrapper(i: ZodTypeAny): boolean {
+        const type = i?._def?.typeName as ZodFirstPartyTypeKind;
+        return (
+            type === ZodFirstPartyTypeKind.ZodDefault ||
+            type === ZodFirstPartyTypeKind.ZodCatch ||
+            type === ZodFirstPartyTypeKind.ZodReadonly ||
+            type === ZodFirstPartyTypeKind.ZodBranded ||
+            type === ZodFirstPartyTypeKind.ZodEffects
+        );
+    }
+
+    /**
+     * Returns the inner schema of a transparent wrapper.
+     */
+    static getWrappedSchema(i: ZodTypeAny): ZodTypeAny {
+        const type = i._def.typeName as ZodFirstPartyTypeKind;
+
+        if (type === ZodFirstPartyTypeKind.ZodBranded) {
+            return i._def.type;
+        } else if (type === ZodFirstPartyTypeKind.ZodEffects) {
+            return i._def.schema;
+        }
+
+        return i._def.innerType;
+    }
+
+    /**
+     * Returns the schema that represents the data model of a pipeline: its output side
+     * (e.g. `z.string().pipe(z.coerce.number())`).
+     */
+    static getPipelineModelSchema(i: z.ZodPipeline<any, any>): ZodTypeAny {
+        return i._def.out;
+    }
+
+    /**
+     * Returns a short structural signature of a schema, used to tell apart two different schemas
+     * that share the same type name.
+     */
+    static getShallowSignature(i: ZodTypeAny, depth = 0): string {
+        const typeName = resolveZod2xMetadata(i)?.typeName;
+        if (typeName) {
+            return `#${typeName}`;
+        }
+
+        const def = i?._def as any;
+        const inner: ZodTypeAny | undefined =
+            def?.innerType ?? (this.isZodType(def?.type) ? def.type : undefined) ?? def?.schema;
+        return inner && depth < 5
+            ? `${def.typeName}<${this.getShallowSignature(inner, depth + 1)}>`
+            : `${def?.typeName}`;
     }
 
     static isZodAny(i: ZodTypeAny): i is z.ZodAny {
@@ -204,9 +271,13 @@ export class ZodHelpers {
         );
     }
 
+    /**
+     * Creates a new instance of the schema with the same definition. It inherits the zod2x
+     * metadata of the original schema unless it has its own.
+     */
     static cloneZod(i: ZodTypeAny) {
         const zodType: ZodFirstPartyTypeKind = i._def.typeName;
-        return new (Extended.getZ()[zodType] as any)({ ...i._def });
+        return linkToSource(new (Extended.getZ()[zodType] as any)({ ...i._def }), i);
     }
 
     static createZodObject(properties: Map<string, ZodTypeAny>): ZodObject<any> {
@@ -238,8 +309,8 @@ export function createGenericType(name: string) {
 
 /**
  * Use generic types defined in a generic ZodObject by replacing them with the actual child types.
- * It preserves the zod2x metadata including the genericTypes array which will be moved to the
- * new type during layer modeling metadata assignment.
+ * The new type references the generic type and the child types used for each template, so its
+ * type name, layer and templates translation are resolved from them when transpiled.
  * @param genObj ZodObject with generic types.
  * @param childrens Record of child types to replace generics.
  * @returns The extended ZodObject with replaced generic types.
@@ -261,33 +332,29 @@ export function useGenericType(
 ): ZodObject<any> | z.ZodLazy<ZodObject<any>> {
     const builder = () => {
         let extended = genObj;
+        const templates: [string, ZodTypeAny][] = [];
+
         for (const [key, property] of Object.entries<ZodTypeAny>(genObj.shape)) {
             if (ZodHelpers.isZod2XGeneric(property)) {
                 const childType = childrens[key];
                 if (!childType) {
                     throw new Error(
-                        `Missing child type for generic property ${key} in ${genObj._zod2x!.typeName}.`
+                        `Missing child type for generic property ${key} in ` +
+                            `${resolveZod2xMetadata(genObj)?.typeName}.`
                     );
                 }
-                const zod2xMeta = structuredClone(extended._zod2x);
                 extended = extended.extend({ [key]: childType });
-                extended._zod2x = zod2xMeta;
-                extended._zod2x!.isGenericChild = false;
-
-                if (!Array.isArray(extended._zod2x!.genericTypes)) {
-                    extended._zod2x!.genericTypes = [];
-                }
-
-                if (childType._zod2x !== undefined) {
-                    extended._zod2x!.genericTypes!.push({
-                        typeName: childType._zod2x.typeName,
-                        layer: childType._zod2x.layer!,
-                    });
-                }
+                templates.push([key, childType]);
             }
         }
+
+        if (templates.length > 0) {
+            // Type name and layer are taken from the generic type when resolved.
+            setZod2xMetadata(extended, { genericOf: { generic: genObj, templates } });
+        }
+
         return extended;
     };
 
-    return skipLazy ? builder() : z.lazy(builder);
+    return skipLazy ? builder() : Extended.getZ().lazy(builder);
 }

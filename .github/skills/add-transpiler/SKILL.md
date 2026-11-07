@@ -199,7 +199,7 @@ Create a test script `test/test_zod2<lang>/test_<lang>.sh` that:
 
 ## Key Patterns to Follow
 
-1. **`checkExtendedTypeInclusion`** — Every `transpileX` method should check for cross-layer aliases first
+1. **`checkExtendedTypeInclusion`** — Every `transpileX` method should check for cross-layer aliases first. It is implemented in `Zod2X`: override `getExtendedTypeOptions` to provide the language options received by `addExtendedType`
 2. **`_transpileMember`** — Private method for rendering a single property with optional/nullable handling
 3. **`getAttributeType`** — Inherited from `Zod2X`, dispatches to your type methods. Don't override unless necessary.
 4. **Output naming** — Use `case` library or manual conversion to match target language conventions (snake_case, camelCase, etc.)

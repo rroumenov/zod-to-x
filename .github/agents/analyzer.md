@@ -43,7 +43,7 @@ Read `AGENTS.md` at the project root for full architecture context. Key referenc
 3. Identify the specific method(s) responsible
 4. **Cross-transpiler impact analysis** (MANDATORY):
    - If the fix is in `src/core/`, `src/lib/`, or `src/layered-modeling/`: the bug affects ALL transpilers (TypeScript, Python, C++). Plan regression tests for all three.
-   - If the fix is in `src/transpilers/<lang>/`: inspect the equivalent method in the OTHER transpilers. Patterns like `checkExtendedTypeInclusion`, `_transpileMember`, and `transpileStruct` are independently implemented in each runner — the same flaw often exists in multiple runners.
+   - If the fix is in `src/transpilers/<lang>/`: inspect the equivalent method in the OTHER transpilers. Patterns like `getExtendedTypeOptions`, `_transpileMember`, and `transpileStruct` are independently implemented in each runner — the same flaw often exists in multiple runners.
    - Document which transpilers were checked and whether they share the flaw.
 5. Produce a plan with:
    - Root cause analysis
