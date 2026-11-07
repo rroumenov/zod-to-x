@@ -10,9 +10,7 @@ import {
     ZodUnionOptions,
 } from "zod";
 
-import { cloneSchema, getZod2xMetadata, linkToSource, setZod2xMetadata } from "./zod2x_metadata";
-
-const DESCRIBE_PATCHED = Symbol.for("zod-to-x.describe");
+import { cloneSchema, getZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
 
 export interface IZod2xLayerMetadata {
     /**
@@ -439,17 +437,6 @@ export function extendZod(zod: any /*typeof z ---> any type until solve type inc
                     : { ...opt }) as IZod2xMetadata
             );
         };
-    }
-
-    if (zod.ZodType.prototype.describe[DESCRIBE_PATCHED] === undefined) {
-        // Zod 3 creates a new schema when it is described. It is linked to the described schema,
-        // so it keeps the zod2x metadata of it, also when the metadata is set afterwards.
-        const describe = zod.ZodType.prototype.describe;
-        const patchedDescribe = function (this: any, description: string) {
-            return linkToSource(describe.call(this, description), this);
-        };
-        (patchedDescribe as any)[DESCRIBE_PATCHED] = true;
-        zod.ZodType.prototype.describe = patchedDescribe;
     }
 
     Extended.setZ(zod);

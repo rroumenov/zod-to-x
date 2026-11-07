@@ -44,7 +44,7 @@ Defined in `src/layered-modeling/layer.ts`:
 
 1. **Enforces singleton** — caches instance on `constructor.instance`
 2. **Sets `modelName`** and **`layerMetadata`** on the instance
-3. **Declares types** — each transpilerable own property declares a type (`declareLayerType` in `resolver.ts`): the property is replaced by a copy of its schema (its handle). Schemas are not modified and no metadata is stored
+3. **Declares types** — each transpilerable own property declares a type (`declareLayerType` in `resolver.ts`): the property is replaced by a copy of its schema (its handle). Schemas are not modified and no metadata is stored. The declared schema is registered as a copy source (`registerCopySource`), so its `.describe()`/`.strict()` copies are found by structure; the handle references itself in its definition (`linkCopies`), so copies made through the model property are linked to it
 4. **Second pass** — declares `z.lazy()` properties (their getters can use the other properties)
 5. **Registers the model** (`registerLayeredModel`), which increments the layered generation
 
