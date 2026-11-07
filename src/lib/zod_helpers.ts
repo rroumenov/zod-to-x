@@ -1,6 +1,11 @@
 import { z, ZodEnum, ZodLiteral, ZodNumber, ZodObject, ZodType } from "zod/v4";
 
-import { getZod2xMetadata, resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
+import {
+    getZod2xMetadata,
+    IZod2xResolvedMetadata,
+    resolveZod2xMetadata,
+    setZod2xMetadata,
+} from "./zod2x_metadata";
 import { Extended } from "./zod_ext";
 
 export type {
@@ -117,8 +122,12 @@ export class ZodHelpers {
      * Returns a short structural signature of a schema, used to tell apart two different schemas
      * that share the same type name.
      */
-    static getShallowSignature(i: ZodType, depth = 0): string {
-        const typeName = resolveZod2xMetadata(i)?.typeName;
+    static getShallowSignature(
+        i: ZodType,
+        resolve: (schema: ZodType) => IZod2xResolvedMetadata | undefined = resolveZod2xMetadata,
+        depth = 0
+    ): string {
+        const typeName = resolve(i)?.typeName;
         if (typeName) {
             return `#${typeName}`;
         }
@@ -126,7 +135,7 @@ export class ZodHelpers {
         const def = i?.def as any;
         const inner: ZodType | undefined = def?.innerType ?? def?.element;
         return inner && depth < 5
-            ? `${def.type}<${this.getShallowSignature(inner, depth + 1)}>`
+            ? `${def.type}<${this.getShallowSignature(inner, resolve, depth + 1)}>`
             : `${def?.type}`;
     }
 
