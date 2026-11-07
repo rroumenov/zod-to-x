@@ -141,3 +141,33 @@ export const createGenericTestSuite = (
         });
     };
 };
+
+/**
+ * Takes a snapshot of the own properties of a schema and of its definition (symbol keys included).
+ * Returns the properties changed since then.
+ */
+export const snapshotSchema = (schema: any) => {
+    const targets = { schema, _def: schema._def };
+    const snapshots = Object.entries(targets).map(([name, target]) => ({
+        name,
+        target,
+        descriptors: Object.getOwnPropertyDescriptors(target),
+    }));
+
+    return {
+        changes: () =>
+            snapshots.flatMap(({ name, target, descriptors }) =>
+                Reflect.ownKeys(target)
+                    .filter((key) => {
+                        const before = descriptors[key as any];
+                        const after = Object.getOwnPropertyDescriptor(target, key)!;
+                        return (
+                            before === undefined ||
+                            before.value !== after.value ||
+                            before.get !== after.get
+                        );
+                    })
+                    .map((key) => `${name}.${String(key)}`)
+            ),
+    };
+};

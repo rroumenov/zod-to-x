@@ -1,9 +1,12 @@
 import { IZod2xLayerMetadata, IZod2xMetadata } from "@/lib/zod_ext";
 import {
+    getCopyKey,
     getCopySource,
     getOwnZod2xMetadata,
     getZod2xMetadata,
+    isDescribedCopy,
     linkCopies,
+    registerCopySource,
     resolveZod2xMetadata,
     setLayeredMetadataLookup,
     Zod2xMetadataLookup,
@@ -95,8 +98,9 @@ export function declareLayerType(
     declarations.push(declaration);
     declarationsByHandle.set(handle, declaration);
 
-    // Copies with another unknown keys policy (`.strict()`, ...) are the same type.
-    linkCopies(value);
+    // Copies that only change cosmetic keys (`.describe()`, `.strict()`, ...) are the same type.
+    // Copies of the declared schema are found by structure; copies of the handle are linked to it.
+    registerCopySource(value);
     linkCopies(handle);
 
     return handle;
@@ -144,6 +148,17 @@ interface ILayerResolution {
      * Returns the schema that defines the metadata of a schema.
      */
     findMetadataSource: (schema: unknown) => unknown;
+
+    /**
+     * Declarations of each model, by the key that the copies of their schema share.
+     */
+    modelDeclarations: Map<object, Map<object, ILayerDeclaration[]>>;
+
+    /**
+     * Returns the handle of the declaration of a model whose schema another schema is a copy of,
+     * for the kinds of schemas whose copies are only found among the declarations of the model.
+     */
+    findModelCopyHandle: (model: object, schema: unknown) => ZodTypeAny | undefined;
 }
 
 /**
@@ -266,12 +281,48 @@ function resolveDeclarations(): ILayerResolution {
         }
     }
 
+    // Declarations of each model, by the key that the copies of their schema share. Zod 3 copies
+    // of schemas of some kinds (arrays, optionals, ...) are only found among the schemas declared
+    // by the same model (see `isDescribedCopy`).
+    const modelDeclarations = new Map<object, Map<object, ILayerDeclaration[]>>();
+    for (const declaration of declarations) {
+        const key = getCopyKey(declaration.value);
+        if (key !== undefined) {
+            const byKey = modelDeclarations.get(declaration.model) ?? new Map();
+            byKey.set(key, [...(byKey.get(key) ?? []), declaration]);
+            modelDeclarations.set(declaration.model, byKey);
+        }
+    }
+    const findModelCopy = (model: object, schema: unknown, before = Infinity) => {
+        const key = getCopyKey(schema);
+        return key === undefined
+            ? undefined
+            : modelDeclarations
+                  .get(model)
+                  ?.get(key)
+                  ?.find(
+                      (declaration) =>
+                          declaration.sequence < before &&
+                          isDescribedCopy(schema, declaration.value)
+                  );
+    };
+
     // A schema copied by Zod from a declared schema (e.g. with `.describe()`) is the same type.
     const declaredSchemas = new Set<ZodTypeAny>();
     kinds.forEach((kind) => kind.kind === "type" && declaredSchemas.add(kind.underlying));
-    kinds.forEach((kind) => {
+    kinds.forEach((kind, declaration) => {
         if (kind.kind === "type" && !kind.throughModel) {
             let current: unknown = getCopySource(kind.underlying);
+            if (current === undefined) {
+                const original = findModelCopy(
+                    declaration.model,
+                    kind.underlying,
+                    declaration.sequence
+                );
+                const originalKind = original === undefined ? undefined : kinds.get(original);
+                current = originalKind?.kind === "type" ? originalKind.underlying : undefined;
+            }
+
             while (current !== undefined && current !== null) {
                 if (declaredSchemas.has(current as ZodTypeAny)) {
                     kind.underlying = current as ZodTypeAny;
@@ -415,7 +466,18 @@ function resolveDeclarations(): ILayerResolution {
         sources.forEach((source) => localAliases.get(model)!.delete(source))
     );
 
-    return { lookup, ties, localAliases, findMetadataSource };
+    // Copies of declared schemas of the model, by structure, use the property that declares them.
+    const findModelCopyHandle = (model: object, schema: unknown) =>
+        getCopySource(schema) === undefined ? findModelCopy(model, schema)?.handle : undefined;
+
+    return {
+        lookup,
+        ties,
+        localAliases,
+        findMetadataSource,
+        modelDeclarations,
+        findModelCopyHandle,
+    };
 }
 
 function getResolution(): ILayerResolution {
@@ -444,11 +506,24 @@ export function getLocalAliasSubstitute(
 ): ((schema: ZodTypeAny) => ZodTypeAny | undefined) | undefined {
     const resolved = getResolution();
     const aliases = resolved.localAliases.get(model);
-    if (aliases === undefined || aliases.size === 0) {
+    const copyKeys = resolved.modelDeclarations.get(model);
+    const hasAliases = aliases !== undefined && aliases.size > 0;
+    if (!hasAliases && copyKeys === undefined) {
         return undefined;
     }
 
-    return (schema) => aliases.get(resolved.findMetadataSource(schema));
+    return (schema) => {
+        const alias = hasAliases ? aliases.get(resolved.findMetadataSource(schema)) : undefined;
+        if (alias !== undefined) {
+            return alias;
+        }
+
+        // Copies of the declared schemas of the model (only looked up when they share their key).
+        const key = getCopyKey(schema);
+        return key !== undefined && copyKeys?.has(key)
+            ? resolved.findModelCopyHandle(model, schema)
+            : undefined;
+    };
 }
 
 // Layered metadata is resolved from the declared types when schemas are resolved.

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { describe, expect, test } from "vitest";
 import { Application, Domain, extendZod, Layer, Zod2XModel, Zod2XTranspilers } from "../../dist";
+import { snapshotSchema } from "../common/utils";
 extendZod(z);
 
 const { Zod2Cpp, Zod2Cpp17, Zod2Dart, Zod2Go, Zod2Py, Zod2Ts } = Zod2XTranspilers;
@@ -105,7 +106,7 @@ describe("Layered model checks", () => {
     describe("Layered resolution", () => {
         test("Model properties are copies of the declared schemas, which are not modified", () => {
             const address = z.object({ street: z.string() });
-            const ownKeys = Object.keys(address);
+            const snapshot = snapshotSchema(address);
 
             @Domain({ namespace: "RES_COPY", file: "res_copy" })
             class ResCopy extends Zod2XModel {
@@ -117,11 +118,35 @@ describe("Layered model checks", () => {
             expect(resCopy.Address.parse({ street: "Main" })).toEqual({ street: "Main" });
             expect(() => resCopy.Address.parse({})).toThrow();
             expect(resCopy.transpile(Zod2Ts)).toContain("export interface Address {");
-            // Only `clone` can be wrapped, to link `.strict()` and similar copies until they are
-            // detected by structure. Zod versions before 4.4 already define it on each instance.
-            const addedKeys = Object.keys(address).filter((key) => !ownKeys.includes(key));
-            expect(addedKeys.filter((key) => key !== "clone")).toEqual([]);
-            expect(Object.keys(address)).toEqual(expect.arrayContaining(ownKeys));
+            expect(snapshot.changes()).toEqual([]);
+        });
+
+        test("Copies of declared schemas are the same type, whenever they are created", () => {
+            const shared = z.object({ id: z.string() });
+            const strictShared = shared.strict();
+
+            @Application({ namespace: "RES_COPY_APP", file: "res_copy_app" })
+            class ResCopyApp extends Zod2XModel {
+                readonly StrictEntity = strictShared;
+                readonly LooseEntity = shared.passthrough();
+            }
+
+            @Domain({ namespace: "RES_COPY_DOMAIN", file: "res_copy_domain" })
+            class ResCopyDomain extends Zod2XModel {
+                readonly Entity = shared;
+            }
+
+            const resCopyApp = new ResCopyApp();
+            const resCopyDomain = new ResCopyDomain();
+
+            expect(resCopyDomain.transpile(Zod2Ts)).toContain("export interface Entity {");
+            const output = resCopyApp.transpile(Zod2Ts);
+            expect(output).toContain(
+                "export interface StrictEntity extends RES_COPY_DOMAIN.Entity {}"
+            );
+            expect(output).toContain(
+                "export interface LooseEntity extends RES_COPY_DOMAIN.Entity {}"
+            );
         });
 
         test("Types belong to the lowest layer, whatever the creation order", () => {
@@ -153,6 +178,39 @@ describe("Layered model checks", () => {
             expect(resInfra.transpile(Zod2Ts)).toContain(
                 "export interface Entity extends RES_DOMAIN.Entity {}"
             );
+        });
+    });
+
+    describe("Copies of declared basic types", () => {
+        test("Are the same type when they are described", () => {
+            const tags = z.array(z.string());
+            const snapshot = snapshotSchema(tags);
+
+            @Domain({ namespace: "RES_BASIC", file: "res_basic" })
+            class ResBasic extends Zod2XModel {
+                readonly Email = z.string().email();
+                readonly Tags = tags;
+                readonly Item = z.object({ id: z.string() });
+                readonly Items = z.array(this.Item);
+                readonly DocumentedTags = this.Tags.describe("Documented tags");
+
+                readonly User = z.object({
+                    email: this.Email.describe("User email"),
+                    tags: this.Tags.describe("User tags"),
+                    // Equal schemas are not copies: they can be created independently.
+                    items: z.array(this.Item),
+                    documentedItems: this.Items.describe("User items"),
+                });
+            }
+            const resBasic = new ResBasic();
+
+            const output = resBasic.transpile(Zod2Ts);
+            expect(output).toContain("export type DocumentedTags = Tags;");
+            expect(output).toContain("email: Email;");
+            expect(output).toContain("tags: Tags;");
+            expect(output).toContain("items: Item[];");
+            expect(output).toContain("documentedItems: Items;");
+            expect(snapshot.changes()).toEqual([]);
         });
     });
 

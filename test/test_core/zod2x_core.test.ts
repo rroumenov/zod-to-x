@@ -9,6 +9,7 @@ import {
     Zod2XTranspilers,
     Zod2XTypes,
 } from "../../dist";
+import { snapshotSchema } from "../common/utils";
 extendZod(z);
 
 const buildTs = (schema: any, strict = true) =>
@@ -42,6 +43,45 @@ describe("Zod2X core", () => {
             expect(buildTs(z.object({ role: describedRole }).zod2x("Root"))).toContain(
                 "export enum Role {"
             );
+        });
+
+        test("Schemas are not modified when they are named or described", () => {
+            const item = z.object({ a: z.string() });
+            const role = z.enum(["Admin", "User"]);
+            const snapshots = [item, role].map(snapshotSchema);
+
+            (item as any).zod2x("typeName", "Item");
+            (role as any).zod2x("typeName", "Role");
+            const output = buildTs(
+                z
+                    .object({
+                        item: item.describe("Documented").strict(),
+                        role: role.describe("User role"),
+                    })
+                    .zod2x("Root")
+            );
+
+            expect(output).toContain("// Documented\nexport interface Item {");
+            expect(output).toContain("// User role\nexport enum Role {");
+            expect(snapshots.map((snapshot) => snapshot.changes())).toEqual([[], []]);
+        });
+
+        test("Copies are resolved when schemas are copies of one another", () => {
+            const base = z.object({ a: z.string() });
+            const named = base.zod2x("Named");
+            const described = named.describe("Described");
+            (described as any).zod2x("typeName", "Described");
+
+            // The base schema is not named, although its copies are.
+            expect(() => buildTs(z.object({ base }).zod2x("Root"))).toThrow(
+                /ZodObject type must have a typeName/
+            );
+
+            const output = buildTs(
+                z.object({ named: named.strict(), described: described.strict() }).zod2x("Root")
+            );
+            expect(output).toContain("named: Named;");
+            expect(output).toContain("described: Described;");
         });
 
         test("Type name is not inherited by types derived with extend, omit or pick", () => {
