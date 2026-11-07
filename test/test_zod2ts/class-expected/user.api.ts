@@ -10,7 +10,7 @@ export class ResUpdateUser extends USER_DTOS.UpdateUserUseCaseResultDto {}
 
 export class ResUpdateUserMulti {
     amount: number;
-    data: USER_DTOS.UpdateUserUseCaseResultDto[];
+    data: ResUpdateUser[];
 
     constructor(data: ResUpdateUserMulti) {
         this.amount = data.amount;

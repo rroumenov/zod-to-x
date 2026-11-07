@@ -8,5 +8,5 @@ type Price struct {
 
 type Invoice struct {
     Id string `json:"id"`
-    Total CASE_15_DOMAIN.Money `json:"total"`
+    Total Price `json:"total"`
 }

@@ -16,7 +16,7 @@ type ResUpdateUser struct {
 
 type ResUpdateUserMulti struct {
     Amount int64 `json:"amount"`
-    Data []USER_DTOS.UpdateUserUseCaseResultDto `json:"data"`
+    Data []ResUpdateUser `json:"data"`
 }
 
 type UserApi struct {

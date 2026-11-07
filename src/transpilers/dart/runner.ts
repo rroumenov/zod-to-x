@@ -63,8 +63,13 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
      * - Typedef types: fromJson = _<camelName>FromJson (standalone wrapper)
      * - TypedefList: list fromJson/toJson helpers
      * _toJson helpers are emitted in runAfter() for all entries.
+     * Keyed by helper (`<typeName>` or `<typeName>[]` for list helpers), so a type used both
+     * directly and in a list gets both helpers.
      */
-    private _usedCustomFromJsonTypes = new Map<string, "discUnion" | "typedef" | "typedefList">();
+    private _usedCustomFromJsonTypes = new Map<
+        string,
+        { typeName: string; kind: "discUnion" | "typedef" | "typedefList" }
+    >();
 
     /**
      * Maps a type name (e.g. "GenericUserEntity") to its full Dart type with
@@ -204,7 +209,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         // These helpers prevent json_serializable from following typedef chains and generating
         // code that references transitively-imported types not directly in scope.
         if (this.opt.useJsonSerialization !== false) {
-            for (const [typeName, kind] of this._usedCustomFromJsonTypes) {
+            for (const { typeName, kind } of this._usedCustomFromJsonTypes.values()) {
                 const fnBase = Case.camel(typeName);
                 // Use full type (including generics) if available, e.g. GenericUserEntity<SomeDtoResult>
                 const fullType = this._usedCustomFromJsonFullTypes.get(typeName) ?? typeName;
@@ -665,7 +670,10 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 // Abstract discriminated union — use local or delegate fromJson function.
                 // If this union is a typedef alias of another (aliasOf set), delegate to
                 // the entity-level fromJson so we don't define a duplicate dispatcher.
-                this._usedCustomFromJsonTypes.set(localTypeName, "discUnion");
+                this._usedCustomFromJsonTypes.set(localTypeName, {
+                    typeName: localTypeName,
+                    kind: "discUnion",
+                });
                 const fnBase = Case.camel(localTypeName);
                 const fromJsonFn =
                     this._discriminatedUnionDelegateFromJson.get(localTypeName) ??
@@ -678,7 +686,10 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
             } else if (this._typedefNames.has(localTypeName) && !isList && isClassLike) {
                 // Locally-defined typedef of a class — use standalone fromJson helper to
                 // prevent json_serializable from following the chain to an un-imported type.
-                this._usedCustomFromJsonTypes.set(localTypeName, "typedef");
+                this._usedCustomFromJsonTypes.set(localTypeName, {
+                    typeName: localTypeName,
+                    kind: "typedef",
+                });
                 const fnBase = Case.camel(localTypeName);
                 const namePart = fieldName !== key ? `name: '${key}', ` : "";
                 this.push1(
@@ -690,10 +701,14 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
                 const typeName = nodeName || localTypeName;
                 const fnBase = Case.camel(typeName);
                 const kind = isList ? "typedefList" : "typedef";
-                this._usedCustomFromJsonTypes.set(typeName, kind);
-                // Store full type (including generics) for helper generation in runAfter()
+                this._usedCustomFromJsonTypes.set(isList ? `${typeName}[]` : typeName, {
+                    typeName,
+                    kind,
+                });
+                // Store full type (including generics) for helper generation in runAfter().
+                // List helpers only use the type of the items.
                 const fullType = varType.replace(/\?$/, "");
-                if (fullType !== typeName) {
+                if (!isList && fullType !== typeName) {
                     this._usedCustomFromJsonFullTypes.set(typeName, fullType);
                 }
                 const namePart = fieldName !== key ? `name: '${key}', ` : "";

@@ -17,7 +17,7 @@ namespace USER_API {
     class ResUpdateUserMulti {
     private:
         std::uint64_t amount;
-        std::vector<USER_DTOS::UpdateUserUseCaseResultDto> data;
+        std::vector<ResUpdateUser> data;
     
     public:
         ResUpdateUserMulti() = default;
@@ -27,9 +27,9 @@ namespace USER_API {
         std::uint64_t& get_mut_amount() { return this->amount; }
         void set_amount(const std::uint64_t& value) { this->amount = value; }
         
-        const std::vector<USER_DTOS::UpdateUserUseCaseResultDto>& get_data() const { return this->data; }
-        std::vector<USER_DTOS::UpdateUserUseCaseResultDto>& get_mut_data() { return this->data; }
-        void set_data(const std::vector<USER_DTOS::UpdateUserUseCaseResultDto>& value) { this->data = value; }
+        const std::vector<ResUpdateUser>& get_data() const { return this->data; }
+        std::vector<ResUpdateUser>& get_mut_data() { return this->data; }
+        void set_data(const std::vector<ResUpdateUser>& value) { this->data = value; }
     };
 
     class UserApi {
@@ -81,7 +81,7 @@ namespace USER_API {
 
     inline void from_json(const nlohmann::json& j, ResUpdateUserMulti& x) {
         x.set_amount(j.at("amount").get<std::uint64_t>());
-        x.set_data(j.at("data").get<std::vector<USER_DTOS::UpdateUserUseCaseResultDto>>());
+        x.set_data(j.at("data").get<std::vector<ResUpdateUser>>());
     }
 
     inline void to_json(nlohmann::json& j, const UserApi& x) {
