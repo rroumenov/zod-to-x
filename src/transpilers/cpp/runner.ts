@@ -420,10 +420,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         });
 
         const attributesTypes = attributesData.map((i) => i.type);
+        const unionType = this.getUnionType(attributesTypes);
 
-        this.push0(`using ${data.name} = ${this.getUnionType(attributesTypes)};\n`);
+        // nlohmann finds the serializers of a type by ADL. For a variant, ADL only searches the
+        // namespaces of its alternatives, so a variant without alternatives of this namespace
+        // (e.g. of types of another layer) is declared as a distinct type of this namespace.
+        const isStrongType = !data.options.some((i) => i instanceof ASTDefinition && !i.parentFile);
 
-        this._createUnionSerializer(data.name, attributesTypes);
+        if (isStrongType) {
+            this.push0(`struct ${data.name} : ${unionType} {`);
+            this.push1(`using variant::variant;`);
+            this.push1(`using variant::operator=;`);
+            this.push0(`};\n`);
+        } else {
+            this.push0(`using ${data.name} = ${unionType};\n`);
+        }
+
+        this._createUnionSerializer(data.name, attributesTypes, isStrongType);
         this._createUnionDeserializer(data.name, attributesData, data.discriminantKey);
     }
 
@@ -935,7 +948,11 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
      * //     }
      * // }
      */
-    protected _createUnionSerializer(unionName: string, itemsType: string[]) {
+    protected _createUnionSerializer(
+        unionName: string,
+        itemsType: string[],
+        _isStrongType?: boolean
+    ) {
         this.imports.add(this.lib.exceptions);
 
         this._push0(
@@ -1144,7 +1161,11 @@ export class Zod2Cpp17 extends Zod2Cpp {
      * //     );
      * // }
      */
-    protected override _createUnionSerializer(unionName: string, itemsType: string[]) {
+    protected override _createUnionSerializer(
+        unionName: string,
+        itemsType: string[],
+        isStrongType?: boolean
+    ) {
         this.imports.add(this.lib.exceptions);
 
         this._push0(
@@ -1167,7 +1188,11 @@ export class Zod2Cpp17 extends Zod2Cpp {
         this._push3(this.serializers, `}`);
 
         this._push2(this.serializers, `},`);
-        this._push2(this.serializers, `x`);
+        // Classes derived from std::variant are visited as such only since C++23 (P2162).
+        this._push2(
+            this.serializers,
+            isStrongType ? `static_cast<const ${unionName}::variant&>(x)` : `x`
+        );
         this._push1(this.serializers, `);`);
         this._push0(this.serializers, `}\n`);
     }
