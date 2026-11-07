@@ -66,7 +66,7 @@ Defined in `src/layered-modeling/model.ts`. Base class for all layer models.
 |---|---|
 | `getModelName()` | Returns decorator-assigned model name |
 | `getLayerMetadata()` | Returns decorator-assigned layer metadata |
-| `getAstNode(opt?)` | Lazy-builds and caches AST from all own Zod properties |
+| `getAstNode(opt?)` | Lazy-builds and caches AST from all own Zod properties. The cache is cleared when the layered generation changes (a model is created or a type moves to another layer) |
 | `transpile(target, opt?, astOpt?)` | Full transpile: build AST → check circular imports (if the transpiler does not support them) → transpile |
 
 **Usage:**

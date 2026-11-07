@@ -8,7 +8,12 @@ import {
     ZodTypeAny,
 } from "zod";
 
-import { linkToSource, resolveZod2xMetadata, setZod2xMetadata } from "./zod2x_metadata";
+import {
+    IZod2xResolvedMetadata,
+    linkToSource,
+    resolveZod2xMetadata,
+    setZod2xMetadata,
+} from "./zod2x_metadata";
 import { Extended } from "./zod_ext";
 
 export type { ZodArray, ZodTypeAny, ZodIntersection, ZodObject } from "zod";
@@ -81,8 +86,12 @@ export class ZodHelpers {
      * Returns a short structural signature of a schema, used to tell apart two different schemas
      * that share the same type name.
      */
-    static getShallowSignature(i: ZodTypeAny, depth = 0): string {
-        const typeName = resolveZod2xMetadata(i)?.typeName;
+    static getShallowSignature(
+        i: ZodTypeAny,
+        resolve: (schema: ZodTypeAny) => IZod2xResolvedMetadata | undefined = resolveZod2xMetadata,
+        depth = 0
+    ): string {
+        const typeName = resolve(i)?.typeName;
         if (typeName) {
             return `#${typeName}`;
         }
@@ -91,7 +100,7 @@ export class ZodHelpers {
         const inner: ZodTypeAny | undefined =
             def?.innerType ?? (this.isZodType(def?.type) ? def.type : undefined) ?? def?.schema;
         return inner && depth < 5
-            ? `${def.typeName}<${this.getShallowSignature(inner, depth + 1)}>`
+            ? `${def.typeName}<${this.getShallowSignature(inner, resolve, depth + 1)}>`
             : `${def?.typeName}`;
     }
 
