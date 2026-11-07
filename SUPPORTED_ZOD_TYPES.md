@@ -5,6 +5,8 @@ This document provides a comprehensive mapping of Zod types to their equivalent 
 <sup>(1)</sup> Consider to use Zod's merge instead of ZodIntersection when possible.  
 <sup>(2)</sup> Consider to use ZodDiscriminatedUnion when possible. In languages like C++, deserialization is O(1) against the O(n) of the ZodUnion.
 
+Wrappers that do not change the data model are transpiled as their inner type in every language: `.default()`, `.catch()`, `.readonly()`, `.brand()`, `.refine()`, `.superRefine()`, `.transform()` (its input type) and `z.preprocess()`. Pipelines (`.pipe()`) are transpiled as their output type, and `z.unknown()` as `z.any()`. Other Zod types are not supported: they raise an error in strict mode (default), or are transpiled as `z.any()` otherwise.
+
 ## Index of Languages
 - [Mapping of Supported Zod Types by Language](#mapping-of-supported-zod-types-by-language)
   - [Index of Languages](#index-of-languages)

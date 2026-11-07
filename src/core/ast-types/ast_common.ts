@@ -70,16 +70,33 @@ export type ASTAliasedTypes =
     | Complex.ASTArray;
 
 /**
+ * Translation of a generic template of a generic type instance. Named types are referenced by
+ * name (and file, if external), and the rest of types (basic types, arrays, ...) by their AST.
+ */
+export type ASTTemplateTranslation = Pick<
+    ASTCommon,
+    "parentFile" | "parentNamespace" | "aliasOf"
+> & {
+    type?: ASTType;
+};
+
+/**
  * Represents a usage of any existing ASTNode. Used to reduce node size.
  */
 export class ASTDefinition extends ASTCommon {
+    static readonly kind = "ASTDefinition";
+
     name: string;
+
+    /**
+     * Kind of the referenced AST node (e.g. "ASTObject"). See `getASTKind`.
+     */
     instanceType: string;
     constraints?: Record<string, any>;
 
     // In case of model definition that uses a generic template. Shall follow the same order as
     // templates definition.
-    templatesTranslation: Pick<ASTCommon, "parentFile" | "parentNamespace" | "aliasOf">[];
+    templatesTranslation: ASTTemplateTranslation[];
 
     constructor(data: ASTDefinition & ASTCommon) {
         super(data);
@@ -93,12 +110,22 @@ export class ASTDefinition extends ASTCommon {
 
 export type ASTType = ASTNode | ASTDefinition;
 
+/**
+ * Returns the kind of an AST node, which is the name of its class (e.g. "ASTObject"). Unlike
+ * `constructor.name`, it is not modified by minifiers.
+ */
+export function getASTKind(node: unknown): string | undefined {
+    return (node as { constructor?: { kind?: string } })?.constructor?.kind;
+}
+
 export type ASTNodes = {
     nodes: Map<string, ASTNode>;
     warnings: string[];
 };
 
 export class ASTGenericType {
+    static readonly kind = "ASTGenericType";
+
     name: string;
 
     constructor(name: string) {

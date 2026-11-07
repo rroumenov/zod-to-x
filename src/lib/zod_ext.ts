@@ -4,10 +4,15 @@ import {
     z,
     ZodEnum,
     ZodNativeEnum,
+    ZodObject,
     ZodRawShape,
     ZodTypeAny,
     ZodUnionOptions,
 } from "zod";
+
+import { cloneSchema, getZod2xMetadata, linkToSource, setZod2xMetadata } from "./zod2x_metadata";
+
+const DESCRIBE_PATCHED = Symbol.for("zod-to-x.describe");
 
 export interface IZod2xLayerMetadata {
     /**
@@ -82,11 +87,27 @@ export interface IZod2xLayerMetadata {
     skipLayerInterface?: boolean;
 }
 
-export interface IZod2xMetadata {
+/**
+ * Options accepted by the `zod2x` method to name a type.
+ */
+export interface IZod2xTypeNameOpt {
     /**
      * The type name to use in the generated schema.
      */
     typeName: string;
+}
+
+/**
+ * Metadata stored for each schema. Only source information is stored: everything that can be
+ * derived from other schemas (layers of the original types, generic templates, ...) is resolved
+ * when needed, so it is always up to date.
+ */
+export interface IZod2xMetadata {
+    /**
+     * The type name to use in the generated schema. Instances of generic types take it from their
+     * generic type.
+     */
+    typeName?: string;
 
     /**
      * For literal types, the parent enum that contains the literal value. Useful when using
@@ -102,36 +123,23 @@ export interface IZod2xMetadata {
 
     /**
      * For Layered Modeling.
-     * When a type of another file is used without modifying it, it is sustituted by its import
-     * instead of creating a new type.
+     * When a type of another layer (or a type with a different name) is used without modifying it,
+     * a new type is created that extends the original one, which is referenced here.
      */
-    aliasOf?: string;
-    parentLayer?: IZod2xLayerMetadata;
+    aliasOf?: ZodTypeAny;
 
     /**
      * For Layered Modeling defining generics.
-     * When a generic type is used with `useGenericType`, it stores the templates translation for
-     * the associated key.
+     * When a generic type is used with `useGenericType`, it references the generic type and the
+     * types used for each template, in the same order as they are defined in the generic type.
      */
-    genericTypes?: {
-        typeName: string;
-        layer: IZod2xLayerMetadata;
-    }[]; // For generics, the layers associated to each child type.
-
-    /**
-     * For Layered Modeling defining generics.
-     * Indicates when useGenericType was used to create a definition (set to true during Layer
-     * decorator) or if it is used inline as part of another definition (set to false).
-     * Defaults to false.
-     */
-    isGenericChild?: boolean;
+    genericOf?: {
+        generic: ZodObject<any>;
+        templates: [string, ZodTypeAny][];
+    };
 }
 
 declare module "zod" {
-    interface ZodType {
-        _zod2x?: IZod2xMetadata;
-    }
-
     interface ZodObject<
         T extends ZodRawShape,
         UnknownKeys extends UnknownKeysParam = UnknownKeysParam,
@@ -151,10 +159,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod object with the metadata properties.
          */
-        zod2x(
-            this: ZodObject<T, UnknownKeys, Catchall>,
-            opt: Pick<IZod2xMetadata, "typeName">
-        ): this;
+        zod2x(this: ZodObject<T, UnknownKeys, Catchall>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod object by modifying a specific metadata property.
@@ -163,10 +168,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod object with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodObject<T, UnknownKeys, Catchall>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -185,7 +190,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod enum with the metadata properties.
          */
-        zod2x(this: ZodEnum<T>, opt: Pick<IZod2xMetadata, "typeName">): this;
+        zod2x(this: ZodEnum<T>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod enum by modifying a specific metadata property.
@@ -194,10 +199,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod enum with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodEnum<T>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -216,7 +221,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod native enum with the metadata properties.
          */
-        zod2x(this: ZodNativeEnum<T>, opt: Pick<IZod2xMetadata, "typeName">): this;
+        zod2x(this: ZodNativeEnum<T>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod native enum by modifying a specific metadata property.
@@ -225,10 +230,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod native enum with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodNativeEnum<T>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -251,10 +256,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod discriminated union with the metadata properties.
          */
-        zod2x(
-            this: ZodDiscriminatedUnion<Discriminator, Options>,
-            opt: Pick<IZod2xMetadata, "typeName">
-        ): this;
+        zod2x(this: ZodDiscriminatedUnion<Discriminator, Options>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod discriminated union by modifying a specific metadata property.
@@ -263,10 +265,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod discriminated union with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodDiscriminatedUnion<Discriminator, Options>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -285,7 +287,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod union with the metadata properties.
          */
-        zod2x(this: ZodUnion<ZodUnionOptions>, opt: Pick<IZod2xMetadata, "typeName">): this;
+        zod2x(this: ZodUnion<ZodUnionOptions>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod union by modifying a specific metadata property.
@@ -294,10 +296,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod union with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodUnion<ZodUnionOptions>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -316,7 +318,7 @@ declare module "zod" {
          * @param opt - An object containing the metadata properties to set.
          * @returns A new instance of the Zod intersection with the metadata properties.
          */
-        zod2x(this: ZodIntersection<T, U>, opt: Pick<IZod2xMetadata, "typeName">): this;
+        zod2x(this: ZodIntersection<T, U>, opt: IZod2xTypeNameOpt): this;
 
         /**
          * Updates the current Zod intersection by modifying a specific metadata property.
@@ -325,10 +327,10 @@ declare module "zod" {
          * @param value - The new value to set for the specified metadata property.
          * @returns The current instance of the Zod intersection with the updated metadata property.
          */
-        zod2x<K extends keyof Pick<IZod2xMetadata, "typeName">>(
+        zod2x<K extends keyof IZod2xTypeNameOpt>(
             this: ZodIntersection<T, U>,
             key: K,
-            value: IZod2xMetadata[K]
+            value: IZod2xTypeNameOpt[K]
         ): this;
     }
 
@@ -352,20 +354,22 @@ declare module "zod" {
 }
 
 function getZod2XConstructor() {
-    return function <K extends keyof IZod2xMetadata>(
+    return function <K extends keyof IZod2xTypeNameOpt>(
         this: any,
-        opt: string | IZod2xMetadata | K,
-        value?: IZod2xMetadata[K]
+        opt: string | IZod2xTypeNameOpt | K,
+        value?: IZod2xTypeNameOpt[K]
     ) {
         if (typeof opt === "string" && value !== undefined) {
-            this._zod2x[opt] = value;
-            return this;
+            return setZod2xMetadata(this, {
+                ...(getZod2xMetadata(this) ?? {}),
+                [opt]: value,
+            } as IZod2xMetadata);
         }
 
-        const newItem = new (this as any).constructor({ ...this._def });
-        newItem._zod2x = typeof opt === "string" ? { typeName: opt } : opt;
-
-        return newItem;
+        return setZod2xMetadata(
+            cloneSchema(this),
+            typeof opt === "string" ? { typeName: opt } : { ...(opt as IZod2xMetadata) }
+        );
     };
 }
 
@@ -425,14 +429,27 @@ export function extendZod(zod: any /*typeof z ---> any type until solve type inc
             this: any,
             opt: ZodNativeEnum | ZodEnum<any> | Pick<IZod2xMetadata, "parentEnum">
         ) {
-            const newItem = new (this as any).constructor({ ...this._def });
-            newItem._zod2x =
-                opt instanceof zod.ZodEnum || opt instanceof zod.ZodNativeEnum
-                    ? { parentEnum: opt }
-                    : opt;
+            const typeName = (opt as ZodTypeAny)?._def?.typeName;
 
-            return newItem;
+            return setZod2xMetadata(
+                cloneSchema(this),
+                // Zod's typeName is checked instead of instanceof to resolve Bun incompatibilities.
+                (typeName === "ZodEnum" || typeName === "ZodNativeEnum"
+                    ? { parentEnum: opt }
+                    : { ...opt }) as IZod2xMetadata
+            );
         };
+    }
+
+    if (zod.ZodType.prototype.describe[DESCRIBE_PATCHED] === undefined) {
+        // Zod 3 creates a new schema when it is described. It is linked to the described schema,
+        // so it keeps the zod2x metadata of it, also when the metadata is set afterwards.
+        const describe = zod.ZodType.prototype.describe;
+        const patchedDescribe = function (this: any, description: string) {
+            return linkToSource(describe.call(this, description), this);
+        };
+        (patchedDescribe as any)[DESCRIBE_PATCHED] = true;
+        zod.ZodType.prototype.describe = patchedDescribe;
     }
 
     Extended.setZ(zod);

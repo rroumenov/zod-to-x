@@ -30,8 +30,8 @@ console.log(JSON.stringify(astNodes, null, 2));
 Check:
 - Is the node the correct AST type? (e.g., `ASTObject` vs `ASTDefinition`)
 - Are `isOptional` / `isNullable` correctly set?
-- Is `aliasOf` / `parentLayer` set for cross-layer refs?
-- Are `genericTypes` and `templatesTranslation` populated for generics?
+- Is `aliasOf` / `parentLayer` set for cross-layer refs? (see `resolveZod2xMetadata(schema)`)
+- Are `genericTypes` (resolved metadata) and `templatesTranslation` populated for generics?
 - Is `arrayDimension` correct for nested arrays?
 - Does the `name` match what `.zod2x("Name")` set?
 
@@ -48,14 +48,14 @@ For property types, `getAttributeType()` is the central dispatcher. Add logging 
 
 ```typescript
 // Temporary debug in transpiler.ts getAttributeType()
-console.log(`getAttributeType: ${token.constructor.name}`, token);
+console.log(`getAttributeType: ${getASTKind(token)}`, token);
 ```
 
 ### 4. Common Issues and Fixes
 
 #### Wrong output name
 - Check `.zod2x("Name")` is called on the schema
-- Check `_zod2x.typeName` is set in the AST node
+- Check `getZod2xMetadata(schema)?.typeName` is set for the schema
 
 #### Missing import
 - Check `parentFile` and `parentNamespace` are set on the AST node
@@ -73,7 +73,7 @@ console.log(`getAttributeType: ${token.constructor.name}`, token);
 - Check `addExtendedType()` emits the correct syntax
 
 #### Generic type not resolving
-- Check `genericTypes` array on the definition
+- Check `genericTypes` array of `resolveZod2xMetadata(schema)`
 - Check `templatesTranslation` on the object
 - Verify `useGenericType()` was called correctly (check `skipLazy` if in discriminatedUnion)
 
@@ -133,9 +133,9 @@ After finding the root cause, **always** perform this analysis:
 1. **Core fix (`src/core/`, `src/lib/`, `src/layered-modeling/`):** The bug affects ALL transpilers. Test TypeScript, Python, AND C++ output. Create regression tests for all three.
 
 2. **Transpiler-specific fix (`src/transpilers/<lang>/`):** Check if the same method in other transpilers has the same flaw. Common patterns that are implemented independently in each runner:
-   - `checkExtendedTypeInclusion()` — cross-layer alias handling
+   - `getExtendedTypeOptions()` — language options for cross-layer aliases (the alias handling itself, `checkExtendedTypeInclusion()`, is shared in `Zod2X`)
    - `_transpileMember()` — property rendering with optional/nullable
    - `transpileStruct()` / `transpileEnum()` / `transpileUnion()` — type declaration rendering
-   - `getGenericTemplatesTranslation()` — generic parameter syntax
+   - `genericTemplatesBrackets` — generic parameter brackets (`getGenericTemplatesTranslation()` is shared in `Zod2X`)
 
 3. **Document the scope** in your fix: which transpilers were affected and which were checked.

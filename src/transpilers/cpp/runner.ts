@@ -10,6 +10,7 @@ import {
     ASTObject,
     ASTUnion,
     NotTranspilerableTypeError,
+    TExtendedTypeKind,
     Zod2X,
 } from "@/core";
 import { INT32_RANGES, UINT32_RANGES } from "@/utils/number_limits";
@@ -110,71 +111,23 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         }
     }
 
-    protected getGenericTemplatesTranslation(data: ASTNode): string | undefined {
-        if (
-            (data instanceof ASTObject || data instanceof ASTDefinition) &&
-            data.templatesTranslation.length > 0
-        ) {
-            return (
-                "<" +
-                data.templatesTranslation
-                    .map((t) => {
-                        if (this.isExternalTypeImport(t)) {
-                            this.addExternalTypeImport(t);
-                            return this.getTypeFromExternalNamespace(
-                                t.parentNamespace!,
-                                t.aliasOf!
-                            );
-                        } else {
-                            return t.aliasOf!;
-                        }
-                    })
-                    .join(", ") +
-                ">"
-            );
-        }
-    }
-
     /**
-     * Emits an alias/extension declaration early for layered references.
-     * It keeps concrete template translations and falls back to declared templates (e.g. <T>)
-     * for aliases of generic templates.
+     * For Layered Modeling. Language options used to declare a type that extends another one.
      */
-    protected checkExtendedTypeInclusion(data: ASTNode, type?: "union" | "alias") {
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind) {
         const templatesMeta =
             data instanceof ASTObject && data.templates.size > 0
                 ? this._getTemplates(data.templates)
                 : undefined;
 
         const translatedTemplates = this.getGenericTemplatesTranslation(data);
-        const templates = translatedTemplates || templatesMeta?.templateList;
-        const templateList = translatedTemplates ? undefined : templatesMeta?.templateList;
-        const templateDefinition = translatedTemplates
-            ? undefined
-            : templatesMeta?.templateDefinition;
 
-        if (this.isExternalTypeImport(data)) {
-            if (data.aliasOf) {
-                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf!, {
-                    type,
-                    templates,
-                    templateDefinition,
-                    templateList,
-                });
-                this.addExternalTypeImport(data);
-            }
-            return true;
-        } else if (data.aliasOf) {
-            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
-                type,
-                isInternal: true,
-                templates,
-                templateDefinition,
-                templateList,
-            });
-            return true;
-        }
-        return false;
+        return {
+            type: type as "union" | "alias" | undefined,
+            templates: translatedTemplates || templatesMeta?.templateList,
+            templateDefinition: translatedTemplates ? undefined : templatesMeta?.templateDefinition,
+            templateList: translatedTemplates ? undefined : templatesMeta?.templateList,
+        };
     }
 
     protected runAfter() {

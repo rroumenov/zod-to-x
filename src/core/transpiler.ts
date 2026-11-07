@@ -20,6 +20,7 @@ import {
     ASTTuple,
     ASTType,
     ASTUnion,
+    getASTKind,
 } from "@/core";
 import StringUtils, { TIndentationLevels } from "@/utils/string_utils";
 
@@ -50,6 +51,11 @@ export interface IZodToXOpt extends Record<string, any> {
      */
     useImports?: boolean;
 }
+
+/**
+ * For Layered Modeling. Kind of type that extends another one.
+ */
+export type TExtendedTypeKind = "alias" | "union" | "d-union";
 
 /**
  * Abstract base class for transpiling Zod schemas into other programming languages.
@@ -99,9 +105,33 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected abstract getTypeFromExternalNamespace(namespace: string, typeName: string): string;
 
     /**
+     * Opening and closing brackets of generic templates in the target language.
+     */
+    protected readonly genericTemplatesBrackets: [string, string] = ["<", ">"];
+
+    /**
      * Returns the translation of generic templates for a given AST node.
      */
-    protected abstract getGenericTemplatesTranslation(data: ASTNode): string | undefined;
+    protected getGenericTemplatesTranslation(data: ASTNode | ASTDefinition): string | undefined {
+        if (
+            (data instanceof ASTObject || data instanceof ASTDefinition) &&
+            data.templatesTranslation.length > 0
+        ) {
+            const [open, close] = this.genericTemplatesBrackets;
+            const templates = data.templatesTranslation.map((t) => {
+                if (t.type !== undefined) {
+                    return this.getAttributeType(t.type);
+                } else if (this.isExternalTypeImport(t)) {
+                    this.addExternalTypeImport(t);
+                    return this.getTypeFromExternalNamespace(t.parentNamespace!, t.aliasOf!);
+                } else {
+                    return t.aliasOf!;
+                }
+            });
+
+            return `${open}${templates.join(", ")}${close}`;
+        }
+    }
 
     /**
      * For Layered Modeling.
@@ -114,8 +144,48 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     protected abstract addExtendedType(
         name: string,
         parentNamespace: string,
-        aliasOf: string
+        aliasOf: string,
+        opt?: { isInternal?: boolean }
     ): void;
+
+    /**
+     * For Layered Modeling.
+     * Returns the language specific options used by `addExtendedType` to declare a type that
+     * extends another one.
+     * @param data - The AST node of the type.
+     * @param type - Kind of the type.
+     */
+    protected getExtendedTypeOptions(data: ASTNode, type?: TExtendedTypeKind): object {
+        return { type };
+    }
+
+    /**
+     * For Layered Modeling.
+     * Emits the declaration of a type that extends another layered type, if the node is an alias.
+     * @param data - The AST node to transpile.
+     * @param type - Kind of the type.
+     * @returns `true` if the node shall not be transpiled as a new type: it is an alias, or a
+     *          type imported from another file.
+     */
+    protected checkExtendedTypeInclusion(data: ASTNode, type?: TExtendedTypeKind): boolean {
+        // Options are computed in advance because they can have side effects (imports, ...).
+        const options = this.getExtendedTypeOptions(data, type);
+
+        if (this.isExternalTypeImport(data)) {
+            if (data.aliasOf) {
+                this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, options);
+                this.addExternalTypeImport(data);
+            }
+            return true;
+        } else if (data.aliasOf) {
+            this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
+                ...options,
+                isInternal: true,
+            });
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Returns the keyword representing a string type in the target language.
@@ -364,7 +434,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         } else if (token instanceof ASTGenericType) {
             varType = token.name;
         } else {
-            console.log("  # Unknown attribute equivalent for ---> ", token.constructor.name);
+            console.log("  # Unknown attribute equivalent for ---> ", getASTKind(token));
         }
 
         return token.arrayDimension ? this.getArrayType(varType, token.arrayDimension) : varType;
@@ -377,7 +447,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *               properties of the type to evaluate.
      * @returns `true` if the type is an external type import; otherwise, `false`.
      */
-    protected isExternalTypeImport(item: ASTNode): boolean {
+    protected isExternalTypeImport(item: Pick<ASTNode, "parentFile" | "parentNamespace">): boolean {
         return (
             item.parentFile !== undefined &&
             item.parentNamespace !== undefined &&
@@ -393,7 +463,9 @@ export abstract class Zod2X<T extends IZodToXOpt> {
      *                  about the type to be imported, including its parent file and namespace.
      * @returns `true` if the import was successfully added, otherwise `false`.
      */
-    protected addExternalTypeImport(item: ASTNode): boolean {
+    protected addExternalTypeImport(
+        item: Pick<ASTNode, "parentFile" | "parentNamespace">
+    ): boolean {
         if (this.isExternalTypeImport(item)) {
             this.imports.add(this.addImportFromFile(item.parentFile!, item.parentNamespace!));
             return true;
@@ -418,7 +490,7 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         } else if (this.isAliasedType(item)) {
             this.transpileAliasedType(item);
         } else if (item instanceof ASTCommon) {
-            console.log(`Under construction: ${item.constructor.name}`);
+            console.log(`Under construction: ${getASTKind(item)}`);
         } else {
             throw new Error(`Unexpected item for transpilation: ${JSON.stringify(item)}`);
         }
