@@ -29,9 +29,13 @@ jobs:
             NPM_TAG: ${{ github.ref_name == 'main' && 'latest' || 'latestV1' }}
             GH_LATEST: ${{ github.ref_name == 'main' && 'true' || 'false' }}
         steps:
+            # The release commit is pushed straight to the branch. The ruleset requires PRs
+            # and GITHUB_TOKEN cannot bypass it, so push with a write deploy key that is on
+            # the ruleset's bypass list.
             - uses: actions/checkout@v5
               with:
                   fetch-depth: 0
+                  ssh-key: ${{ secrets.ZOD_TO_X_RELEASE_DEPLOY_KEY }}
             - uses: actions/setup-node@v5
               with:
                   node-version: 24
