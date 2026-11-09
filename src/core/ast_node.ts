@@ -248,6 +248,15 @@ export class Zod2Ast {
     }
 
     private _setNode(key: string, schema: ZodTypeAny, node: ASTNode) {
+        // An alias only documents what it adds: the description of the type it extends would be
+        // repeated, as handles and copies of a schema keep its description.
+        if (
+            node.aliasOf !== undefined &&
+            node.description === this._resolve(schema)?.aliasedDescription
+        ) {
+            node.description = undefined;
+        }
+
         this.nodes.set(key, node);
         this.nodeSchemas.set(key, schema);
     }
