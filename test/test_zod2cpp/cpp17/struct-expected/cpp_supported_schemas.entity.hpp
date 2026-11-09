@@ -107,10 +107,8 @@ namespace CPP_SUPPORTED_SCHEMAS {
 
     struct CppSupportedSchemas {
         StringItem string_item;
-        
         // A literal string
         std::string literal_string_item;
-        
         // A literal number
         std::uint32_t literal_number_item;
         EnumItem enum_item;
@@ -133,10 +131,8 @@ namespace CPP_SUPPORTED_SCHEMAS {
         DiscriminatedUnionItem discriminated_union_item;
         IntersectionItem intersection_item;
         AnyItem any_item;
-        
         // An optional string
         std::optional<std::string> optional_item;
-        
         // A nullable string
         std::optional<std::string> nullable_item;
     };

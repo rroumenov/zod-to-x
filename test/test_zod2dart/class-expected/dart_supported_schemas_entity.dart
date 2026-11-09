@@ -163,10 +163,8 @@ typedef AnyItem = dynamic;
 @JsonSerializable(explicitToJson: true)
 class DartSupportedSchemas {
   final StringItem stringItem;
-
   // A literal string
   final String literalStringItem;
-
   // A literal number
   final int literalNumberItem;
   final EnumItem enumItem;
@@ -191,10 +189,8 @@ class DartSupportedSchemas {
   final DiscriminatedUnionItem discriminatedUnionItem;
   final IntersectionItem intersectionItem;
   final AnyItem anyItem;
-
   // An optional string
   final String? optionalItem;
-
   // A nullable string
   final String? nullableItem;
 

@@ -342,7 +342,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
 
         if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
             // Avoid duplicated descriptions for transpiled items.
-            this.addComment(memberNode.description, `\n${this.indent[1]}`);
+            this.addComment(memberNode.description, this.indent[1]);
         }
 
         this.push1(`${keyName}${this.getAttributeType(memberNode)}${setNullable};`);

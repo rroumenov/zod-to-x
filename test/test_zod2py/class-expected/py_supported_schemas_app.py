@@ -55,10 +55,8 @@ class BaseSchema(BaseModel):
 
 class PySupportedSchemasApplication(BaseSchema):
     new_string_item: NewStringItem
-
     # A literal string
     new_literal_string_item: Literal["literal"]
-
     # A literal number
     new_literal_number_item: Literal[1]
     new_enum_item: NewEnumItem
@@ -79,9 +77,7 @@ class PySupportedSchemasApplication(BaseSchema):
     new_discriminated_union_item: NewDiscriminatedUnionItem
     new_intersection_item: NewIntersectionItem
     new_any_item: NewAnyItem
-
     # An optional string
     new_optional_item: Optional[str] = None
-
     # A nullable string
     new_nullable_item: Optional[str] = None

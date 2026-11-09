@@ -105,10 +105,8 @@ AnyItem: TypeAlias = Any
 
 class PySupportedSchemas(BaseSchema):
     string_item: StringItem
-
     # A literal string
     literal_string_item: Literal["literal"]
-
     # A literal number
     literal_number_item: Literal[1]
     enum_item: EnumItem
@@ -132,9 +130,7 @@ class PySupportedSchemas(BaseSchema):
     discriminated_union_item: DiscriminatedUnionItem
     intersection_item: IntersectionItem
     any_item: AnyItem
-
     # An optional string
     optional_item: Optional[str] = None
-
     # A nullable string
     nullable_item: Optional[str] = None
