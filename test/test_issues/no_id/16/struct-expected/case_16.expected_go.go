@@ -24,13 +24,15 @@ type Customer struct {
 
 type Order struct {
     Id string `json:"id"`
-    Destination ShippingAddress `json:"destination"`
-    Billing *ShippingAddress `json:"billing,omitempty"`
-    Items []OrderItem `json:"items"`
+    Destination CASE_16_DOMAIN.Address `json:"destination"`
+    Billing *CASE_16_DOMAIN.Address `json:"billing,omitempty"`
+    Items []CASE_16_DOMAIN.Item `json:"items"`
     Currency CASE_16_DOMAIN.Currency `json:"currency"`
     Contact Contact `json:"contact"`
 }
 
+type AddressList = []CASE_16_DOMAIN.Address
+
 type OrderItemPage struct {
-    CASE_16_DOMAIN.Page[OrderItem]
+    CASE_16_DOMAIN.Page[CASE_16_DOMAIN.Item]
 }

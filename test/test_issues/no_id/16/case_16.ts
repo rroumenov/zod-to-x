@@ -10,33 +10,31 @@ import {
 extendZod(z);
 
 /**
- * Case 16: References to types of other files ignore the alias declared by the model
+ * Case 16: References to a type of another file use that type, even if the model redeclares it
  *
  * - Use case:
- * A model declares an alias of a type of another layer (`ShippingAddress = domain.Address`) and
- * uses that type in other types of the model.
+ * A model declares an alias of a type of another layer (`ShippingAddress = domain.Address`) for a
+ * specific role, and uses the original type in other types of the model.
  *
- * - Current state:
- * The alias is declared, but the other types of the model use the type of the other layer, so
- * the alias is not used by the model and the file depends on the other layer for both.
+ * - Previous state:
+ * The other types of the model were transpiled with the alias, replacing the type they reference
+ * with a role they do not have. A second redeclaration of the type reverted them all.
  *
- * @current
- * export interface Order {
- *     destination: CASE_16_DOMAIN.Address;
- *     ...
- * }
- *
- * @expected
+ * @previous
  * export interface Order {
  *     destination: ShippingAddress;
  *     ...
  * }
  *
- * References use the alias of the model directly, through the property of the model that
- * declares the type, as a copy (`.describe()`), inside other schemas (arrays, optionals) and as
- * templates of generic types. A type that the model declares twice is ambiguous, so its
- * references keep using the type of the other layer. Aliases of types of the same file
- * (`Home = this.Address`) are not used either.
+ * @expected
+ * export interface Order {
+ *     destination: CASE_16_DOMAIN.Address;
+ *     ...
+ * }
+ *
+ * References keep the type they use directly, through the property of the model that declares
+ * the type, as a copy (`.describe()`), inside other schemas (arrays, optionals) and as templates
+ * of generic types, regardless of how many times the model redeclares it.
  */
 
 const SharedItem = z.object({
@@ -69,7 +67,7 @@ class Case16App extends Zod2XModel {
 
     readonly OrderItem = SharedItem;
 
-    // Declared twice: references use the domain type.
+    // Declared twice, as independent aliases of the domain type.
     readonly PaymentCurrency = case16Domain.Currency;
     readonly RefundCurrency = case16Domain.Currency;
 
@@ -77,7 +75,7 @@ class Case16App extends Zod2XModel {
         email: z.string(),
     });
 
-    // Alias of a type of the same file: references use the original type.
+    // Alias of a type of the same file.
     readonly Customer = this.Contact;
 
     readonly Order = z.object({
@@ -88,6 +86,8 @@ class Case16App extends Zod2XModel {
         currency: case16Domain.Currency,
         contact: this.Contact,
     });
+
+    readonly AddressList = z.array(case16Domain.Address);
 
     readonly OrderItemPage = useGenericType(case16Domain.Page, {
         data: case16Domain.Item,

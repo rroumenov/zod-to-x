@@ -4,7 +4,7 @@ export class Price extends CASE_15_DOMAIN.Money {}
 
 export class Invoice {
     id: string;
-    total: Price;
+    total: CASE_15_DOMAIN.Money;
 
     constructor(data: Invoice) {
         this.id = data.id;
