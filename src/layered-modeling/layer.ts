@@ -8,7 +8,7 @@ import { declareLayerType, registerLayeredModel } from "./resolver";
 export {
     getLayeredGeneration,
     getLayeredModels,
-    getLocalAliasSubstitute,
+    getModelCopySubstitute,
     getOwnershipTie,
 } from "./resolver";
 

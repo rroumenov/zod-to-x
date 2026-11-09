@@ -31,12 +31,12 @@ typedef Customer = Contact;
 @JsonSerializable(explicitToJson: true)
 class Order {
   final String id;
-  @JsonKey(fromJson: _shippingAddressFromJson, toJson: _shippingAddressToJson)
-  final ShippingAddress destination;
-  @JsonKey(fromJson: _shippingAddressFromJson, toJson: _shippingAddressToJson)
-  final ShippingAddress? billing;
-  @JsonKey(fromJson: _orderItemListFromJson, toJson: _orderItemListToJson)
-  final List<OrderItem> items;
+  @JsonKey(fromJson: _addressFromJson, toJson: _addressToJson)
+  final Address destination;
+  @JsonKey(fromJson: _addressFromJson, toJson: _addressToJson)
+  final Address? billing;
+  @JsonKey(fromJson: _itemListFromJson, toJson: _itemListToJson)
+  final List<Item> items;
   final Currency currency;
   final Contact contact;
 
@@ -55,16 +55,18 @@ class Order {
   Map<String, dynamic> toJson() => _$OrderToJson(this);
 }
 
-typedef OrderItemPage = Page<OrderItem>;
+typedef AddressList = List<Address>;
 
-ShippingAddress _shippingAddressFromJson(Object? json) =>
-  ShippingAddress.fromJson(json as Map<String, dynamic>);
+typedef OrderItemPage = Page<Item>;
 
-Map<String, dynamic> _shippingAddressToJson(ShippingAddress value) =>
+Address _addressFromJson(Object? json) =>
+  Address.fromJson(json as Map<String, dynamic>);
+
+Map<String, dynamic> _addressToJson(Address value) =>
   (value as dynamic).toJson() as Map<String, dynamic>;
 
-List<OrderItem> _orderItemListFromJson(Object? json) =>
-  (json as List<dynamic>).map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList();
+List<Item> _itemListFromJson(Object? json) =>
+  (json as List<dynamic>).map((e) => Item.fromJson(e as Map<String, dynamic>)).toList();
 
-List<Map<String, dynamic>> _orderItemListToJson(List<OrderItem> list) =>
+List<Map<String, dynamic>> _itemListToJson(List<Item> list) =>
   list.map((e) => (e as dynamic).toJson() as Map<String, dynamic>).toList();

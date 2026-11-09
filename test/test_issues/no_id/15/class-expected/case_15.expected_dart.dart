@@ -9,8 +9,8 @@ typedef Price = Money;
 @JsonSerializable(explicitToJson: true)
 class Invoice {
   final String id;
-  @JsonKey(fromJson: _priceFromJson, toJson: _priceToJson)
-  final Price total;
+  @JsonKey(fromJson: _moneyFromJson, toJson: _moneyToJson)
+  final Money total;
 
   Invoice({
     required this.id,
@@ -23,8 +23,8 @@ class Invoice {
   Map<String, dynamic> toJson() => _$InvoiceToJson(this);
 }
 
-Price _priceFromJson(Object? json) =>
-  Price.fromJson(json as Map<String, dynamic>);
+Money _moneyFromJson(Object? json) =>
+  Money.fromJson(json as Map<String, dynamic>);
 
-Map<String, dynamic> _priceToJson(Price value) =>
+Map<String, dynamic> _moneyToJson(Money value) =>
   (value as dynamic).toJson() as Map<String, dynamic>;

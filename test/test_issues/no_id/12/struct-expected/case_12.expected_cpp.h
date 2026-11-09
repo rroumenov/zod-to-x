@@ -9,7 +9,7 @@ namespace CASE_12_APP {
 
     struct ShippingRequest {
         std::string order_id;
-        ShippingAddress destination;
+        CASE_12_DOMAIN::Address destination;
     };
 
 }
@@ -30,7 +30,7 @@ namespace CASE_12_APP {
 
     inline void from_json(const nlohmann::json& j, ShippingRequest& x) {
         x.order_id = j.at("orderId").get<std::string>();
-        x.destination = j.at("destination").get<ShippingAddress>();
+        x.destination = j.at("destination").get<CASE_12_DOMAIN::Address>();
     }
 
 }

@@ -139,17 +139,6 @@ interface ILayerResolution {
     ties: Map<ILayerDeclaration, string[]>;
 
     /**
-     * Local aliases of each model: types of other files that the model redeclares, by the schema
-     * that defines them, with the handle of the alias.
-     */
-    localAliases: Map<object, Map<unknown, ZodTypeAny>>;
-
-    /**
-     * Returns the schema that defines the metadata of a schema.
-     */
-    findMetadataSource: (schema: unknown) => unknown;
-
-    /**
      * Declarations of each model, by the key that the copies of their schema share.
      */
     modelDeclarations: Map<object, Map<object, ILayerDeclaration[]>>;
@@ -203,27 +192,6 @@ function resolveDeclarations(): ILayerResolution {
             const own = getOwnZod2xMetadata(current);
             if (own !== undefined) {
                 return own;
-            }
-
-            current = getCopySource(current);
-        }
-
-        return undefined;
-    };
-
-    // Schema that defines the metadata of a schema: a declared type, a layer alias or a schema
-    // with metadata set on it.
-    const findMetadataSource = (schema: unknown): unknown => {
-        let current: unknown = schema;
-
-        while (current !== undefined && current !== null && typeof current === "object") {
-            const entry = layered.get(current);
-            if (entry !== undefined) {
-                return "metadata" in entry ? current : findMetadataSource(entry.sameAs);
-            }
-
-            if (getOwnZod2xMetadata(current) !== undefined) {
-                return current;
             }
 
             current = getCopySource(current);
@@ -435,49 +403,11 @@ function resolveDeclarations(): ILayerResolution {
         }
     }
 
-    // A model that redeclares a type of another file uses its alias for the references to that
-    // type. A type redeclared more than once by the same model is ambiguous, so its references
-    // keep using the original type.
-    const localAliases = new Map<object, Map<unknown, ZodTypeAny>>();
-    const ambiguous = new Map<object, Set<unknown>>();
-    for (const declaration of declarations) {
-        const entry = layered.get(declaration.handle);
-        const extended =
-            entry !== undefined && "metadata" in entry ? entry.metadata.aliasOf : undefined;
-
-        if (
-            extended === undefined ||
-            resolveZod2xMetadata(extended, lookup)?.layer?.file === declaration.layer.file
-        ) {
-            continue;
-        }
-
-        const source = findMetadataSource(extended);
-        const aliases = localAliases.get(declaration.model) ?? new Map<unknown, ZodTypeAny>();
-        if (aliases.has(source)) {
-            const sources = ambiguous.get(declaration.model) ?? new Set<unknown>();
-            sources.add(source);
-            ambiguous.set(declaration.model, sources);
-        }
-        aliases.set(source, declaration.handle);
-        localAliases.set(declaration.model, aliases);
-    }
-    ambiguous.forEach((sources, model) =>
-        sources.forEach((source) => localAliases.get(model)!.delete(source))
-    );
-
     // Copies of declared schemas of the model, by structure, use the property that declares them.
     const findModelCopyHandle = (model: object, schema: unknown) =>
         getCopySource(schema) === undefined ? findModelCopy(model, schema)?.handle : undefined;
 
-    return {
-        lookup,
-        ties,
-        localAliases,
-        findMetadataSource,
-        modelDeclarations,
-        findModelCopyHandle,
-    };
+    return { lookup, ties, modelDeclarations, findModelCopyHandle };
 }
 
 function getResolution(): ILayerResolution {
@@ -498,29 +428,21 @@ export function getOwnershipTie(handle: ZodTypeAny): string[] | undefined {
 }
 
 /**
- * Returns the local alias that a model uses in place of a schema, if any: the model redeclares
- * the type of another file that the schema defines.
+ * Returns the property that a model uses in place of a schema, if any: the one that declares the
+ * schema it is a copy of, for the copies that are only found among the declarations of the model.
  */
-export function getLocalAliasSubstitute(
+export function getModelCopySubstitute(
     model: object
 ): ((schema: ZodTypeAny) => ZodTypeAny | undefined) | undefined {
     const resolved = getResolution();
-    const aliases = resolved.localAliases.get(model);
     const copyKeys = resolved.modelDeclarations.get(model);
-    const hasAliases = aliases !== undefined && aliases.size > 0;
-    if (!hasAliases && copyKeys === undefined) {
+    if (copyKeys === undefined) {
         return undefined;
     }
 
     return (schema) => {
-        const alias = hasAliases ? aliases.get(resolved.findMetadataSource(schema)) : undefined;
-        if (alias !== undefined) {
-            return alias;
-        }
-
-        // Copies of the declared schemas of the model (only looked up when they share their key).
         const key = getCopyKey(schema);
-        return key !== undefined && copyKeys?.has(key)
+        return key !== undefined && copyKeys.has(key)
             ? resolved.findModelCopyHandle(model, schema)
             : undefined;
     };

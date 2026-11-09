@@ -16,7 +16,7 @@ namespace USER_API {
 
     struct ResUpdateUserMulti {
         std::uint64_t amount;
-        std::vector<ResUpdateUser> data;
+        std::vector<USER_DTOS::UpdateUserUseCaseResultDto> data;
     };
 
     struct UserApi {
@@ -51,7 +51,7 @@ namespace USER_API {
 
     inline void from_json(const nlohmann::json& j, ResUpdateUserMulti& x) {
         x.amount = j.at("amount").get<std::uint64_t>();
-        x.data = j.at("data").get<std::vector<ResUpdateUser>>();
+        x.data = j.at("data").get<std::vector<USER_DTOS::UpdateUserUseCaseResultDto>>();
     }
 
     inline void to_json(nlohmann::json& j, const UserApi& x) {

@@ -26,10 +26,12 @@ class Customer(Contact): ...
 
 class Order(BaseSchema):
     id: str
-    destination: ShippingAddress
-    billing: Optional[ShippingAddress] = None
-    items: List[OrderItem]
+    destination: CASE_16_DOMAIN.Address
+    billing: Optional[CASE_16_DOMAIN.Address] = None
+    items: List[CASE_16_DOMAIN.Item]
     currency: CASE_16_DOMAIN.Currency
     contact: Contact
 
-class OrderItemPage(CASE_16_DOMAIN.Page[OrderItem]): ...
+AddressList: TypeAlias = List[CASE_16_DOMAIN.Address]
+
+class OrderItemPage(CASE_16_DOMAIN.Page[CASE_16_DOMAIN.Item]): ...

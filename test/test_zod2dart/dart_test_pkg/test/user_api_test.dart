@@ -6,7 +6,7 @@ import 'dart_test_utils.dart';
 
 void main() {
   group('ResUpdateUserMulti', () {
-    // Exercises List<ResUpdateUser> field with custom @JsonKey helpers
+    // Exercises List<UpdateUserUseCaseResultDto> field with custom @JsonKey helpers
     testRoundtrip('roundtrip', jResUpdateUserMulti, ResUpdateUserMulti.fromJson, (o) => o.toJson());
   });
 
