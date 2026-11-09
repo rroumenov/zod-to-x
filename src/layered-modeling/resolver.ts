@@ -399,7 +399,8 @@ function resolveDeclarations(): ILayerResolution {
 
             setHandleMetadata(declaration, generic);
         } else {
-            setHandleMetadata(declaration, declaration.value);
+            // It extends the property it uses: its value can be a copy with its own description.
+            setHandleMetadata(declaration, findDeclaration(declaration.value)!.handle);
         }
     }
 

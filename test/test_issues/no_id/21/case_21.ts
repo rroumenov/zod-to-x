@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Application, Domain, extendZod, Zod2XModel } from "../../../../dist";
+import { Application, Domain, extendZod, Infrastructure, Zod2XModel } from "../../../../dist";
 extendZod(z);
 
 /**
@@ -19,7 +19,8 @@ extendZod(z);
  * export type UtmId = CASE_21_DOMAIN.Uuid;
  *
  * Only the description set on the alias is emitted: an alias without its own description does not
- * repeat the description of the type it extends.
+ * repeat the description of the type it extends. A description set on the alias replaces the one
+ * of the type it extends, also when that type is an alias (`Case21Infra`).
  */
 
 @Domain({ namespace: "CASE_21_DOMAIN", file: "case_21_domain" })
@@ -66,3 +67,15 @@ class Case21App extends Zod2XModel {
 }
 
 export const case21App = new Case21App();
+
+@Infrastructure({ namespace: "CASE_21_INFRA", file: "case_21_infra" })
+class Case21Infra extends Zod2XModel {
+    // The extended types are aliases, without and with their own description.
+    readonly RedefinedPlainAlias = case21App.Inherited.describe("Description over a plain alias.");
+
+    readonly RedefinedDocumentedAlias = case21App.Renamed.describe("Description over an alias.");
+
+    readonly PlainOverDocumentedAlias = case21App.Renamed;
+}
+
+export const case21Infra = new Case21Infra();
