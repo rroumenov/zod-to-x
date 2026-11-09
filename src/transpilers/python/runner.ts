@@ -497,9 +497,7 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
             typeAnnotation = pythonType;
         }
 
-        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
-            this.addComment(memberNode.description, this.indent[1]);
-        }
+        this.addMemberComment(memberNode);
 
         const defaultValue = isOptional ? " = None" : "";
         this.push1(`${memberName}: ${typeAnnotation}${defaultValue}`);

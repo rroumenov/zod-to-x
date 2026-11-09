@@ -4,6 +4,7 @@ import {
     getCopySource,
     getOwnZod2xMetadata,
     getZod2xMetadata,
+    hasOwnDescription,
     isDescribedCopy,
     linkCopies,
     registerCopySource,
@@ -215,6 +216,9 @@ function resolveDeclarations(): ILayerResolution {
                           typeName: declaration.name,
                           layer: declaration.layer,
                           aliasOf: extended,
+                          aliasedDescription: hasOwnDescription(declaration.value)
+                              ? undefined
+                              : extended.description,
                       },
                   }
                 : { sameAs: extended }

@@ -657,9 +657,7 @@ export class Zod2Go extends Zod2X<IZod2GoOpt> {
             }
         }
 
-        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
-            this.addComment(memberNode.description, this.indent[1]);
-        }
+        this.addMemberComment(memberNode);
 
         const tag = this._buildJsonTag(originalKey, isOptionalOrNullable ?? false);
         this.push1(`${fieldName} ${varType}${tag}`);

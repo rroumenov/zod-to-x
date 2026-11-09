@@ -34,6 +34,7 @@ namespace CASE_16_APP {
     private:
         std::string id;
         CASE_16_DOMAIN::Address destination;
+        // Billing address
         boost::optional<CASE_16_DOMAIN::Address> billing;
         std::vector<CASE_16_DOMAIN::Item> items;
         CASE_16_DOMAIN::Currency currency;

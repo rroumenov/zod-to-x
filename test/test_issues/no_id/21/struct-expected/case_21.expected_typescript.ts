@@ -15,6 +15,9 @@ export type OrderTags = CASE_21_DOMAIN.Tags;
 // Description of the alias.
 export type Renamed = CASE_21_DOMAIN.Documented;
 
+// Description of the base type.
+export type Restated = CASE_21_DOMAIN.Documented;
+
 export type Inherited = CASE_21_DOMAIN.Documented;
 
 export type Undocumented = CASE_21_DOMAIN.Uuid;
@@ -25,3 +28,26 @@ export interface Contact {
 
 // Contact that places the order.
 export interface Customer extends Contact {}
+
+export interface Order {
+    // Field redefining the base description.
+    redefined: CASE_21_DOMAIN.Documented;
+    // Description of the base type.
+    restated: CASE_21_DOMAIN.Documented;
+    // Field documenting an undocumented type.
+    documented: CASE_21_DOMAIN.Uuid;
+    // Described before optional.
+    describedBefore?: CASE_21_DOMAIN.Uuid;
+    // Described after optional.
+    describedAfter?: CASE_21_DOMAIN.Uuid;
+    // List of identifiers.
+    list: CASE_21_DOMAIN.Uuid[];
+    // Field of an object type.
+    address: CASE_21_DOMAIN.Address;
+    // Field of an enum type.
+    currency: CASE_21_DOMAIN.Currency;
+    // Field of a basic type.
+    local: string;
+    plain: CASE_21_DOMAIN.Documented;
+    plainOptional?: CASE_21_DOMAIN.Documented;
+}

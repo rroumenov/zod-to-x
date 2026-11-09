@@ -20,7 +20,8 @@ extendZod(z);
  *
  * Only the description set on the alias is emitted: an alias without its own description does not
  * repeat the description of the type it extends. A description set on the alias replaces the one
- * of the type it extends, also when that type is an alias (`Case21Infra`).
+ * of the type it extends, also when that type is an alias (`Case21Infra`). Object members follow
+ * the same rules (`Order`).
  */
 
 @Domain({ namespace: "CASE_21_DOMAIN", file: "case_21_domain" })
@@ -53,6 +54,9 @@ class Case21App extends Zod2XModel {
     // Own description, replacing the one of the extended type.
     readonly Renamed = case21Domain.Documented.describe("Description of the alias.");
 
+    // Set explicitly, so it is kept even if it is the same text as the extended type.
+    readonly Restated = case21Domain.Documented.describe("Description of the base type.");
+
     // No description of its own: the description of the extended type is not repeated.
     readonly Inherited = case21Domain.Documented;
 
@@ -64,6 +68,22 @@ class Case21App extends Zod2XModel {
 
     // Alias of a type of the same file.
     readonly Customer = this.Contact.describe("Contact that places the order.");
+
+    // Members document their use of a named type, keeping the reference to it.
+    readonly Order = z.object({
+        redefined: case21Domain.Documented.describe("Field redefining the base description."),
+        restated: case21Domain.Documented.describe("Description of the base type."),
+        documented: case21Domain.Uuid.describe("Field documenting an undocumented type."),
+        describedBefore: case21Domain.Uuid.describe("Described before optional.").optional(),
+        describedAfter: case21Domain.Uuid.optional().describe("Described after optional."),
+        list: z.array(case21Domain.Uuid).describe("List of identifiers."),
+        address: case21Domain.Address.describe("Field of an object type."),
+        currency: case21Domain.Currency.describe("Field of an enum type."),
+        local: z.string().describe("Field of a basic type."),
+        // No description of their own: the one of the type is not repeated.
+        plain: case21Domain.Documented,
+        plainOptional: case21Domain.Documented.optional(),
+    });
 }
 
 export const case21App = new Case21App();

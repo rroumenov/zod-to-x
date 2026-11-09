@@ -93,11 +93,17 @@ export function linkCopies(schema: object) {
 }
 
 /**
+ * Copies of schemas created by zod-to-x (handles of model properties, ...).
+ */
+const createdCopies = new WeakSet<object>();
+
+/**
  * Links a schema created by zod-to-x as a copy of another one to it, and its copies to itself.
  */
 export function linkToSource<T>(schema: T, source: unknown): T {
     if (schema !== source && typeof source === "object" && source !== null) {
         copySources.set(schema as object, source);
+        createdCopies.add(schema as object);
     }
     linkCopies(schema as object);
     return schema;
@@ -283,6 +289,28 @@ export function isDescribedCopy(schema: unknown, source: unknown): boolean {
 }
 
 /**
+ * Checks if a schema was documented by calling `.describe()` on another one, even with its same
+ * text. Copies that change something else (`.strict()`, ...) keep the description of their source,
+ * and the copies created by zod-to-x (handles of model properties) are not documented by the user.
+ */
+export function hasOwnDescription(schema: unknown): boolean {
+    const def = (schema as any)?._def;
+    if (def?.description === undefined || createdCopies.has(schema as object)) {
+        return false;
+    }
+
+    const sourceDef = (getCopySource(schema) as any)?._def;
+    if (sourceDef === undefined) {
+        return false;
+    }
+
+    const keys = new Set([...Reflect.ownKeys(def), ...Reflect.ownKeys(sourceDef)]);
+    return [...keys].every(
+        (key) => key === SOURCE || key === "description" || def[key] === sourceDef[key]
+    );
+}
+
+/**
  * Returns the schema another schema was copied from without changing the type it represents
  * (e.g. `.describe()`, `.strict()`), if any.
  */
@@ -347,7 +375,7 @@ export interface IZod2xResolvedMetadata {
     aliasOf?: string;
 
     /**
-     * Description of the schema that the alias extends.
+     * Description of the type that an alias extends, if the alias does not document itself.
      */
     aliasedDescription?: string;
 
@@ -410,7 +438,7 @@ export function resolveZod2xMetadata(
             layer: metadata.layer,
             parentLayer: original?.layer,
             aliasOf: original?.typeName,
-            aliasedDescription: metadata.aliasOf.description,
+            aliasedDescription: metadata.aliasedDescription,
             // Generics associated to the original type, but related to the alias.
             genericTypes: isGenericInstance ? original.genericTypes : undefined,
             genericOf: isGenericInstance ? original.genericOf : undefined,

@@ -127,6 +127,11 @@ export interface IZod2xMetadata {
     aliasOf?: ZodTypeAny;
 
     /**
+     * Description inherited by a layer alias from the type it extends. It is not repeated.
+     */
+    aliasedDescription?: string;
+
+    /**
      * For Layered Modeling defining generics.
      * When a generic type is used with `useGenericType`, it references the generic type and the
      * types used for each template, in the same order as they are defined in the generic type.

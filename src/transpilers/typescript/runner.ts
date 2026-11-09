@@ -340,10 +340,7 @@ export class Zod2Ts extends Zod2X<IZod2TsOpt> {
         const keyName = memberNode.isOptional ? `${memberName}?: ` : `${memberName}: `;
         const setNullable = memberNode.isNullable ? " | null" : "";
 
-        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
-            // Avoid duplicated descriptions for transpiled items.
-            this.addComment(memberNode.description, this.indent[1]);
-        }
+        this.addMemberComment(memberNode);
 
         this.push1(`${keyName}${this.getAttributeType(memberNode)}${setNullable};`);
     }
