@@ -65,60 +65,43 @@ class DiscriminatedUnionItemWrapper(BaseSchema):
 class IntersectionItem(ObjectItem, OtherObjectItem): ...
 
 class PySupportedSchemas(BaseSchema):
-
     # A simple string
     string_item: str
-
     # A literal string
     literal_string_item: Literal["literal"]
-
     # A literal number
     literal_number_item: Literal[1]
     enum_item: EnumItem
     native_enum_item: NativeEnumItem
-
     # A double
     double_item: float
-
     # A big integer
     big_int_item: int
-
     # A 64-bit integer
     int64_item: int
-
     # A 32-bit integer
     int32_item: int
-
     # A boolean
     boolean_item: bool
     object_item: ObjectItem
-
     # A date
     date_item: datetime
-
     # A two-dimensional array of numbers
     array_item: List[List[float]]
-
     # A record with string keys and number values
     record_item: Dict[str, float]
-
     # A map with string keys and number values
     map_item: Dict[str, float]
-
     # A set of strings
     set_item: Set[str]
-
     # A tuple of a number, a string, and a boolean
     tuple_item: Tuple[float, str, bool]
     union_item: UnionItem
     discriminated_union_item: DiscriminatedUnionItem
     intersection_item: IntersectionItem
-
     # Any type
     any_item: Any
-
     # An optional string
     optional_item: Optional[str] = None
-
     # A nullable string
     nullable_item: Optional[str] = None

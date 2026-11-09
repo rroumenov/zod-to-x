@@ -127,62 +127,45 @@ class IntersectionItem {
 
 @JsonSerializable(explicitToJson: true)
 class DartSupportedSchemas {
-
   // A simple string
   final String stringItem;
-
   // A literal string
   final String literalStringItem;
-
   // A literal number
   final int literalNumberItem;
   final EnumItem enumItem;
   final NativeEnumItem nativeEnumItem;
-
   // A double
   final double doubleItem;
-
   // A big integer
   final int bigIntItem;
-
   // A 64-bit integer
   final int int64Item;
-
   // A 32-bit integer
   final int int32Item;
-
   // A boolean
   final bool booleanItem;
   final ObjectItem objectItem;
-
   // A date
   final DateTime dateItem;
-
   // A two-dimensional array of numbers
   final List<List<double>> arrayItem;
-
   // A record with string keys and number values
   final Map<String, double> recordItem;
-
   // A map with string keys and number values
   final Map<String, double> mapItem;
-
   // A set of strings
   final Set<String> setItem;
-
   // A tuple of a number, a string, and a boolean
   final (double, String, bool) tupleItem;
   final UnionItem unionItem;
   @JsonKey(fromJson: discriminatedUnionItemFromJson, toJson: discriminatedUnionItemToJson)
   final DiscriminatedUnionItem discriminatedUnionItem;
   final IntersectionItem intersectionItem;
-
   // Any type
   final dynamic anyItem;
-
   // An optional string
   final String? optionalItem;
-
   // A nullable string
   final String? nullableItem;
 

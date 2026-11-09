@@ -44,10 +44,8 @@ export type NewAnyItem = TS_SUPPORTED_SCHEMAS.AnyItem;
 
 export class TsSupportedSchemasApplication {
     newStringItem: NewStringItem;
-
     // A literal string
     newLiteralStringItem: "literal";
-
     // A literal number
     newLiteralNumberItem: 1;
     newEnumItem: NewEnumItem;
@@ -68,10 +66,8 @@ export class TsSupportedSchemasApplication {
     newDiscriminatedUnionItem: NewDiscriminatedUnionItem;
     newIntersectionItem: NewIntersectionItem;
     newAnyItem: NewAnyItem;
-
     // An optional string
     newOptionalItem?: string;
-
     // A nullable string
     newNullableItem: string | null;
 

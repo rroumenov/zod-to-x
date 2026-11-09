@@ -49,10 +49,8 @@ type NewAnyItem = GO_SUPPORTED_SCHEMAS.AnyItem
 
 type GoSupportedSchemasApplication struct {
     NewStringItem NewStringItem `json:"newStringItem"`
-
     // A literal string
     NewLiteralStringItem string `json:"newLiteralStringItem"`
-
     // A literal number
     NewLiteralNumberItem int64 `json:"newLiteralNumberItem"`
     NewEnumItem NewEnumItem `json:"newEnumItem"`
@@ -73,10 +71,8 @@ type GoSupportedSchemasApplication struct {
     NewDiscriminatedUnionItem NewDiscriminatedUnionItem `json:"newDiscriminatedUnionItem"`
     NewIntersectionItem NewIntersectionItem `json:"newIntersectionItem"`
     NewAnyItem NewAnyItem `json:"newAnyItem"`
-
     // An optional string
     NewOptionalItem *string `json:"newOptionalItem,omitempty"`
-
     // A nullable string
     NewNullableItem *string `json:"newNullableItem,omitempty"`
 }
