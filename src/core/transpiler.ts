@@ -173,11 +173,13 @@ export abstract class Zod2X<T extends IZodToXOpt> {
 
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
+                this.addComment(data.description);
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, options);
                 this.addExternalTypeImport(data);
             }
             return true;
         } else if (data.aliasOf) {
+            this.addComment(data.description);
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 ...options,
                 isInternal: true,
