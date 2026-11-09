@@ -27,6 +27,7 @@ class Customer(Contact): ...
 class Order(BaseSchema):
     id: str
     destination: CASE_16_DOMAIN.Address
+    # Billing address
     billing: Optional[CASE_16_DOMAIN.Address] = None
     items: List[CASE_16_DOMAIN.Item]
     currency: CASE_16_DOMAIN.Currency

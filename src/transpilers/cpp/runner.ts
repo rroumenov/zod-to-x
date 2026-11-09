@@ -571,15 +571,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
         let keyType = this.getAttributeType(memberNode);
         const origType = keyType;
 
-        if (
-            this.opt.includeComments &&
-            memberNode.description &&
-            !memberNode.name &&
-            !this.isTranspilerable(memberNode)
-        ) {
-            // Avoid duplicated descriptions for transpiled items.
-            this.addComment(memberNode.description, this.indent[1]);
-        }
+        this.addMemberComment(memberNode);
 
         if (memberNode.isOptional || memberNode.isNullable) {
             keyType = this._getOptional(keyType);

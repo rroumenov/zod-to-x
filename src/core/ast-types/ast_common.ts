@@ -7,6 +7,12 @@ import * as Complex from "./ast_complex";
 export abstract class ASTCommon {
     arrayDimension?: number;
     description?: string;
+
+    /**
+     * Description set on an object member that references a named type. The description of the
+     * type is documented where the type is defined.
+     */
+    memberDescription?: string;
     isNullable?: boolean;
     isOptional?: boolean;
 
@@ -26,6 +32,7 @@ export abstract class ASTCommon {
     constructor(data: ASTCommon) {
         this.arrayDimension = data.arrayDimension;
         this.description = data.description;
+        this.memberDescription = data.memberDescription;
         this.isNullable = data.isNullable;
         this.isOptional = data.isOptional;
 

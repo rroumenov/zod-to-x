@@ -33,6 +33,7 @@ class Order {
   final String id;
   @JsonKey(fromJson: _addressFromJson, toJson: _addressToJson)
   final Address destination;
+  // Billing address
   @JsonKey(fromJson: _addressFromJson, toJson: _addressToJson)
   final Address? billing;
   @JsonKey(fromJson: _itemListFromJson, toJson: _itemListToJson)

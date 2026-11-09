@@ -371,6 +371,21 @@ export abstract class Zod2X<T extends IZodToXOpt> {
     }
 
     /**
+     * Adds the comment of a member of a transpiled type: the description set on the member, or the
+     * description of its type if the type is not transpiled, as it would be lost otherwise.
+     * @param memberNode - The AST node of the member.
+     */
+    protected addMemberComment(memberNode: ASTType) {
+        const description =
+            memberNode.memberDescription ??
+            (memberNode.name || this.isTranspilerable(memberNode as ASTNode)
+                ? undefined
+                : memberNode.description);
+
+        this.addComment(description, this.indent[1]);
+    }
+
+    /**
      * Retrieves the equivalent type representation of an AST node in the target language.
      * @param token - The AST node or transpilerable type to convert.
      * @returns A string representing the type in the target language.
