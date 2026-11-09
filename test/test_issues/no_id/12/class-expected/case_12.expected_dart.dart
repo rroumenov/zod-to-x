@@ -9,8 +9,8 @@ typedef ShippingAddress = Address;
 @JsonSerializable(explicitToJson: true)
 class ShippingRequest {
   final String orderId;
-  @JsonKey(fromJson: _shippingAddressFromJson, toJson: _shippingAddressToJson)
-  final ShippingAddress destination;
+  @JsonKey(fromJson: _addressFromJson, toJson: _addressToJson)
+  final Address destination;
 
   ShippingRequest({
     required this.orderId,
@@ -23,8 +23,8 @@ class ShippingRequest {
   Map<String, dynamic> toJson() => _$ShippingRequestToJson(this);
 }
 
-ShippingAddress _shippingAddressFromJson(Object? json) =>
-  ShippingAddress.fromJson(json as Map<String, dynamic>);
+Address _addressFromJson(Object? json) =>
+  Address.fromJson(json as Map<String, dynamic>);
 
-Map<String, dynamic> _shippingAddressToJson(ShippingAddress value) =>
+Map<String, dynamic> _addressToJson(Address value) =>
   (value as dynamic).toJson() as Map<String, dynamic>;

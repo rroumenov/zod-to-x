@@ -10,7 +10,7 @@ namespace CASE_15_APP {
     class Invoice {
     private:
         std::string id;
-        Price total;
+        CASE_15_DOMAIN::Money total;
     
     public:
         Invoice() = default;
@@ -20,9 +20,9 @@ namespace CASE_15_APP {
         std::string& get_mut_id() { return this->id; }
         void set_id(const std::string& value) { this->id = value; }
         
-        const Price& get_total() const { return this->total; }
-        Price& get_mut_total() { return this->total; }
-        void set_total(const Price& value) { this->total = value; }
+        const CASE_15_DOMAIN::Money& get_total() const { return this->total; }
+        CASE_15_DOMAIN::Money& get_mut_total() { return this->total; }
+        void set_total(const CASE_15_DOMAIN::Money& value) { this->total = value; }
     };
 
 }
@@ -43,7 +43,7 @@ namespace CASE_15_APP {
 
     inline void from_json(const nlohmann::json& j, Invoice& x) {
         x.set_id(j.at("id").get<std::string>());
-        x.set_total(j.at("total").get<Price>());
+        x.set_total(j.at("total").get<CASE_15_DOMAIN::Money>());
     }
 
 }

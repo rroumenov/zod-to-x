@@ -14,4 +14,4 @@ class BaseSchema(BaseModel):
 
 class Invoice(BaseSchema):
     id: str
-    total: Price
+    total: CASE_15_DOMAIN.Money

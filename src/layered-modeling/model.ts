@@ -8,7 +8,7 @@ import { log } from "@/utils/logger";
 import {
     getLayeredGeneration,
     getLayeredModels,
-    getLocalAliasSubstitute,
+    getModelCopySubstitute,
     getOwnershipTie,
 } from "./layer";
 
@@ -200,11 +200,11 @@ export class Zod2XModel {
             this.reportLayerIssue(tieIssues.join("\n"), opt);
         }
 
-        // References to types of other files that this model redeclares use its local aliases.
+        // Copies of the schemas declared by this model use the property that declares them.
         const astNodes = new Zod2Ast({
             ...opt,
             layer: this.getLayerMetadata(),
-            substitute: getLocalAliasSubstitute(this),
+            substitute: getModelCopySubstitute(this),
         }).build(ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName()));
         tieIssues.forEach((issue) => this.reportLayerIssue(issue, opt, astNodes));
         this.astNodes.set(cacheKey, astNodes);

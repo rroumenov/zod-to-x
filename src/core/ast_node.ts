@@ -67,7 +67,7 @@ export interface IZod2AstOpt {
 
     /**
      * Returns the schema used in place of a referenced schema, if any. Layered models use their
-     * local alias of the types of other files that they redeclare.
+     * property for the copies of the schemas they declare that Zod 3 does not link to them.
      */
     substitute?: (schema: ZodTypeAny) => ZodTypeAny | undefined;
 }
@@ -289,8 +289,7 @@ export class Zod2Ast {
             }
 
             const templatesTranslation = metadata.genericTypes?.map((i): ASTTemplateTranslation => {
-                // Templates are instantiated in this file (also for layer aliases of generic
-                // instances), so they are references of the model.
+                // Templates are references of the model too.
                 const local = this.opt.substitute?.(i.schema);
                 if (local !== undefined) {
                     const localMetadata = this._resolve(local);

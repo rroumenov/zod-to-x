@@ -52,7 +52,6 @@ The resolver (`resolver.ts`) computes the layered information from all declarati
 - **Owner** — a type belongs to the lowest layer that declares it, then to the first declaration. A type name set with `.zod2x()` is kept
 - **Aliases** — other declarations extend the owner type when they belong to another file or have another name (`aliasOf` lookup metadata). A declaration through the property of an alias, or of a generic instance, extends that property
 - **Generic instances** (`useGenericType`) declared by a model take the layer of the model if their generic type has none
-- **Local aliases** — a model that redeclares a type of another file uses its alias for every reference to that type (`getLocalAliasSubstitute`, passed to `Zod2Ast` as its `substitute` option, which is applied to each schema and to generic templates). Types the model redeclares more than once keep their original type
 - **Ties** — declarations of the same layer in different files that do not use the type through the owner's property (`getOwnershipTie`), reported by `Zod2XModel` for every declaration of the type
 
 ### Zod2XModel
