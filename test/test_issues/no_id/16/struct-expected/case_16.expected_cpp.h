@@ -23,14 +23,16 @@ namespace CASE_16_APP {
 
     struct Order {
         std::string id;
-        ShippingAddress destination;
-        boost::optional<ShippingAddress> billing;
-        std::vector<OrderItem> items;
+        CASE_16_DOMAIN::Address destination;
+        boost::optional<CASE_16_DOMAIN::Address> billing;
+        std::vector<CASE_16_DOMAIN::Item> items;
         CASE_16_DOMAIN::Currency currency;
         Contact contact;
     };
 
-    struct OrderItemPage : public CASE_16_DOMAIN::Page<OrderItem> {};
+    using AddressList = std::vector<CASE_16_DOMAIN::Address>;
+
+    struct OrderItemPage : public CASE_16_DOMAIN::Page<CASE_16_DOMAIN::Item> {};
 
 }
 
@@ -81,7 +83,7 @@ namespace CASE_16_APP {
     inline void to_json(nlohmann::json& j, const Order& x) {
         j["id"] = x.id;
         j["destination"] = x.destination;
-        CASE_16_APP::set_opt<ShippingAddress>(j, "billing", x.billing);
+        CASE_16_APP::set_opt<CASE_16_DOMAIN::Address>(j, "billing", x.billing);
         j["items"] = x.items;
         j["currency"] = x.currency;
         j["contact"] = x.contact;
@@ -89,9 +91,9 @@ namespace CASE_16_APP {
 
     inline void from_json(const nlohmann::json& j, Order& x) {
         x.id = j.at("id").get<std::string>();
-        x.destination = j.at("destination").get<ShippingAddress>();
-        x.billing = CASE_16_APP::get_opt<ShippingAddress>(j, "billing");
-        x.items = j.at("items").get<std::vector<OrderItem>>();
+        x.destination = j.at("destination").get<CASE_16_DOMAIN::Address>();
+        x.billing = CASE_16_APP::get_opt<CASE_16_DOMAIN::Address>(j, "billing");
+        x.items = j.at("items").get<std::vector<CASE_16_DOMAIN::Item>>();
         x.currency = j.at("currency").get<CASE_16_DOMAIN::Currency>();
         x.contact = j.at("contact").get<Contact>();
     }

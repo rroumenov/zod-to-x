@@ -9,7 +9,7 @@ namespace CASE_15_APP {
 
     struct Invoice {
         std::string id;
-        Price total;
+        CASE_15_DOMAIN::Money total;
     };
 
 }
@@ -30,7 +30,7 @@ namespace CASE_15_APP {
 
     inline void from_json(const nlohmann::json& j, Invoice& x) {
         x.id = j.at("id").get<std::string>();
-        x.total = j.at("total").get<Price>();
+        x.total = j.at("total").get<CASE_15_DOMAIN::Money>();
     }
 
 }

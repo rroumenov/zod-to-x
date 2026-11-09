@@ -4,5 +4,5 @@ export interface Price extends CASE_15_DOMAIN.Money {}
 
 export interface Invoice {
     id: string;
-    total: Price;
+    total: CASE_15_DOMAIN.Money;
 }

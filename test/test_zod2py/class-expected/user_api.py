@@ -21,7 +21,7 @@ class BaseSchema(BaseModel):
 
 class ResUpdateUserMulti(BaseSchema):
     amount: int
-    data: List[ResUpdateUser]
+    data: List[USER_DTOS.UpdateUserUseCaseResultDto]
 
 class UserApi(BaseSchema):
     req_update_user: ReqUpdateUser

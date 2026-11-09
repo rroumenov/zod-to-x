@@ -64,12 +64,6 @@ export interface IZod2AstOpt {
      * Defaults to the metadata set on the schemas (`resolveZod2xMetadata`).
      */
     resolveMetadata?: (schema: ZodType) => IZod2xResolvedMetadata | undefined;
-
-    /**
-     * Returns the schema used in place of a referenced schema, if any. Layered models use their
-     * local alias of the types of other files that they redeclare.
-     */
-    substitute?: (schema: ZodType) => ZodType | undefined;
 }
 
 interface ISchemasMetadata {
@@ -290,18 +284,6 @@ export class Zod2Ast {
             }
 
             const templatesTranslation = metadata.genericTypes?.map((i): ASTTemplateTranslation => {
-                // Templates are instantiated in this file (also for layer aliases of generic
-                // instances), so they are references of the model.
-                const local = this.opt.substitute?.(i.schema);
-                if (local !== undefined) {
-                    const localMetadata = this._resolve(local);
-                    i = {
-                        schema: local,
-                        typeName: localMetadata?.typeName,
-                        layer: localMetadata?.layer,
-                    };
-                }
-
                 if (i.typeName === undefined) {
                     // Not named types (basic types, arrays, ...) are used directly.
                     return { type: this._zodToAST(i.schema) };
@@ -916,8 +898,6 @@ export class Zod2Ast {
      * @returns
      */
     private _zodToAST(schema: ZodType, opt?: ISchemasMetadata): ASTType {
-        schema = this.opt.substitute?.(schema) ?? schema;
-
         if (ZodHelpers.isZodString(schema)) {
             return this._getAliasAst(
                 schema,

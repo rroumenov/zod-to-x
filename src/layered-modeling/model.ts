@@ -5,12 +5,7 @@ import { ZodHelpers, ZodType } from "@/lib/zod_helpers";
 import * as Transpilers from "@/transpilers";
 import { log } from "@/utils/logger";
 
-import {
-    getLayeredGeneration,
-    getLayeredModels,
-    getLocalAliasSubstitute,
-    getOwnershipTie,
-} from "./layer";
+import { getLayeredGeneration, getLayeredModels, getOwnershipTie } from "./layer";
 
 type TargetKeys = keyof typeof Transpilers;
 type Target<T extends TargetKeys> = (typeof Transpilers)[T];
@@ -200,12 +195,9 @@ export class Zod2XModel {
             this.reportLayerIssue(tieIssues.join("\n"), opt);
         }
 
-        // References to types of other files that this model redeclares use its local aliases.
-        const astNodes = new Zod2Ast({
-            ...opt,
-            layer: this.getLayerMetadata(),
-            substitute: getLocalAliasSubstitute(this),
-        }).build(ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName()));
+        const astNodes = new Zod2Ast({ ...opt, layer: this.getLayerMetadata() }).build(
+            ZodHelpers.createZodObject(objectProps).zod2x(this.getModelName())
+        );
         tieIssues.forEach((issue) => this.reportLayerIssue(issue, opt, astNodes));
         this.astNodes.set(cacheKey, astNodes);
 

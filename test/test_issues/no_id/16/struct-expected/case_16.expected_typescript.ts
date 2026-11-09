@@ -16,11 +16,13 @@ export interface Customer extends Contact {}
 
 export interface Order {
     id: string;
-    destination: ShippingAddress;
-    billing?: ShippingAddress;
-    items: OrderItem[];
+    destination: CASE_16_DOMAIN.Address;
+    billing?: CASE_16_DOMAIN.Address;
+    items: CASE_16_DOMAIN.Item[];
     currency: CASE_16_DOMAIN.Currency;
     contact: Contact;
 }
 
-export interface OrderItemPage extends CASE_16_DOMAIN.Page<OrderItem> {}
+export type AddressList = CASE_16_DOMAIN.Address[];
+
+export interface OrderItemPage extends CASE_16_DOMAIN.Page<CASE_16_DOMAIN.Item> {}

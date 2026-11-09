@@ -33,9 +33,9 @@ namespace CASE_16_APP {
     class Order {
     private:
         std::string id;
-        ShippingAddress destination;
-        boost::optional<ShippingAddress> billing;
-        std::vector<OrderItem> items;
+        CASE_16_DOMAIN::Address destination;
+        boost::optional<CASE_16_DOMAIN::Address> billing;
+        std::vector<CASE_16_DOMAIN::Item> items;
         CASE_16_DOMAIN::Currency currency;
         Contact contact;
     
@@ -47,16 +47,16 @@ namespace CASE_16_APP {
         std::string& get_mut_id() { return this->id; }
         void set_id(const std::string& value) { this->id = value; }
         
-        const ShippingAddress& get_destination() const { return this->destination; }
-        ShippingAddress& get_mut_destination() { return this->destination; }
-        void set_destination(const ShippingAddress& value) { this->destination = value; }
+        const CASE_16_DOMAIN::Address& get_destination() const { return this->destination; }
+        CASE_16_DOMAIN::Address& get_mut_destination() { return this->destination; }
+        void set_destination(const CASE_16_DOMAIN::Address& value) { this->destination = value; }
         
-        boost::optional<ShippingAddress> get_billing() const { return this->billing; }
-        void set_billing(boost::optional<ShippingAddress> value) { this->billing = value; }
+        boost::optional<CASE_16_DOMAIN::Address> get_billing() const { return this->billing; }
+        void set_billing(boost::optional<CASE_16_DOMAIN::Address> value) { this->billing = value; }
         
-        const std::vector<OrderItem>& get_items() const { return this->items; }
-        std::vector<OrderItem>& get_mut_items() { return this->items; }
-        void set_items(const std::vector<OrderItem>& value) { this->items = value; }
+        const std::vector<CASE_16_DOMAIN::Item>& get_items() const { return this->items; }
+        std::vector<CASE_16_DOMAIN::Item>& get_mut_items() { return this->items; }
+        void set_items(const std::vector<CASE_16_DOMAIN::Item>& value) { this->items = value; }
         
         const CASE_16_DOMAIN::Currency& get_currency() const { return this->currency; }
         CASE_16_DOMAIN::Currency& get_mut_currency() { return this->currency; }
@@ -67,7 +67,9 @@ namespace CASE_16_APP {
         void set_contact(const Contact& value) { this->contact = value; }
     };
 
-    class OrderItemPage : public CASE_16_DOMAIN::Page<OrderItem> {};
+    using AddressList = std::vector<CASE_16_DOMAIN::Address>;
+
+    class OrderItemPage : public CASE_16_DOMAIN::Page<CASE_16_DOMAIN::Item> {};
 
 }
 
@@ -118,7 +120,7 @@ namespace CASE_16_APP {
     inline void to_json(nlohmann::json& j, const Order& x) {
         j["id"] = x.get_id();
         j["destination"] = x.get_destination();
-        CASE_16_APP::set_opt<ShippingAddress>(j, "billing", x.get_billing());
+        CASE_16_APP::set_opt<CASE_16_DOMAIN::Address>(j, "billing", x.get_billing());
         j["items"] = x.get_items();
         j["currency"] = x.get_currency();
         j["contact"] = x.get_contact();
@@ -126,9 +128,9 @@ namespace CASE_16_APP {
 
     inline void from_json(const nlohmann::json& j, Order& x) {
         x.set_id(j.at("id").get<std::string>());
-        x.set_destination(j.at("destination").get<ShippingAddress>());
-        x.set_billing(CASE_16_APP::get_opt<ShippingAddress>(j, "billing"));
-        x.set_items(j.at("items").get<std::vector<OrderItem>>());
+        x.set_destination(j.at("destination").get<CASE_16_DOMAIN::Address>());
+        x.set_billing(CASE_16_APP::get_opt<CASE_16_DOMAIN::Address>(j, "billing"));
+        x.set_items(j.at("items").get<std::vector<CASE_16_DOMAIN::Item>>());
         x.set_currency(j.at("currency").get<CASE_16_DOMAIN::Currency>());
         x.set_contact(j.at("contact").get<Contact>());
     }

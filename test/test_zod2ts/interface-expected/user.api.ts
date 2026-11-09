@@ -10,7 +10,7 @@ export interface ResUpdateUser extends USER_DTOS.UpdateUserUseCaseResultDto {}
 
 export interface ResUpdateUserMulti {
     amount: number;
-    data: ResUpdateUser[];
+    data: USER_DTOS.UpdateUserUseCaseResultDto[];
 }
 
 export interface UserApi {
