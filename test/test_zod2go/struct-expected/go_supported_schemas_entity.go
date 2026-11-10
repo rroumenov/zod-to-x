@@ -135,10 +135,8 @@ type AnyItem = any
 
 type GoSupportedSchemas struct {
     StringItem StringItem `json:"stringItem"`
-
     // A literal string
     LiteralStringItem string `json:"literalStringItem"`
-
     // A literal number
     LiteralNumberItem int64 `json:"literalNumberItem"`
     EnumItem EnumItem `json:"enumItem"`
@@ -162,10 +160,8 @@ type GoSupportedSchemas struct {
     DiscriminatedUnionItem DiscriminatedUnionItem `json:"discriminatedUnionItem"`
     IntersectionItem IntersectionItem `json:"intersectionItem"`
     AnyItem AnyItem `json:"anyItem"`
-
     // An optional string
     OptionalItem *string `json:"optionalItem,omitempty"`
-
     // A nullable string
     NullableItem *string `json:"nullableItem,omitempty"`
 }

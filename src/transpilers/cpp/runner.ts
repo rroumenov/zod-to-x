@@ -578,8 +578,7 @@ export class Zod2Cpp extends Zod2X<IZod2CppOpt> {
             !this.isTranspilerable(memberNode)
         ) {
             // Avoid duplicated descriptions for transpiled items.
-            this.push1("");
-            this.addComment(memberNode.description, `${this.indent[1]}`);
+            this.addComment(memberNode.description, this.indent[1]);
         }
 
         if (memberNode.isOptional || memberNode.isNullable) {

@@ -52,61 +52,44 @@ export type DiscriminatedUnionItem =
 export type IntersectionItem = ObjectItem & OtherObjectItem;
 
 export interface TsSupportedSchemas {
-
     // A simple string
     stringItem: string;
-
     // A literal string
     literalStringItem: "literal";
-
     // A literal number
     literalNumberItem: 1;
     enumItem: EnumItem;
     nativeEnumItem: NativeEnumItem;
-
     // A double
     doubleItem: number;
-
     // A big integer
     bigIntItem: number;
-
     // A 64-bit integer
     int64Item: number;
-
     // A 32-bit integer
     int32Item: number;
-
     // A boolean
     booleanItem: boolean;
     objectItem: ObjectItem;
-
     // A date
     dateItem: Date;
-
     // A two-dimensional array of numbers
     arrayItem: Array<number[]>;
-
     // A record with string keys and number values
     recordItem: Record<string, number>;
-
     // A map with string keys and number values
     mapItem: Map<string, number>;
-
     // A set of strings
     setItem: Set<string>;
-
     // A tuple of a number, a string, and a boolean
     tupleItem: [number, string, boolean];
     unionItem: UnionItem;
     discriminatedUnionItem: DiscriminatedUnionItem;
     intersectionItem: IntersectionItem;
-
     // Any type
     anyItem: any;
-
     // An optional string
     optionalItem?: string;
-
     // A nullable string
     nullableItem: string | null;
 }

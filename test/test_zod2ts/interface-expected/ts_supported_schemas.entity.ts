@@ -92,10 +92,8 @@ export type AnyItem = any;
 
 export interface TsSupportedSchemas {
     stringItem: StringItem;
-
     // A literal string
     literalStringItem: "literal";
-
     // A literal number
     literalNumberItem: 1;
     enumItem: EnumItem;
@@ -119,10 +117,8 @@ export interface TsSupportedSchemas {
     discriminatedUnionItem: DiscriminatedUnionItem;
     intersectionItem: IntersectionItem;
     anyItem: AnyItem;
-
     // An optional string
     optionalItem?: string;
-
     // A nullable string
     nullableItem: string | null;
 }

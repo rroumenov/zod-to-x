@@ -45,10 +45,8 @@ typedef NewAnyItem = AnyItem;
 @JsonSerializable(explicitToJson: true)
 class DartSupportedSchemasApplication {
   final NewStringItem newStringItem;
-
   // A literal string
   final String newLiteralStringItem;
-
   // A literal number
   final int newLiteralNumberItem;
   final NewEnumItem newEnumItem;
@@ -71,10 +69,8 @@ class DartSupportedSchemasApplication {
   final NewDiscriminatedUnionItem newDiscriminatedUnionItem;
   final NewIntersectionItem newIntersectionItem;
   final NewAnyItem newAnyItem;
-
   // An optional string
   final String? newOptionalItem;
-
   // A nullable string
   final String? newNullableItem;
 
