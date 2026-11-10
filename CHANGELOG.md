@@ -1,5 +1,13 @@
 # zod-to-x
 
+## 2.7.1
+
+### Patch Changes
+
+- remove the blank line before member comments
+- keep the types referenced by layered models instead of their local aliases
+- keep the descriptions set on layered aliases and object members
+
 ## 2.7.0
 
 ### Minor Changes
