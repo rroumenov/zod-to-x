@@ -108,6 +108,20 @@ export function declareLayerType(
 }
 
 /**
+ * Returns the schema assigned to a model property from its handle, if it is one.
+ */
+export function getDeclaredValue(handle: unknown): ZodTypeAny | undefined {
+    return declarationsByHandle.get(handle as object)?.value;
+}
+
+/**
+ * Returns the handle of the first model property a schema is assigned to, if any.
+ */
+export function getDeclaredHandle(value: unknown): ZodTypeAny | undefined {
+    return declarations.find((declaration) => declaration.value === value)?.handle;
+}
+
+/**
  * Registers a model once all its types are declared.
  */
 export function registerLayeredModel(model: object) {

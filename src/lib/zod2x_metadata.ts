@@ -311,6 +311,18 @@ export function hasOwnDescription(schema: unknown): boolean {
 }
 
 /**
+ * Checks if a schema is a copy of a type created by the user (`.describe()`, `.strict()`, ...)
+ * and not named with zod2x.
+ */
+export function isUserCopy(schema: unknown): boolean {
+    return (
+        !createdCopies.has(schema as object) &&
+        getOwnZod2xMetadata(schema) === undefined &&
+        getCopySource(schema) !== undefined
+    );
+}
+
+/**
  * Returns the schema another schema was copied from without changing the type it represents
  * (e.g. `.describe()`, `.strict()`), if any.
  */

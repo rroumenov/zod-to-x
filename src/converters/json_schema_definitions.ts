@@ -1,5 +1,39 @@
-import { resolveZod2xMetadata } from "@/lib/zod2x_metadata";
+import { getDeclaredHandle, getDeclaredValue } from "@/layered-modeling/resolver";
+import { isUserCopy, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
 import { ZodHelpers, ZodTypeAny } from "@/lib/zod_helpers";
+
+/**
+ * Name of the definition of a schema. Copies of a type (`.describe()`, `.strict()`) are written
+ * where they are used, unless a model declares them.
+ */
+function getDefinitionName(schema: ZodTypeAny): string | undefined {
+    if (!isUserCopy(schema)) {
+        return resolveZod2xMetadata(schema)?.typeName;
+    }
+
+    const handle = getDeclaredHandle(schema);
+    return handle === undefined ? undefined : resolveZod2xMetadata(handle)?.typeName;
+}
+
+/**
+ * The property of a model is a copy of the schema assigned to it, and models use both. As
+ * `zod-to-json-schema` tells schemas apart by their definition, the property of the model that owns
+ * a type uses the definition of its schema, so both reference the same definition.
+ */
+function useDeclaredDefinition(schema: ZodTypeAny, typeName: string | undefined) {
+    let value = getDeclaredValue(schema);
+    if (value === undefined || typeName === undefined) {
+        return;
+    }
+
+    while (getDeclaredValue(value) !== undefined && getDefinitionName(value) === typeName) {
+        value = getDeclaredValue(value)!;
+    }
+
+    if (getDefinitionName(value) === typeName) {
+        (schema as any)._def = value._def;
+    }
+}
 
 /**
  * Recursively extracts custom type definitions from a Zod schema and collects them into a
@@ -29,7 +63,8 @@ export function zod2JsonSchemaDefinitions(
     }
     visited.add(schema);
 
-    const typeName = resolveZod2xMetadata(schema)?.typeName;
+    const typeName = getDefinitionName(schema);
+    useDeclaredDefinition(schema, typeName);
 
     if (typeName && definitions[typeName]) {
         return definitions;
