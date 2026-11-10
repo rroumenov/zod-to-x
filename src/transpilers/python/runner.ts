@@ -498,7 +498,7 @@ export class Zod2Py extends Zod2X<IZod2PyOpt> {
         }
 
         if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
-            this.addComment(memberNode.description, `\n${this.indent[1]}`);
+            this.addComment(memberNode.description, this.indent[1]);
         }
 
         const defaultValue = isOptional ? " = None" : "";

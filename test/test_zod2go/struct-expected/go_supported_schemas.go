@@ -99,61 +99,44 @@ type IntersectionItem struct {
 }
 
 type GoSupportedSchemas struct {
-
     // A simple string
     StringItem string `json:"stringItem"`
-
     // A literal string
     LiteralStringItem string `json:"literalStringItem"`
-
     // A literal number
     LiteralNumberItem int64 `json:"literalNumberItem"`
     EnumItem EnumItem `json:"enumItem"`
     NativeEnumItem NativeEnumItem `json:"nativeEnumItem"`
-
     // A double
     DoubleItem float64 `json:"doubleItem"`
-
     // A big integer
     BigIntItem int64 `json:"bigIntItem"`
-
     // A 64-bit integer
     Int64Item int64 `json:"int64Item"`
-
     // A 32-bit integer
     Int32Item int32 `json:"int32Item"`
-
     // A boolean
     BooleanItem bool `json:"booleanItem"`
     ObjectItem ObjectItem `json:"objectItem"`
-
     // A date
     DateItem time.Time `json:"dateItem"`
-
     // A two-dimensional array of numbers
     ArrayItem [][]float64 `json:"arrayItem"`
-
     // A record with string keys and number values
     RecordItem map[string]float64 `json:"recordItem"`
-
     // A map with string keys and number values
     MapItem map[string]float64 `json:"mapItem"`
-
     // A set of strings
     SetItem map[string]struct{} `json:"setItem"`
-
     // A tuple of a number, a string, and a boolean
     TupleItem []any `json:"tupleItem"`
     UnionItem UnionItem `json:"unionItem"`
     DiscriminatedUnionItem DiscriminatedUnionItem `json:"discriminatedUnionItem"`
     IntersectionItem IntersectionItem `json:"intersectionItem"`
-
     // Any type
     AnyItem any `json:"anyItem"`
-
     // An optional string
     OptionalItem *string `json:"optionalItem,omitempty"`
-
     // A nullable string
     NullableItem *string `json:"nullableItem,omitempty"`
 }

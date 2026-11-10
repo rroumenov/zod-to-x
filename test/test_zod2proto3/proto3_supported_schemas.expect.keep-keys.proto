@@ -61,57 +61,41 @@ message DiscriminatedUnionItem {
 }
 
 message Proto3SupportedSchemas {
-
     // A simple string
     string stringItem = 1;
-
     // A literal string
     string literalStringItem = 2;
-
     // A literal number
     uint32 literalNumberItem = 3;
     EnumItem enumItem = 4;
     NativeEnumItem nativeEnumItem = 5;
-
     // A double
     double doubleItem = 6;
-
     // A big integer
     int64 bigIntItem = 7;
-
     // A 64-bit integer
     int64 int64Item = 8;
-
     // A 32-bit integer
     int32 int32Item = 9;
-
     // A boolean
     bool booleanItem = 10;
     ObjectItem objectItem = 11;
-
     // A date
     google.protobuf.Timestamp dateItem = 12;
-
     // A one-dimensional array of numbers
     repeated double arrayItem = 13;
-
     // A record with string keys and number values
     map<string, double> recordItem = 14;
-
     // A map with string keys and number values
     map<string, double> mapItem = 15;
-
     // A set of strings
     repeated string setItem = 16;
-
     // A tuple of two numbers
     repeated double tupleItem = 17;
     UnionItem unionItem = 18;
     DiscriminatedUnionItem discriminatedUnionItem = 19;
-
     // An optional string
     string optionalItem = 20;
-
     // Any type
     google.protobuf.Any anyItem = 21;
 }
