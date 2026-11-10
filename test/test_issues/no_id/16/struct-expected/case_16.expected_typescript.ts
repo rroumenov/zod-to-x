@@ -17,6 +17,7 @@ export interface Customer extends Contact {}
 export interface Order {
     id: string;
     destination: CASE_16_DOMAIN.Address;
+    // Billing address
     billing?: CASE_16_DOMAIN.Address;
     items: CASE_16_DOMAIN.Item[];
     currency: CASE_16_DOMAIN.Currency;
