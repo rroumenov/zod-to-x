@@ -300,6 +300,18 @@ export class ZodHelpers {
     }
 
     /**
+     * Checks if a schema was documented on a copy of another one (`.describe()`), even with its
+     * same text. Zod keeps the metadata of each schema in its registry, and the copies inherit
+     * the one of their parent, so inherited descriptions are not in the entry of the schema.
+     */
+    static hasOwnDescription(i: ZodType): boolean {
+        return (
+            i._zod.parent !== undefined &&
+            Extended.getZ().globalRegistry._map.get(i)?.description !== undefined
+        );
+    }
+
+    /**
      * Zod2X generics are represented as Promise<"TypeName">.
      * Ex: z.promise(z.literal("K")) will be transpiled to Template<K>
      */

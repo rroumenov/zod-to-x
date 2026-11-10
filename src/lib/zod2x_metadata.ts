@@ -400,6 +400,11 @@ export interface IZod2xResolvedMetadata {
     aliasOf?: string;
 
     /**
+     * Description of the type that an alias extends, if the alias does not document itself.
+     */
+    aliasedDescription?: string;
+
+    /**
      * For Layered Modeling defining generics. Types used for each template of a generic type
      * instance, and name of the generic type.
      */
@@ -458,6 +463,7 @@ export function resolveZod2xMetadata(
             layer: metadata.layer,
             parentLayer: original?.layer,
             aliasOf: original?.typeName,
+            aliasedDescription: metadata.aliasedDescription,
             // Generics associated to the original type, but related to the alias.
             genericTypes: isGenericInstance ? original.genericTypes : undefined,
             genericOf: isGenericInstance ? original.genericOf : undefined,

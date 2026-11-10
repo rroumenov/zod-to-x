@@ -23,7 +23,7 @@ import {
     ASTUnion,
     getASTKind,
 } from "@/core";
-import { IZod2xResolvedMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
+import { getCopySource, IZod2xResolvedMetadata, resolveZod2xMetadata } from "@/lib/zod2x_metadata";
 import { IZod2xLayerMetadata } from "@/lib/zod_ext";
 import {
     ZodArray,
@@ -243,6 +243,15 @@ export class Zod2Ast {
     }
 
     private _setNode(key: string, schema: ZodType, node: ASTNode) {
+        // The description of a type is only written where the type is defined: an alias does not
+        // repeat it (handles keep the description of their schema), unless it sets its own one.
+        if (
+            node.aliasOf !== undefined &&
+            node.description === this._resolve(schema)?.aliasedDescription
+        ) {
+            node.description = undefined;
+        }
+
         this.nodes.set(key, node);
         this.nodeSchemas.set(key, schema);
     }
@@ -435,7 +444,7 @@ export class Zod2Ast {
                 if (templateKey !== undefined) {
                     properties[key] = new ASTGenericType(templateKey);
                 } else {
-                    properties[key] = this._zodToAST(shape[key]);
+                    properties[key] = this._getMemberAst(shape[key]);
                 }
                 if (prevWasRequired && properties[key].isOptional) {
                     // In intersection, if a property is required in one schema and optional in
@@ -653,7 +662,7 @@ export class Zod2Ast {
                     }
                     templates.add(templateKey);
                 } else {
-                    properties[key] = this._zodToAST(shape[key]);
+                    properties[key] = this._getMemberAst(shape[key]);
                 }
             }
 
@@ -893,6 +902,63 @@ export class Zod2Ast {
     }
 
     /**
+     * Builds the AST node of an object member.
+     */
+    private _getMemberAst(schema: ZodType): ASTType {
+        const node = this._zodToAST(schema);
+        node.memberDescription = this._getMemberDescription(schema, node);
+        return node;
+    }
+
+    /**
+     * Returns the description set on an object member that references a named type, if any. The
+     * description of the type itself is not returned, as it is documented where it is defined.
+     */
+    private _getMemberDescription(schema: ZodType, node: ASTType): string | undefined {
+        if (!(node instanceof ASTDefinition)) {
+            return undefined;
+        }
+
+        let current = schema;
+        let description = current.meta()?.description;
+        while (this._resolve(current)?.typeName === undefined) {
+            let inner: ZodType | undefined;
+            if (ZodHelpers.isZodNullable(current) || ZodHelpers.isZodOptional(current)) {
+                inner = current.unwrap() as ZodType;
+            } else if (ZodHelpers.isZodTransparentWrapper(current)) {
+                inner = current.def.innerType as ZodType;
+            } else if (ZodHelpers.isZodPipe(current)) {
+                inner = ZodHelpers.getPipeModelSchema(current);
+            } else if (ZodHelpers.isZodArray(current)) {
+                inner = current.element as ZodType;
+            }
+
+            if (inner === undefined) {
+                break;
+            }
+            current = inner;
+            description ||= current.meta()?.description;
+        }
+
+        // A type of this file defined from this schema is documented with its description.
+        if (
+            node.parentFile === undefined &&
+            this.nodeSchemas.get(this._getNodeKey(node)) === current
+        ) {
+            return undefined;
+        }
+
+        const source = getCopySource(current) as ZodType | undefined;
+        const isOwn =
+            source !== undefined &&
+            ZodHelpers.hasOwnDescription(current) &&
+            this._resolve(source)?.typeName !== undefined;
+        return isOwn || description !== (source ?? current).meta()?.description
+            ? description
+            : undefined;
+    }
+
+    /**
      * Build the AST node of provided Zod Schema
      * @param schema
      * @returns
@@ -1072,7 +1138,8 @@ export class Zod2Ast {
 
             // Modifiers applied by wrappers of the lazy schema (optional, nullable, array, ...)
             // were set on the pointer and shall be kept.
-            const { arrayDimension, isOptional, isNullable, description } = pointer;
+            const { arrayDimension, isOptional, isNullable, description, memberDescription } =
+                pointer;
 
             /** Pointer to the pending AST node is updated with the lazy resolve */
             Object.keys(pointer).forEach((key) => {
@@ -1089,6 +1156,7 @@ export class Zod2Ast {
             resolved.isOptional = isOptional ?? resolved.isOptional;
             resolved.isNullable = isNullable ?? resolved.isNullable;
             resolved.description = description || resolved.description;
+            resolved.memberDescription = memberDescription;
         }
 
         if (this.opt.strict !== false && this.warnings.length > 0) {

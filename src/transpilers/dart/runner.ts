@@ -819,9 +819,7 @@ export class Zod2Dart extends Zod2X<IZod2DartOpt> {
         const isOpt = memberNode.isOptional || memberNode.isNullable;
         const varType = this.getAttributeType(memberNode);
 
-        if (memberNode.description && !memberNode.name && !this.isTranspilerable(memberNode)) {
-            this.addComment(memberNode.description, this.indent[1]);
-        }
+        this.addMemberComment(memberNode);
 
         const useJson = this.opt.useJsonSerialization !== false;
         let annotationEmitted = false;

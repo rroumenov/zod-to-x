@@ -25,6 +25,7 @@ type Customer struct {
 type Order struct {
     Id string `json:"id"`
     Destination CASE_16_DOMAIN.Address `json:"destination"`
+    // Billing address
     Billing *CASE_16_DOMAIN.Address `json:"billing,omitempty"`
     Items []CASE_16_DOMAIN.Item `json:"items"`
     Currency CASE_16_DOMAIN.Currency `json:"currency"`

@@ -173,11 +173,13 @@ export abstract class Zod2X<T extends IZodToXOpt> {
 
         if (this.isExternalTypeImport(data)) {
             if (data.aliasOf) {
+                this.addComment(data.description);
                 this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, options);
                 this.addExternalTypeImport(data);
             }
             return true;
         } else if (data.aliasOf) {
+            this.addComment(data.description);
             this.addExtendedType(data.name!, data.parentNamespace!, data.aliasOf, {
                 ...options,
                 isInternal: true,
@@ -366,6 +368,21 @@ export abstract class Zod2X<T extends IZodToXOpt> {
         if (data && this.opt.includeComments) {
             this.output.push(this.getComment(data, indent));
         }
+    }
+
+    /**
+     * Adds the comment of a member of a transpiled type: the description set on the member, or the
+     * description of its type if the type is not transpiled, as it would be lost otherwise.
+     * @param memberNode - The AST node of the member.
+     */
+    protected addMemberComment(memberNode: ASTType) {
+        const description =
+            memberNode.memberDescription ??
+            (memberNode.name || this.isTranspilerable(memberNode as ASTNode)
+                ? undefined
+                : memberNode.description);
+
+        this.addComment(description, this.indent[1]);
     }
 
     /**
