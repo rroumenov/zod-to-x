@@ -1,5 +1,16 @@
 # zod-to-x
 
+## 1.9.1
+
+### Patch Changes
+
+- keep the descriptions set on object members and explicit aliases
+- keep the description set on layered aliases
+- keep the description redefined over a layered alias
+- remove the blank line before member comments
+- restore the references and descriptions of JSON Schema definitions
+- keep the types referenced by layered models instead of their local aliases
+
 ## 1.9.0
 
 ### Minor Changes
